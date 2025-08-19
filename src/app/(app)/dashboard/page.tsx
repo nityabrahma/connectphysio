@@ -2,11 +2,23 @@
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Calendar, Package, DollarSign, BarChart3, Clock } from 'lucide-react';
+import type { Patient, Session } from '@/types/domain';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { LS_KEYS } from '@/lib/constants';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { useMemo, useState } from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { add, isAfter, isBefore, isSameDay } from 'date-fns';
 
-export default function DashboardPage() {
-  const { user } = useAuth();
-
-  const renderAdminDashboard = () => (
+const renderAdminDashboard = () => (
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -53,7 +65,62 @@ export default function DashboardPage() {
     </>
   );
 
-  const renderReceptionistDashboard = () => (
+const ReceptionistDashboard = () => {
+  const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
+  const [patients] = useLocalStorage<Patient[]>(LS_KEYS.PATIENTS, []);
+  const [filter, setFilter] = useState('today');
+  const { toast } = useToast();
+
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  
+  const todaysSessions = useMemo(() => {
+    return sessions.filter(s => s.date === todayStr);
+  }, [sessions, todayStr]);
+
+  const filteredSessions = useMemo(() => {
+    const now = new Date();
+    const oneHourFromNow = add(now, { hours: 1 });
+    const endOfWeek = add(now, { days: 7 });
+
+    let filtered = todaysSessions;
+
+    switch (filter) {
+      case 'within_hour':
+        filtered = todaysSessions.filter(s => {
+          const startTime = new Date(`${s.date}T${s.startTime}`);
+          return isAfter(startTime, now) && isBefore(startTime, oneHourFromNow);
+        });
+        break;
+      case 'today':
+        filtered = sessions.filter(s => isSameDay(new Date(s.date), now));
+        break;
+      case 'this_week':
+        filtered = sessions.filter(s => {
+          const sessionDate = new Date(s.date);
+          return isAfter(sessionDate, now) && isBefore(sessionDate, endOfWeek);
+        });
+        break;
+    }
+    // sort by start time
+    return filtered.sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }, [filter, sessions, todaysSessions]);
+
+  const handleCheckIn = (sessionId: string) => {
+    setSessions(sessions.map(s => 
+        s.id === sessionId ? { ...s, status: 'checked-in' } : s
+    ));
+    toast({
+        title: "Patient Checked-In",
+        description: "The patient's status has been updated."
+    });
+  }
+
+  const getPatientName = (patientId: string) => {
+    return patients.find(p => p.id === patientId)?.name || "Unknown Patient";
+  }
+
+  return (
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -62,28 +129,8 @@ export default function DashboardPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">+2 from yesterday</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Patients This Week</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+3</div>
-            <p className="text-xs text-muted-foreground">in the last 7 days</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Packages Sold Today</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+5</div>
-            <p className="text-xs text-muted-foreground">A new record!</p>
+            <div className="text-2xl font-bold">{todaysSessions.length}</div>
+            <p className="text-xs text-muted-foreground">scheduled for today</p>
           </CardContent>
         </Card>
         <Card>
@@ -92,15 +139,78 @@ export default function DashboardPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div>
+            <div className="text-2xl font-bold">{todaysSessions.filter(s => s.status === 'scheduled').length}</div>
             <p className="text-xs text-muted-foreground">for upcoming sessions</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{todaysSessions.filter(s => s.status === 'completed').length}</div>
+            <p className="text-xs text-muted-foreground">sessions finished</p>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{patients.length}</div>
+            <p className="text-xs text-muted-foreground">in the system</p>
+          </CardContent>
+        </Card>
+      </div>
+      <div>
+        <Card>
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Upcoming Appointments</CardTitle>
+              <p className="text-sm text-muted-foreground">Manage patient check-ins for today.</p>
+            </div>
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="w-full md:w-[180px] mt-4 md:mt-0">
+                <SelectValue placeholder="Filter..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="within_hour">Within 1 hour</SelectItem>
+                <SelectItem value="today">All Today</SelectItem>
+                <SelectItem value="this_week">This Week</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent>
+            {filteredSessions.length > 0 ? (
+              <ul className="space-y-4">
+                {filteredSessions.map(session => (
+                  <li key={session.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div>
+                      <p className="font-semibold">{getPatientName(session.patientId)}</p>
+                      <p className="text-sm text-muted-foreground">{session.startTime} - {session.endTime}</p>
+                    </div>
+                    <div className="flex items-center gap-4 mt-2 md:mt-0">
+                      <Badge variant={session.status === 'checked-in' ? 'default' : 'secondary'} className="capitalize">{session.status}</Badge>
+                      {session.status === 'scheduled' && (
+                        <Button size="sm" onClick={() => handleCheckIn(session.id)}>Check In</Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">No appointments match the current filter.</p>
+            )}
           </CardContent>
         </Card>
       </div>
     </>
   );
+}
 
-  const renderTherapistDashboard = () => (
+const renderTherapistDashboard = () => (
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -147,12 +257,15 @@ export default function DashboardPage() {
     </>
   );
 
+export default function DashboardPage() {
+  const { user } = useAuth();
+  
   const renderDashboardContent = () => {
     switch (user?.role) {
       case 'admin':
         return renderAdminDashboard();
       case 'receptionist':
-        return renderReceptionistDashboard();
+        return <ReceptionistDashboard />;
       case 'therapist':
         return renderTherapistDashboard();
       default:
@@ -168,17 +281,6 @@ export default function DashboardPage() {
       </div>
       
       {renderDashboardContent()}
-      
-      <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">No recent activity to display.</p>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

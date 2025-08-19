@@ -19,8 +19,8 @@ import { Icons } from '../icons';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'receptionist', 'therapist'] },
-  { href: '/patients', label: 'Patients', icon: Users, roles: ['admin', 'receptionist', 'therapist'] },
   { href: '/appointments', label: 'Appointments', icon: Calendar, roles: ['admin', 'receptionist', 'therapist'] },
+  { href: '/patients', label: 'Patients', icon: Users, roles: ['admin', 'receptionist', 'therapist'] },
   { href: '/packages', label: 'Packages', icon: Package, roles: ['admin', 'receptionist'] },
   { href: '/billing', label: 'Billing', icon: CreditCard, roles: ['admin'] },
   { href: '/users', label: 'Users', icon: UserCog, roles: ['admin'] },

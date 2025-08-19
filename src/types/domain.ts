@@ -80,15 +80,6 @@ export type Session = {
 export type CheckIn = {
   id: ID;
   sessionId: ID;
-  at: string;
-  via: "manual" | "qr";
-};
-
-export type Alert = {
-  id: ID;
-  patientId: ID;
-  kind: "package-ending" | "low-sessions";
-  message: string;
-  createdAt: string;
-  resolved?: boolean;
+  at: string; // ISO DateTime
+  notes?: string; // Optional notes at check-in
 };

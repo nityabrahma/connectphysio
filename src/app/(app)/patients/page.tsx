@@ -9,8 +9,10 @@ import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { PatientForm } from "./patient-form";
 import type { Patient } from "@/types/domain";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function PatientsPage() {
+    const { user } = useAuth();
     const { patients, addPatient, updatePatient, deletePatient, togglePatientPackage } = usePatients();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
@@ -41,32 +43,39 @@ export default function PatientsPage() {
         }
         setIsFormOpen(false);
     };
+    
+    const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
 
     return (
         <div className="flex flex-col gap-8">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">Patients</h1>
-                <Button onClick={handleAddPatient}>
-                    <PlusCircle />
-                    Add New Patient
-                </Button>
+                {canManagePatients && (
+                    <Button onClick={handleAddPatient}>
+                        <PlusCircle />
+                        Add New Patient
+                    </Button>
+                )}
             </div>
             
             <DataTable 
                 columns={columns({ 
                     onEdit: handleEditPatient, 
                     onDelete: handleDeletePatient,
-                    onTogglePackage: handleTogglePackage 
+                    onTogglePackage: handleTogglePackage,
+                    canManage: canManagePatients,
                 })} 
                 data={patients} 
             />
 
-            <PatientForm 
-                isOpen={isFormOpen}
-                onOpenChange={setIsFormOpen}
-                onSubmit={handleFormSubmit}
-                patient={selectedPatient}
-            />
+            {canManagePatients && (
+                 <PatientForm 
+                    isOpen={isFormOpen}
+                    onOpenChange={setIsFormOpen}
+                    onSubmit={handleFormSubmit}
+                    patient={selectedPatient}
+                />
+            )}
         </div>
     );
 }

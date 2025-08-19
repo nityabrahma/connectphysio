@@ -31,9 +31,10 @@ type PatientColumnsProps = {
   onEdit: (patient: Patient) => void;
   onDelete: (patientId: string) => void;
   onTogglePackage: (patient: Patient) => void;
+  canManage: boolean;
 }
 
-export const columns = ({ onEdit, onDelete, onTogglePackage }: PatientColumnsProps): ColumnDef<Patient>[] => [
+export const columns = ({ onEdit, onDelete, onTogglePackage, canManage }: PatientColumnsProps): ColumnDef<Patient>[] => [
   {
     accessorKey: "name",
     header: "Name",
@@ -60,6 +61,10 @@ export const columns = ({ onEdit, onDelete, onTogglePackage }: PatientColumnsPro
       const patient = row.original
       const hasPackage = !!patient.packageSaleId;
  
+      if (!canManage) {
+        return null;
+      }
+
       return (
         <AlertDialog>
           <DropdownMenu>
