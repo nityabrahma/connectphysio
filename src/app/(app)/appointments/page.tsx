@@ -1,39 +1,22 @@
+
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, PlusCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { PlusCircle } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Patient, Session, Therapist, User } from "@/types/domain";
+import type { Patient, Session, Therapist } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { usePatients } from "@/hooks/use-patients";
 import { useUsers } from "@/hooks/use-users";
-import { Calendar, dateFnsLocalizer, Views, type Event } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
-import { enUS } from 'date-fns/locale/en-US';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Button } from "@/components/ui/button";
 import { SessionForm } from "./session-form";
 import { useToast } from "@/hooks/use-toast";
 import { generateId } from "@/lib/ids";
 import { useAuth } from "@/hooks/use-auth";
-
-
-const locales = {
-  'en-US': enUS,
-}
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: () => startOfWeek(new Date(), { locale: enUS }),
-  getDay,
-  locales,
-});
-
-interface SessionEvent extends Event {
-  resource?: Session;
-}
+import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, isSameDay, isSameMonth, isSameWeek } from "date-fns";
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
@@ -45,60 +28,39 @@ export default function AppointmentsPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | undefined>(undefined);
-  const [selectedSlot, setSelectedSlot] = useState<{ start: Date, end: Date } | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const therapistsData: Therapist[] = useMemo(() => {
     const therapistUsers = users.filter(u => u.role === 'therapist');
     return therapists.filter(t => therapistUsers.some(u => u.therapistId === t.id));
   }, [users, therapists]);
-
-  const events: SessionEvent[] = useMemo(() => {
-    return sessions.map(session => {
-      const patient = patients.find(p => p.id === session.patientId);
-      const therapist = therapists.find(t => t.id === session.therapistId);
-      const [hour, minute] = session.startTime.split(':').map(Number);
-      const [endHour, endMinute] = session.endTime.split(':').map(Number);
-      const start = new Date(session.date);
-      start.setHours(hour, minute);
-      const end = new Date(session.date);
-      end.setHours(endHour, endMinute);
-      
-      return {
-        title: `${patient?.name || 'Unknown Patient'} w/ ${therapist?.name || 'Unknown Therapist'}`,
-        start,
-        end,
-        resource: session,
-      };
-    }).filter(event => {
-      if (user?.role === 'therapist') {
-        const therapistUser = users.find(u => u.id === user.id);
-        return event.resource?.therapistId === therapistUser?.therapistId;
-      }
-      return true;
+  
+  const filteredSessions = (view: "day" | "week" | "month") => {
+    if (!selectedDate) return [];
+    
+    let dateFilteredSessions = sessions.filter(session => {
+        const sessionDate = new Date(session.date);
+        switch (view) {
+            case "day": return isSameDay(sessionDate, selectedDate);
+            case "week": return isSameWeek(sessionDate, selectedDate);
+            case "month": return isSameMonth(sessionDate, selectedDate);
+            default: return false;
+        }
     });
-  }, [sessions, patients, therapists, user, users]);
 
-  const handleSelectSlot = ({ start, end }: { start: Date, end: Date }) => {
-    if (user?.role === 'therapist') return; // Therapists can't create appointments from calendar
-    setSelectedSession(undefined);
-    setSelectedSlot({ start, end });
-    setIsFormOpen(true);
-  };
-
-  const handleSelectEvent = (event: SessionEvent) => {
-    if (user?.role === 'therapist') return;
-    setSelectedSession(event.resource);
-    setSelectedSlot(undefined);
-    setIsFormOpen(true);
-  };
+    if (user?.role === 'therapist') {
+      const therapistUser = users.find(u => u.id === user.id);
+      dateFilteredSessions = dateFilteredSessions.filter(s => s.therapistId === therapistUser?.therapistId);
+    }
+    
+    return dateFilteredSessions.sort((a,b) => a.startTime.localeCompare(b.startTime));
+  }
 
   const handleFormSubmit = (values: Omit<Session, 'id' | 'createdAt' | 'status'>) => {
     if (selectedSession) {
-      // Update
       setSessions(sessions.map(s => s.id === selectedSession.id ? { ...selectedSession, ...values } : s));
       toast({ title: "Session updated" });
     } else {
-      // Create
       const newSession: Session = {
         ...values,
         id: generateId(),
@@ -113,7 +75,6 @@ export default function AppointmentsPage() {
   
   const handleAddClick = () => {
     setSelectedSession(undefined);
-    setSelectedSlot(undefined);
     setIsFormOpen(true);
   }
 
@@ -123,31 +84,73 @@ export default function AppointmentsPage() {
     setIsFormOpen(false);
   }
 
+  const SessionList = ({ view }: { view: "day" | "week" | "month" }) => {
+    const data = filteredSessions(view);
+    const getPatientName = (patientId: string) => patients.find(p => p.id === patientId)?.name || 'Unknown';
+    const getTherapistName = (therapistId: string) => therapists.find(t => t.id === therapistId)?.name || 'Unknown';
+
+    if (data.length === 0) {
+      return (
+        <div className="text-center text-muted-foreground py-8">
+            <p>No appointments for this {view}.</p>
+        </div>
+      );
+    }
+
+    return (
+        <ul className="space-y-4 pt-4">
+            {data.map(session => (
+                <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex justify-between items-center">
+                    <div>
+                        <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d')} &middot; {session.startTime} - {session.endTime}</p>
+                        <p className="text-sm text-muted-foreground">{getPatientName(session.patientId)} with {getTherapistName(session.therapistId)}</p>
+                    </div>
+                    <Button variant="ghost" onClick={() => {
+                        setSelectedSession(session);
+                        setIsFormOpen(true);
+                    }}>
+                        Edit
+                    </Button>
+                </li>
+            ))}
+        </ul>
+    )
+  }
+
   return (
-    <div className="flex flex-col gap-8 h-[calc(100vh-10rem)]">
+    <div className="flex flex-col gap-8">
        <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
         {user?.role !== 'therapist' && (
           <Button onClick={handleAddClick}>
               <PlusCircle />
-              Schedule Session
+              New Appointment
           </Button>
         )}
       </div>
-      <Card className="flex-1 flex flex-col">
-        <CardContent className="p-2 md:p-4 flex-1">
-          <Calendar
-            localizer={localizer}
-            events={events}
-            startAccessor="start"
-            endAccessor="end"
-            style={{ flex: 1 }}
-            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-            selectable={user?.role !== 'therapist'}
-            onSelectSlot={handleSelectSlot}
-            onSelectEvent={handleSelectEvent}
-            defaultView={Views.WEEK}
-          />
+      
+      <Card>
+        <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-8">
+            <div className="md:col-span-1 flex justify-center">
+                 <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    className="rounded-md"
+                />
+            </div>
+            <div className="md:col-span-2">
+                 <Tabs defaultValue="month" className="w-full">
+                    <TabsList>
+                        <TabsTrigger value="day">Day</TabsTrigger>
+                        <TabsTrigger value="week">Week</TabsTrigger>
+                        <TabsTrigger value="month">Month</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="day"><SessionList view="day" /></TabsContent>
+                    <TabsContent value="week"><SessionList view="week" /></TabsContent>
+                    <TabsContent value="month"><SessionList view="month" /></TabsContent>
+                </Tabs>
+            </div>
         </CardContent>
       </Card>
 
@@ -157,7 +160,7 @@ export default function AppointmentsPage() {
         onSubmit={handleFormSubmit}
         onDelete={handleDelete}
         session={selectedSession}
-        slot={selectedSlot}
+        slot={selectedDate ? { start: selectedDate, end: selectedDate } : undefined}
         patients={patients}
         therapists={therapistsData}
       />
