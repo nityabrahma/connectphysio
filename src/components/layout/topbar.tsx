@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -24,11 +25,12 @@ import { cn } from '@/lib/utils';
 
 
 const navItems = [
-    { href: '/', label: 'Dashboard', icon: Home, roles: ['admin', 'receptionist', 'therapist'] },
-    { href: '/patients', label: 'Patients', icon: Users, roles: ['admin', 'receptionist'] },
+    { href: '/dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'receptionist', 'therapist'] },
     { href: '/appointments', label: 'Appointments', icon: Calendar, roles: ['admin', 'receptionist', 'therapist'] },
+    { href: '/patients', label: 'Patients', icon: Users, roles: ['admin', 'receptionist', 'therapist'] },
     { href: '/packages', label: 'Packages', icon: Package, roles: ['admin', 'receptionist'] },
     { href: '/billing', label: 'Billing', icon: CreditCard, roles: ['admin'] },
+    { href: '/users', label: 'Users', icon: Users, roles: ['admin'] },
     { href: '/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
   ];
 
@@ -39,9 +41,6 @@ export function Topbar() {
   return (
     <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-            <h1 className="text-lg font-semibold md:text-xl capitalize">
-                {pathname.split('/').pop() || 'Dashboard'}
-            </h1>
         </nav>
       <Sheet>
         <SheetTrigger asChild>

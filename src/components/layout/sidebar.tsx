@@ -5,13 +5,13 @@ import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import {
   Calendar,
-  ClipboardList,
   Home,
   Package,
   Settings,
   Users,
   CreditCard,
   UserCog,
+  HelpCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -34,12 +34,14 @@ export function Sidebar() {
   return (
     <aside className="hidden w-64 flex-col border-r bg-card md:flex">
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <Icons.logo className="h-6 w-6 text-primary" />
-          <span className="">TheraSuite</span>
+        <Link href="/dashboard" className="flex items-center gap-3 font-semibold">
+          <div className="p-2 bg-primary text-primary-foreground rounded-full">
+            <Icons.logo className="h-6 w-6" />
+          </div>
+          <span className="text-lg">Wellness Clinic</span>
         </Link>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex flex-1 flex-col justify-between overflow-y-auto">
         <nav className="grid items-start px-4 py-4 text-sm font-medium">
           {navItems.map((item) =>
             user && item.roles.includes(user.role) ? (
@@ -48,15 +50,26 @@ export function Sidebar() {
                 href={item.href}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                  (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-muted text-primary'
+                  (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-accent text-accent-foreground font-semibold'
                 )}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-5 w-5" />
                 {item.label}
               </Link>
             ) : null
           )}
         </nav>
+        <div className="px-4 py-4 mt-auto">
+           <Link
+              href="#"
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+              )}
+            >
+              <HelpCircle className="h-5 w-5" />
+              Help and docs
+            </Link>
+        </div>
       </div>
     </aside>
   );

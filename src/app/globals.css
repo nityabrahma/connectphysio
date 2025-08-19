@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%; /* Very light blue */
+    --background: 210 20% 98%;
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 206 65% 70%; /* Light desaturated blue */
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 173 80% 30%; /* Dark Teal */
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 258 11% 66%; /* Muted purple */
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 200 100% 95%; /* Light Blue Accent */
+    --accent-foreground: 173 80% 30%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 206 65% 70%;
-    --radius: 1.5rem; /* Softer cards */
+    --ring: 173 80% 30%;
+    --radius: 0.75rem;
   }
  
   .dark {
@@ -33,19 +33,19 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 206 65% 70%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 173 70% 40%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 258 11% 66%;
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 206 65% 70%;
+    --ring: 173 70% 40%;
   }
 }
  

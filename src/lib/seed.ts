@@ -95,8 +95,6 @@ export const seedData = () => {
   storage.setItem(LS_KEYS.PACKAGES, packageDefs);
 
 
-  // No mock patients, sales, or sessions seeded by default.
-  // The application starts with a clean slate.
   storage.setItem(LS_KEYS.PATIENTS, []);
   storage.setItem(LS_KEYS.PACKAGE_SALES, []);
   storage.setItem(LS_KEYS.SESSIONS, []);
