@@ -22,7 +22,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -30,7 +29,7 @@ import { Label } from "@/components/ui/label";
 export default function PackagesPage() {
   const { toast } = useToast();
   const { patients } = usePatients();
-  const [packages, setPackages] = useLocalStorage<PackageDef[]>(LS_KEYS.PACKAGES, []);
+  const [packages] = useLocalStorage<PackageDef[]>(LS_KEYS.PACKAGES, []);
   const [packageSales, setPackageSales] = useLocalStorage<PackageSale[]>(LS_KEYS.PACKAGE_SALES, []);
   
   const [selectedPackage, setSelectedPackage] = useState<PackageDef | null>(null);
@@ -71,11 +70,26 @@ export default function PackagesPage() {
   };
   
   const getStatusBadge = (sale: PackageSale) => {
-    const isExpired = isBefore(new Date(sale.expiryDate), new Date());
-    if (isExpired) return <Badge variant="destructive">Expired</Badge>;
+    const isExpired = sale.expiryDate ? isBefore(new Date(sale.expiryDate), new Date()) : false;
+    if (isExpired) {
+        if(sale.status !== 'expired') {
+            setPackageSales(sales => sales.map(s => s.id === sale.id ? {...s, status: 'expired'} : s))
+        }
+        return <Badge variant="destructive">Expired</Badge>;
+    }
+
+    if (sale.sessionsUsed >= sale.sessionsTotal) {
+        if(sale.status !== 'completed') {
+            setPackageSales(sales => sales.map(s => s.id === sale.id ? {...s, status: 'completed'} : s))
+        }
+        return <Badge variant="secondary">Completed</Badge>;
+    }
     
-    const daysRemaining = Math.round((new Date(sale.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    if (daysRemaining <= 7) return <Badge className="bg-orange-100 text-orange-800">Expiring Soon</Badge>;
+    if (sale.expiryDate) {
+        const daysRemaining = Math.round((new Date(sale.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        if (daysRemaining <= 7) return <Badge className="bg-orange-100 text-orange-800">Expiring Soon</Badge>;
+    }
+
 
     return <Badge className="bg-green-100 text-green-800">Active</Badge>;
   }
@@ -149,7 +163,7 @@ export default function PackagesPage() {
                   <TableCell>{getPackageName(sale.packageId)}</TableCell>
                   <TableCell>{sale.sessionsTotal - sale.sessionsUsed}</TableCell>
                   <TableCell>{getStatusBadge(sale)}</TableCell>
-                  <TableCell>{format(new Date(sale.expiryDate), 'yyyy-MM-dd')}</TableCell>
+                  <TableCell>{sale.expiryDate ? format(new Date(sale.expiryDate), 'yyyy-MM-dd') : 'N/A'}</TableCell>
                 </TableRow>
               )) : (
                 <TableRow>
