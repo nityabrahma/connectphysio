@@ -32,7 +32,7 @@ export function UserNav() {
 
   const handleSwitchUser = (email: string) => {
     logout();
-    router.push(`/auth/login?email=${encodeURIComponent(email)}`);
+    router.push(`/login?email=${encodeURIComponent(email)}`);
   };
 
   const getInitials = (name: string) => {

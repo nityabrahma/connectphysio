@@ -12,7 +12,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push(`/auth/login?redirect=${pathname}`);
+      router.push(`/login?redirect=${pathname}`);
     }
   }, [user, loading, router, pathname]);
 

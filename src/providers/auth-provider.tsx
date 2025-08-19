@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setSession(null);
     setUser(null);
-    router.push('/auth/login');
+    router.push('/login');
   };
 
   const register = async (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'passwordHash' | 'role'> & { role: Role }): Promise<User | null> => {
