@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePatients } from "@/hooks/use-patients";
@@ -10,7 +11,7 @@ import { PatientForm } from "./patient-form";
 import type { Patient } from "@/types/domain";
 
 export default function PatientsPage() {
-    const { patients, addPatient, updatePatient, deletePatient } = usePatients();
+    const { patients, addPatient, updatePatient, deletePatient, togglePatientPackage } = usePatients();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
 
@@ -26,6 +27,10 @@ export default function PatientsPage() {
 
     const handleDeletePatient = (patientId: string) => {
         deletePatient(patientId);
+    };
+
+    const handleTogglePackage = (patient: Patient) => {
+        togglePatientPackage(patient.id);
     };
 
     const handleFormSubmit = (values: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -48,7 +53,11 @@ export default function PatientsPage() {
             </div>
             
             <DataTable 
-                columns={columns({ onEdit: handleEditPatient, onDelete: handleDeletePatient })} 
+                columns={columns({ 
+                    onEdit: handleEditPatient, 
+                    onDelete: handleDeletePatient,
+                    onTogglePackage: handleTogglePackage 
+                })} 
                 data={patients} 
             />
 

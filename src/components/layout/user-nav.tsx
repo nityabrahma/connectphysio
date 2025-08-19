@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,10 +21,11 @@ import { Badge } from '../ui/badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LifeBuoy, LogOut, Settings, User as UserIcon, Users } from 'lucide-react';
-import { demoUsers } from '@/lib/seed';
+import { useUsers } from '@/hooks/use-users';
 
 export function UserNav() {
   const { user, logout } = useAuth();
+  const { users } = useUsers();
   const router = useRouter();
 
   if (!user) {
@@ -84,7 +86,7 @@ export function UserNav() {
             <DropdownMenuSubTrigger><Users />Switch User (Demo)</DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent>
-                {demoUsers.map(demoUser => (
+                {users.map(demoUser => (
                   <DropdownMenuItem key={demoUser.email} onClick={() => handleSwitchUser(demoUser.email)}>
                     <span>{demoUser.name} <span className="text-muted-foreground capitalize">({demoUser.role})</span></span>
                   </DropdownMenuItem>

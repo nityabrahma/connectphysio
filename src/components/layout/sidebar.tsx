@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -10,6 +11,7 @@ import {
   Settings,
   Users,
   CreditCard,
+  UserCog,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -21,6 +23,7 @@ const navItems = [
   { href: '/appointments', label: 'Appointments', icon: Calendar, roles: ['admin', 'receptionist', 'therapist'] },
   { href: '/packages', label: 'Packages', icon: Package, roles: ['admin', 'receptionist'] },
   { href: '/billing', label: 'Billing', icon: CreditCard, roles: ['admin'] },
+  { href: '/users', label: 'Users', icon: UserCog, roles: ['admin'] },
   { href: '/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
 ];
 

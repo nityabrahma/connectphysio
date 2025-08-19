@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useLocalStorage } from './use-local-storage';
@@ -32,7 +33,7 @@ export function usePatients() {
     setPatients(patients.map(p => (p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p)));
     toast({
       title: "Patient Updated",
-      description: `The details for ${updates.name} have been updated.`
+      description: `The details for ${updates.name || 'the patient'} have been updated.`
     })
   };
 
@@ -48,11 +49,35 @@ export function usePatients() {
     }
   };
 
+  const togglePatientPackage = (id: string) => {
+    const patient = patients.find(p => p.id === id);
+    if (patient) {
+      if (patient.packageSaleId) {
+        // Remove package
+        updatePatient(id, { ...patient, packageSaleId: undefined });
+        toast({
+          title: "Package Removed",
+          description: `${patient.name} no longer has an active package.`,
+        });
+      } else {
+        // Add a dummy package for now. A real implementation would show a package selection modal.
+        const dummyPackageSaleId = `sale-${generateId()}`;
+        updatePatient(id, { ...patient, packageSaleId: dummyPackageSaleId });
+         toast({
+          title: "Package Assigned",
+          description: `A package has been assigned to ${patient.name}.`,
+        });
+      }
+    }
+  };
+
+
   return {
     patients,
     addPatient,
     getPatient,
     updatePatient,
     deletePatient,
+    togglePatientPackage
   };
 }

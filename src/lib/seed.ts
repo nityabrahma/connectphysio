@@ -1,3 +1,4 @@
+
 import { storage } from './storage';
 import { LS_KEYS } from './constants';
 import { generateId } from './ids';
@@ -8,14 +9,10 @@ const mockHash = (password: string) => `hashed_${password}`;
 
 export const demoUsers: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'passwordHash'>[] = [
     { name: 'Admin User', email: 'admin@demo.app', role: 'admin' },
-    { name: 'Receptionist', email: 'reception@demo.app', role: 'receptionist' },
-    { name: 'Dr. Emily Carter', email: 'emily@demo.app', role: 'therapist' },
 ];
 
 const demoPasswords = {
     'admin@demo.app': 'admin123',
-    'reception@demo.app': 'recept123',
-    'emily@demo.app': 'thera123',
 }
 
 export const seedData = () => {
