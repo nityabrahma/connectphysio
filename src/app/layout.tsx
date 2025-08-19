@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/providers/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'TheraSuite',
+  title: 'ConnectPhysio',
   description: 'Patient Booking & Therapy Management App',
 };
 

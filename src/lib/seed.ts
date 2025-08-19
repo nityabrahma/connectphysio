@@ -8,7 +8,7 @@ import type { User, Therapist, Patient, PackageDef, PackageSale, Session } from 
 const mockHash = (password: string) => `hashed_${password}`;
 
 export const demoUsers: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'passwordHash'>[] = [
-    { name: 'Admin User', email: 'admin@demo.app', role: 'admin' },
+    { name: 'Admin User', email: 'admin@demo.app', role: 'admin', centreName: 'ConnectPhysio London' },
 ];
 
 const demoPasswords = {

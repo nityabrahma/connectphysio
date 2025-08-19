@@ -9,6 +9,7 @@ export type User = {
   phone?: string;
   role: Role;
   therapistId?: ID; // link if role === "therapist"
+  centreName?: string; // only for admin
   createdAt: string;
   updatedAt: string;
   passwordHash: string;

@@ -56,7 +56,7 @@ export function Topbar() {
               className="flex items-center gap-2 text-lg font-semibold"
             >
               <Icons.logo className="h-6 w-6 text-primary" />
-              <span className="sr-only">TheraSuite</span>
+              <span className="sr-only">ConnectPhysio</span>
             </Link>
             {navItems.map((item) =>
                 user && item.roles.includes(user.role) ? (

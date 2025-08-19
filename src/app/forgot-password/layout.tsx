@@ -12,7 +12,7 @@ export default function AuthLayout({
         <div className="mb-8 flex justify-center">
             <Link href="/" className="flex items-center gap-2 text-primary">
                 <Icons.logo className="h-8 w-8" />
-                <span className="text-2xl font-bold tracking-tight text-foreground">TheraSuite</span>
+                <span className="text-2xl font-bold tracking-tight text-foreground">ConnectPhysio</span>
             </Link>
         </div>
         {children}

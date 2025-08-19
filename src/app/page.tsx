@@ -11,7 +11,7 @@ export default function LandingPage() {
         <div className="container flex h-16 max-w-7xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Icons.logo className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold tracking-tight">TheraSuite</span>
+            <span className="text-xl font-bold tracking-tight">ConnectPhysio</span>
           </Link>
           <div className="flex items-center gap-4">
             <nav className="hidden gap-6 md:flex">
@@ -50,7 +50,7 @@ export default function LandingPage() {
               The All-in-One Platform for Modern Therapy Practices
             </h1>
             <p className="max-w-[600px] text-lg text-muted-foreground md:text-xl">
-              Streamline your patient management, appointment scheduling, and billing with TheraSuite. Focus on what truly matters - your patients.
+              Streamline your patient management, appointment scheduling, and billing with ConnectPhysio. Focus on what truly matters - your patients.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center md:justify-start">
               <Link href="/login">
@@ -66,7 +66,7 @@ export default function LandingPage() {
           <div>
             <img
               src="https://placehold.co/600x400.png"
-              alt="TheraSuite Dashboard"
+              alt="ConnectPhysio Dashboard"
               className="rounded-2xl shadow-2xl"
               data-ai-hint="app dashboard"
             />
@@ -81,7 +81,7 @@ export default function LandingPage() {
                 Everything You Need to Run Your Practice
               </h2>
               <p className="mt-6 text-lg text-muted-foreground">
-                From patient intake to session notes, TheraSuite provides a seamless, integrated experience for your entire team.
+                From patient intake to session notes, ConnectPhysio provides a seamless, integrated experience for your entire team.
               </p>
             </div>
             <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -114,7 +114,7 @@ export default function LandingPage() {
       <footer className="border-t">
         <div className="container mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 py-8 sm:flex-row">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} TheraSuite. All rights reserved.
+            © {new Date().getFullYear()} ConnectPhysio. All rights reserved.
           </p>
           <div className="flex gap-4">
              <Link href="#" className="text-sm hover:underline">Privacy Policy</Link>

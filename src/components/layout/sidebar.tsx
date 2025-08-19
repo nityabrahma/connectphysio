@@ -38,7 +38,7 @@ export function Sidebar() {
           <div className="p-2 bg-primary text-primary-foreground rounded-full">
             <Icons.logo className="h-6 w-6" />
           </div>
-          <span className="text-lg">TheraSuite</span>
+          <span className="text-lg">{user?.centreName || 'ConnectPhysio'}</span>
         </Link>
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-y-auto">
