@@ -39,7 +39,7 @@ export default function LoginPage() {
           title: 'Login Successful',
           description: 'Welcome back!',
         });
-        const redirect = searchParams.get('redirect') || '/';
+        const redirect = searchParams.get('redirect') || '/dashboard';
         router.push(redirect);
       } else {
         toast({
@@ -62,7 +62,7 @@ export default function LoginPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Login</CardTitle>
+        <CardTitle>Sign In</CardTitle>
         <CardDescription>Enter your credentials to access your account.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
@@ -82,7 +82,7 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/auth/forgot-password" passHref>
+                <Link href="/forgot-password" passHref>
                     <Button variant="link" className="px-0 h-auto text-xs">Forgot password?</Button>
                 </Link>
             </div>
@@ -110,12 +110,6 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Link href="/auth/register" className="font-medium text-primary hover:underline">
-              Register
-            </Link>
-          </p>
         </CardFooter>
       </form>
     </Card>

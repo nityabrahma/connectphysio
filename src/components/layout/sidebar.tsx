@@ -16,8 +16,8 @@ import { usePathname } from 'next/navigation';
 import { Icons } from '../icons';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: Home, roles: ['admin', 'receptionist', 'therapist'] },
-  { href: '/patients', label: 'Patients', icon: Users, roles: ['admin', 'receptionist'] },
+  { href: '/dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'receptionist', 'therapist'] },
+  { href: '/patients', label: 'Patients', icon: Users, roles: ['admin', 'receptionist', 'therapist'] },
   { href: '/appointments', label: 'Appointments', icon: Calendar, roles: ['admin', 'receptionist', 'therapist'] },
   { href: '/packages', label: 'Packages', icon: Package, roles: ['admin', 'receptionist'] },
   { href: '/billing', label: 'Billing', icon: CreditCard, roles: ['admin'] },
@@ -31,7 +31,7 @@ export function Sidebar() {
   return (
     <aside className="hidden w-64 flex-col border-r bg-card md:flex">
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <Icons.logo className="h-6 w-6 text-primary" />
           <span className="">TheraSuite</span>
         </Link>
@@ -45,7 +45,7 @@ export function Sidebar() {
                 href={item.href}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                  (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))) && 'bg-muted text-primary'
+                  (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-muted text-primary'
                 )}
               >
                 <item.icon className="h-4 w-4" />
