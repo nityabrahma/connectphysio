@@ -15,11 +15,11 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { Patient, PackageDef, PackageSale } from "@/types/domain";
+import type { Patient, PackageDef, PackageSale, Session, Therapist } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { generateId } from "@/lib/ids";
-import { addDays } from "date-fns";
+import { addDays, format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { usePatients } from "@/hooks/use-patients";
 
@@ -35,6 +35,9 @@ export function AssignPackageModal({ isOpen, onOpenChange, patient }: AssignPack
     const { toast } = useToast();
     const [packages] = useLocalStorage<PackageDef[]>(LS_KEYS.PACKAGES, []);
     const [packageSales, setPackageSales] = useLocalStorage<PackageSale[]>(LS_KEYS.PACKAGE_SALES, []);
+    const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
+    const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
+
     const [selectedPackageId, setSelectedPackageId] = useState<string>("");
 
     const availablePackages = packages.filter(p => p.centreId === user?.centreId);
@@ -48,8 +51,11 @@ export function AssignPackageModal({ isOpen, onOpenChange, patient }: AssignPack
         }
 
         if (patient.packageSaleId) {
-            toast({ variant: "destructive", title: "Patient already has an active package." });
-            return;
+             const existingSale = packageSales.find(s => s.id === patient.packageSaleId);
+             if (existingSale && existingSale.status === 'active') {
+                toast({ variant: "destructive", title: "Patient already has an active package." });
+                return;
+             }
         }
         
         const newSale: PackageSale = {
@@ -64,10 +70,42 @@ export function AssignPackageModal({ isOpen, onOpenChange, patient }: AssignPack
           status: "active",
         };
 
+        // Automatic session scheduling
+        const newSessions: Session[] = [];
+        const availableTherapists = therapists.filter(t => t.centreId === user.centreId);
+        if (availableTherapists.length === 0) {
+            toast({ variant: "destructive", title: "No therapists available to schedule sessions." });
+            return;
+        }
+        
+        let currentDate = new Date();
+        for (let i = 0; i < selectedPackage.sessions; i++) {
+            currentDate = addDays(currentDate, 1); // Schedule for the next available day
+            
+            // Simple logic: assign to the first available therapist
+            const assignedTherapist = availableTherapists[0];
+
+            const newSession: Session = {
+                id: generateId(),
+                patientId: patient.id,
+                therapistId: assignedTherapist.id,
+                centreId: user.centreId,
+                date: format(currentDate, "yyyy-MM-dd"),
+                startTime: "10:00", // Default start time
+                endTime: "11:00", // Default end time
+                status: 'scheduled',
+                paymentStatus: 'unpaid',
+                packageSaleId: newSale.id,
+                createdAt: new Date().toISOString(),
+            };
+            newSessions.push(newSession);
+        }
+
+        setSessions([...sessions, ...newSessions]);
         setPackageSales([...packageSales, newSale]);
         updatePatient(patient.id, { packageSaleId: newSale.id });
 
-        toast({ title: "Package Assigned", description: `${selectedPackage.name} assigned to ${patient.name}.` });
+        toast({ title: "Package Assigned", description: `${selectedPackage.name} assigned to ${patient.name} and ${newSessions.length} sessions scheduled.` });
         onOpenChange(false);
     }
 
@@ -77,7 +115,7 @@ export function AssignPackageModal({ isOpen, onOpenChange, patient }: AssignPack
                 <AlertDialogHeader>
                 <AlertDialogTitle>Assign Package to {patient.name}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Select a package from the list to assign to this patient.
+                    Select a package from the list to assign to this patient. This will automatically schedule their sessions.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="py-4">
@@ -96,11 +134,10 @@ export function AssignPackageModal({ isOpen, onOpenChange, patient }: AssignPack
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleConfirm} disabled={!selectedPackageId}>
-                        Assign Package
+                        Assign & Schedule
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
     );
 }
-

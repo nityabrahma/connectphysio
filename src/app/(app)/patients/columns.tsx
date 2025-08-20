@@ -2,7 +2,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, PackageCheck } from "lucide-react"
+import { MoreHorizontal, PackageCheck, Eye } from "lucide-react"
  
 import { Button } from "@/components/ui/button"
 import {
@@ -31,10 +31,11 @@ type PatientColumnsProps = {
   onEdit: (patient: Patient) => void;
   onDelete: (patientId: string) => void;
   onAssignPackage: (patient: Patient) => void;
+  onView: (patientId: string) => void;
   canManage: boolean;
 }
 
-export const columns = ({ onEdit, onDelete, onAssignPackage, canManage }: PatientColumnsProps): ColumnDef<Patient>[] => [
+export const columns = ({ onEdit, onDelete, onAssignPackage, onView, canManage }: PatientColumnsProps): ColumnDef<Patient>[] => [
   {
     accessorKey: "name",
     header: "Name",
@@ -60,10 +61,6 @@ export const columns = ({ onEdit, onDelete, onAssignPackage, canManage }: Patien
     cell: ({ row }) => {
       const patient = row.original
  
-      if (!canManage) {
-        return null;
-      }
-
       return (
         <AlertDialog>
           <DropdownMenu>
@@ -75,23 +72,25 @@ export const columns = ({ onEdit, onDelete, onAssignPackage, canManage }: Patien
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(patient.id)}
-              >
-                Copy patient ID
+              <DropdownMenuItem onSelect={() => onView(patient.id)}>
+                <Eye/>View History
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => onEdit(patient)}>
-                Edit details
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => onAssignPackage(patient)}>
-                <PackageCheck/>Assign Package
-              </DropdownMenuItem>
-              <AlertDialogTrigger asChild>
-                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                    Delete patient
-                </DropdownMenuItem>
-              </AlertDialogTrigger>
+               {canManage && (
+                <>
+                  <DropdownMenuItem onSelect={() => onEdit(patient)}>
+                    Edit details
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onAssignPackage(patient)}>
+                    <PackageCheck/>Assign Package
+                  </DropdownMenuItem>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                        Delete patient
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                </>
+               )}
             </DropdownMenuContent>
           </DropdownMenu>
           <AlertDialogContent>

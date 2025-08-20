@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { PlusCircle } from "lucide-react";
+import { Check, LogOut, PlusCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Patient, Session, Therapist, PackageSale } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -68,7 +68,13 @@ export default function AppointmentsPage() {
       let packageSaleId = patient?.packageSaleId;
       
       if(packageSaleId) {
-        setPackageSales(sales => sales.map(s => s.id === packageSaleId ? { ...s, sessionsUsed: s.sessionsUsed + 1 } : s));
+        const sale = packageSales.find(s => s.id === packageSaleId);
+        if (sale && sale.sessionsUsed < sale.sessionsTotal) {
+          setPackageSales(sales => sales.map(s => s.id === packageSaleId ? { ...s, sessionsUsed: s.sessionsUsed + 1 } : s));
+        } else {
+           toast({ variant: "destructive", title: "Package Limit Reached", description: "This patient has used all sessions in their package." });
+           // We might want to prevent session creation here, but for now we'll just notify
+        }
       }
 
       const newSession: Session = {
@@ -82,6 +88,11 @@ export default function AppointmentsPage() {
       toast({ title: "Session scheduled" });
     }
     setIsFormOpen(false);
+  };
+
+  const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
+    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status } : s));
+    toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
   };
   
   const handleAddClick = () => {
@@ -99,6 +110,12 @@ export default function AppointmentsPage() {
     const data = filteredSessions(view);
     const getPatientName = (patientId: string) => patients.find(p => p.id === patientId)?.name || 'Unknown';
     const getTherapistName = (therapistId: string) => therapists.find(t => t.id === therapistId)?.name || 'Unknown';
+    
+    const canManageSession = (session: Session) => {
+        if (user?.role === 'admin' || user?.role === 'receptionist') return true;
+        if (user?.role === 'therapist' && user.therapistId === session.therapistId) return true;
+        return false;
+    }
 
     if (data.length === 0) {
       return (
@@ -111,21 +128,31 @@ export default function AppointmentsPage() {
     return (
         <ul className="space-y-4 pt-4">
             {data.map(session => (
-                <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex justify-between items-center">
+                <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center">
                     <div>
                         <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d')} &middot; {session.startTime} - {session.endTime}</p>
                         <p className="text-sm text-muted-foreground">{getPatientName(session.patientId)} with {getTherapistName(session.therapistId)}</p>
-                        <div className="flex gap-2 mt-1">
+                        <div className="flex gap-2 mt-2">
                           <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">{session.paymentStatus}</Badge>
                           <Badge variant="outline" className="capitalize">{session.status}</Badge>
                         </div>
                     </div>
-                    <Button variant="ghost" onClick={() => {
-                        setSelectedSession(session);
-                        setIsFormOpen(true);
-                    }}>
-                        Edit
-                    </Button>
+                    {canManageSession(session) && (
+                        <div className="flex gap-2 mt-4 sm:mt-0">
+                            {session.status === 'scheduled' && user?.role === 'receptionist' && (
+                                <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}><Check/> Check In</Button>
+                            )}
+                            {session.status === 'checked-in' && (
+                                <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'completed')}><LogOut/> End Session</Button>
+                            )}
+                            <Button variant="ghost" size="sm" onClick={() => {
+                                setSelectedSession(session);
+                                setIsFormOpen(true);
+                            }}>
+                                Edit
+                            </Button>
+                        </div>
+                    )}
                 </li>
             ))}
         </ul>

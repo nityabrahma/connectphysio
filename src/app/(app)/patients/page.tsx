@@ -11,9 +11,11 @@ import { PatientForm } from "./patient-form";
 import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
 import { AssignPackageModal } from "./assign-package-modal";
+import { useRouter } from "next/navigation";
 
 export default function PatientsPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const { patients, addPatient, updatePatient, deletePatient } = usePatients();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
@@ -36,6 +38,10 @@ export default function PatientsPage() {
     const handleAssignPackage = (patient: Patient) => {
         setSelectedPatient(patient);
         setIsPackageModalOpen(true);
+    };
+
+    const handleViewPatient = (patientId: string) => {
+        router.push(`/patients/${patientId}`);
     };
 
     const handleFormSubmit = (values: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -66,6 +72,7 @@ export default function PatientsPage() {
                     onEdit: handleEditPatient, 
                     onDelete: handleDeletePatient,
                     onAssignPackage: handleAssignPackage,
+                    onView: handleViewPatient,
                     canManage: canManagePatients,
                 })} 
                 data={patients} 
