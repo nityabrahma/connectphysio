@@ -7,12 +7,12 @@ import { z } from "zod"
 import type { Patient } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import {
@@ -29,12 +29,12 @@ import { useAuth } from "@/hooks/use-auth"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  email: z.string().email("Invalid email address."),
-  phone: z.string().min(10, "Phone number must be at least 10 digits."),
-  age: z.coerce.number().int().positive().optional().or(z.literal('')),
-  medicalInfo: z.string().optional(),
-  notes: z.string().optional(),
+    name: z.string().min(2, "Name must be at least 2 characters."),
+    email: z.string().email("Invalid email address."),
+    phone: z.string().min(10, "Phone number must be at least 10 digits."),
+    age: z.coerce.number().int().positive().optional().or(z.literal('')),
+    medicalInfo: z.string().optional(),
+    notes: z.string().optional(),
 })
 
 type PatientFormValues = z.infer<typeof formSchema>
@@ -94,7 +94,7 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] h-[80vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Patient' : 'Add New Patient'}</DialogTitle>
                     <DialogDescription>
@@ -102,92 +102,92 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="pr-4 -mr-4">
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-                        <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Full Name</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="John Doe" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="john.doe@example.com" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="phone"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Phone</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="555-123-4567" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="age"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Age</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="35" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="medicalInfo"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Medical Info (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="Any relevant medical history..." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="notes"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Notes (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="Initial consultation notes..." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <DialogFooter className="pt-4 sticky bottom-0 bg-background">
-                            <Button type="submit">{isEditing ? 'Save Changes' : 'Create Patient'}</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4 flex flex-col size-full overflow-auto">
+                            <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Full Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="John Doe" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="john.doe@example.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Phone</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="555-123-4567" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="age"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Age</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="35" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="medicalInfo"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Medical Info (Optional)</FormLabel>
+                                        <FormControl>
+                                            <Textarea placeholder="Any relevant medical history..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="notes"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Notes (Optional)</FormLabel>
+                                        <FormControl>
+                                            <Textarea placeholder="Initial consultation notes..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </form>
+                    </Form>
                 </ScrollArea>
+                <DialogFooter className="sticky bottom-0 bg-background w-full">
+                    <Button className="w-full" type="submit">{isEditing ? 'Save Changes' : 'Create Patient'}</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )
