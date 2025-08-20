@@ -128,17 +128,17 @@ export default function AppointmentsPage() {
     return (
         <ul className="space-y-4 pt-4">
             {data.map(session => (
-                <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center">
-                    <div>
+                <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                    <div className="flex-1">
                         <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d')} &middot; {session.startTime} - {session.endTime}</p>
                         <p className="text-sm text-muted-foreground">{getPatientName(session.patientId)} with {getTherapistName(session.therapistId)}</p>
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2 mt-2 flex-wrap">
                           <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">{session.paymentStatus}</Badge>
                           <Badge variant="outline" className="capitalize">{session.status}</Badge>
                         </div>
                     </div>
                     {canManageSession(session) && (
-                        <div className="flex gap-2 mt-4 sm:mt-0">
+                        <div className="flex gap-2 mt-4 sm:mt-0 flex-wrap">
                             {session.status === 'scheduled' && user?.role === 'receptionist' && (
                                 <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}><Check/> Check In</Button>
                             )}
@@ -161,7 +161,7 @@ export default function AppointmentsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-       <div className="flex items-center justify-between">
+       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
         {user?.role !== 'therapist' && (
           <Button onClick={handleAddClick}>

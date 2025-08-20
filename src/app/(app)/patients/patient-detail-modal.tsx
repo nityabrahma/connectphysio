@@ -27,7 +27,7 @@ export function PatientDetailModal({ isOpen, onOpenChange, patient }: PatientDet
 
   const patientSessions = sessions
     .filter(s => s.patientId === patient.id)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const getTherapistName = (therapistId: string) => {
     return therapists.find(t => t.id === therapistId)?.name || 'Unknown';
@@ -41,7 +41,7 @@ export function PatientDetailModal({ isOpen, onOpenChange, patient }: PatientDet
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Patient Details</DialogTitle>
         </DialogHeader>
@@ -49,7 +49,7 @@ export function PatientDetailModal({ isOpen, onOpenChange, patient }: PatientDet
           {/* Left Column: Patient Info */}
           <div className="md:col-span-1 space-y-6">
             <Card>
-              <CardHeader className="flex flex-row items-start gap-4 space-y-0">
+              <CardHeader className="flex flex-col sm:flex-row items-start gap-4 space-y-0">
                   <Avatar className="w-16 h-16 text-xl">
                       <AvatarFallback className="bg-primary text-primary-foreground">
                           {getInitials(patient.name)}
@@ -58,15 +58,15 @@ export function PatientDetailModal({ isOpen, onOpenChange, patient }: PatientDet
                   <div className="flex-1">
                       <CardTitle className="text-2xl">{patient.name}</CardTitle>
                       <CardDescription>
-                          <div className="flex items-center gap-2 mt-2 text-sm">
-                              <Mail className="w-4 h-4 text-muted-foreground"/> <span>{patient.email}</span>
+                          <div className="flex items-center gap-2 mt-2 text-sm break-all">
+                              <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0"/> <span>{patient.email}</span>
                           </div>
                           <div className="flex items-center gap-2 mt-1 text-sm">
-                              <Phone className="w-4 h-4 text-muted-foreground"/> <span>{patient.phone}</span>
+                              <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0"/> <span>{patient.phone}</span>
                           </div>
                           {patient.age && (
                               <div className="flex items-center gap-2 mt-1 text-sm">
-                                  <User className="w-4 h-4 text-muted-foreground"/> <span>{patient.age} years old</span>
+                                  <User className="w-4 h-4 text-muted-foreground flex-shrink-0"/> <span>{patient.age} years old</span>
                               </div>
                           )}
                       </CardDescription>

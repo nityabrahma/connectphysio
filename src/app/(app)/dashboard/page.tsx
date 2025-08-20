@@ -189,12 +189,12 @@ const ReceptionistDashboard = () => {
             {filteredSessions.length > 0 ? (
               <ul className="space-y-4">
                 {filteredSessions.map(session => (
-                  <li key={session.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div>
+                  <li key={session.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-muted/50 rounded-lg gap-4">
+                    <div className="flex-1">
                       <p className="font-semibold">{getPatientName(session.patientId)}</p>
                       <p className="text-sm text-muted-foreground">{session.startTime} - {session.endTime}</p>
                     </div>
-                    <div className="flex items-center gap-4 mt-2 md:mt-0">
+                    <div className="flex items-center gap-4 mt-2 md:mt-0 flex-wrap">
                       <Badge variant={session.status === 'checked-in' ? 'default' : 'secondary'} className="capitalize">{session.status}</Badge>
                       {session.status === 'scheduled' && (
                         <Button size="sm" onClick={() => handleCheckIn(session.id)}>Check In</Button>

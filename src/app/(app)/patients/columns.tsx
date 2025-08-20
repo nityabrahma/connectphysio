@@ -41,7 +41,7 @@ export const columns = ({ onEdit, onDelete, onAssignPackage, onView, canManage }
     header: "Name",
      cell: ({ row }) => {
       return (
-        <button onClick={() => onView(row.original)} className="hover:underline">
+        <button onClick={() => onView(row.original)} className="hover:underline font-medium text-primary">
           {row.original.name}
         </button>
       )

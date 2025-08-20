@@ -80,8 +80,6 @@ export function AssignPackageModal({ isOpen, onOpenChange, patient }: AssignPack
         
         let currentDate = new Date();
         for (let i = 0; i < selectedPackage.sessions; i++) {
-            currentDate = addDays(currentDate, 1); // Schedule for the next available day
-            
             // Simple logic: assign to the first available therapist
             const assignedTherapist = availableTherapists[0];
 
@@ -99,6 +97,7 @@ export function AssignPackageModal({ isOpen, onOpenChange, patient }: AssignPack
                 createdAt: new Date().toISOString(),
             };
             newSessions.push(newSession);
+            currentDate = addDays(currentDate, 1); // Schedule next session for the next day
         }
 
         setSessions([...sessions, ...newSessions]);
