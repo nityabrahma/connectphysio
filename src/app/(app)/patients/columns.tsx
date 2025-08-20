@@ -31,7 +31,7 @@ type PatientColumnsProps = {
   onEdit: (patient: Patient) => void;
   onDelete: (patientId: string) => void;
   onAssignPackage: (patient: Patient) => void;
-  onView: (patientId: string) => void;
+  onView: (patient: Patient) => void;
   canManage: boolean;
 }
 
@@ -39,6 +39,13 @@ export const columns = ({ onEdit, onDelete, onAssignPackage, onView, canManage }
   {
     accessorKey: "name",
     header: "Name",
+     cell: ({ row }) => {
+      return (
+        <button onClick={() => onView(row.original)} className="hover:underline">
+          {row.original.name}
+        </button>
+      )
+    }
   },
   {
     accessorKey: "email",
@@ -72,7 +79,7 @@ export const columns = ({ onEdit, onDelete, onAssignPackage, onView, canManage }
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onSelect={() => onView(patient.id)}>
+              <DropdownMenuItem onSelect={() => onView(patient)}>
                 <Eye/>View History
               </DropdownMenuItem>
               <DropdownMenuSeparator />

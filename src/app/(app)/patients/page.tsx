@@ -12,6 +12,7 @@ import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
 import { AssignPackageModal } from "./assign-package-modal";
 import { useRouter } from "next/navigation";
+import { PatientDetailModal } from "./patient-detail-modal";
 
 export default function PatientsPage() {
     const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function PatientsPage() {
     const { patients, addPatient, updatePatient, deletePatient } = usePatients();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
 
     const handleAddPatient = () => {
@@ -40,8 +42,9 @@ export default function PatientsPage() {
         setIsPackageModalOpen(true);
     };
 
-    const handleViewPatient = (patientId: string) => {
-        router.push(`/patients/${patientId}`);
+    const handleViewPatient = (patient: Patient) => {
+        setSelectedPatient(patient);
+        setIsDetailModalOpen(true);
     };
 
     const handleFormSubmit = (values: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -91,6 +94,14 @@ export default function PatientsPage() {
                 <AssignPackageModal
                     isOpen={isPackageModalOpen}
                     onOpenChange={setIsPackageModalOpen}
+                    patient={selectedPatient}
+                />
+            )}
+
+            {selectedPatient && (
+                <PatientDetailModal
+                    isOpen={isDetailModalOpen}
+                    onOpenChange={setIsDetailModalOpen}
                     patient={selectedPatient}
                 />
             )}
