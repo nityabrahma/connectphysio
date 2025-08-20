@@ -17,7 +17,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { usePatients } from '@/hooks/use-patients';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { SessionForm } from '../../appointments/session-form';
+import { SessionForm } from '@/app/(app)/appointments/session-form';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -84,7 +84,7 @@ export default function PatientDetailPage() {
 
   if (!patient) {
     return (
-        <div className="flex flex-col items-center justify-center h-full text-center">
+        <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <h2 className="text-2xl font-semibold mb-4">Patient not found</h2>
             <p className="text-muted-foreground mb-6">The patient you are looking for does not exist or could not be loaded.</p>
             <Button asChild>
@@ -105,7 +105,7 @@ export default function PatientDetailPage() {
 
 
   return (
-    <div className="flex flex-col gap-8 h-full">
+    <div className="flex flex-col gap-8 h-full p-4 sm:p-6 lg:p-8">
         <div className="flex items-center gap-4">
              <Button variant="outline" size="icon" onClick={() => router.back()}>
                 <ArrowLeft className="h-4 w-4" />
@@ -176,24 +176,16 @@ export default function PatientDetailPage() {
                     <Accordion type="single" collapsible className="w-full">
                         {patientSessions.length > 0 ? patientSessions.map((session) => (
                            <AccordionItem value={session.id} key={session.id}>
-                               <AccordionTrigger className="w-full hover:no-underline">
-                                 <div className="flex-1 w-full">
-                                    <Table className="w-full">
-                                        <tbody className="w-full">
-                                            <TableRow className="border-none hover:bg-transparent">
-                                                <TableCell className="w-1/4 font-medium">{format(new Date(session.date), 'EEE, MMM d, yyyy')}</TableCell>
-                                                <TableCell className="w-1/4">{getTherapistName(session.therapistId)}</TableCell>
-                                                <TableCell className="w-1/4">
-                                                    <Badge variant="outline" className="capitalize">{session.status}</Badge>
-                                                </TableCell>
-                                                <TableCell className="w-1/4">
-                                                    <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">
-                                                        {session.paymentStatus}
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        </tbody>
-                                    </Table>
+                               <AccordionTrigger className="w-full hover:no-underline p-2 rounded-lg hover:bg-muted/50">
+                                 <div className="grid grid-cols-4 items-center flex-1 text-left text-sm">
+                                    <span className="font-medium">{format(new Date(session.date), 'EEE, MMM d, yyyy')}</span>
+                                    <span>{getTherapistName(session.therapistId)}</span>
+                                    <span><Badge variant="outline" className="capitalize">{session.status}</Badge></span>
+                                     <span>
+                                        <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">
+                                            {session.paymentStatus}
+                                        </Badge>
+                                    </span>
                                  </div>
                                </AccordionTrigger>
                                <AccordionContent>
@@ -239,4 +231,3 @@ export default function PatientDetailPage() {
     </div>
   );
 }
-
