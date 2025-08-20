@@ -9,6 +9,7 @@ export type User = {
   phone?: string;
   role: Role;
   centreId: ID;
+  centreName: string; // Add centre name to user
   therapistId?: ID; // link if role === "therapist"
   createdAt: string;
   updatedAt: string;
