@@ -13,6 +13,7 @@ import { Mail, Phone, User, Calendar as CalendarIcon, ChevronDown, ChevronRight,
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useState } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PatientDetailModalProps {
     isOpen: boolean;
@@ -45,7 +46,8 @@ export function PatientDetailModal({ isOpen, onOpenChange, patient }: PatientDet
         <DialogHeader>
           <DialogTitle>Patient Details</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 overflow-y-auto pr-4">
+        <ScrollArea className="pr-4 -mr-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Left Column: Patient Info */}
           <div className="md:col-span-1 space-y-6">
             <Card>
@@ -171,6 +173,7 @@ export function PatientDetailModal({ isOpen, onOpenChange, patient }: PatientDet
             </Card>
           </div>
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

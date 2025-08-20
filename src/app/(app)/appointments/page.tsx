@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 export default function AppointmentsPage() {
@@ -219,7 +220,7 @@ export default function AppointmentsPage() {
                               </div>
                               {canManageSession(session) && (
                                   <div className="flex gap-2 mt-4 sm:mt-0 flex-wrap items-center">
-                                      {session.status === 'scheduled' && user?.role === 'receptionist' && (
+                                      {session.status === 'scheduled' && (user?.role === 'receptionist' || user?.role === 'admin') && (
                                           <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}><Check/> Check In</Button>
                                       )}
                                       {session.status === 'checked-in' && (
@@ -304,7 +305,7 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 h-full">
        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
         {user?.role !== 'therapist' && (
@@ -315,8 +316,8 @@ export default function AppointmentsPage() {
         )}
       </div>
       
-      <Card>
-        <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-8">
+      <Card className="flex-1 overflow-hidden">
+        <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-8 h-full">
             <div className="md:col-span-1 flex justify-center">
                  <Calendar
                     mode="single"
@@ -325,16 +326,18 @@ export default function AppointmentsPage() {
                     className="rounded-md"
                 />
             </div>
-            <div className="md:col-span-2">
-                 <Tabs defaultValue="month" className="w-full">
+            <div className="md:col-span-2 flex flex-col h-full overflow-hidden">
+                 <Tabs defaultValue="month" className="w-full flex flex-col">
                     <TabsList>
                         <TabsTrigger value="day">Day</TabsTrigger>
                         <TabsTrigger value="week">Week</TabsTrigger>
                         <TabsTrigger value="month">Month</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="day"><SessionList view="day" /></TabsContent>
-                    <TabsContent value="week"><SessionList view="week" /></TabsContent>
-                    <TabsContent value="month"><SessionList view="month" /></TabsContent>
+                    <ScrollArea className="flex-1 mt-4 pr-4">
+                        <TabsContent value="day"><SessionList view="day" /></TabsContent>
+                        <TabsContent value="week"><SessionList view="week" /></TabsContent>
+                        <TabsContent value="month"><SessionList view="month" /></TabsContent>
+                    </ScrollArea>
                 </Tabs>
             </div>
         </CardContent>

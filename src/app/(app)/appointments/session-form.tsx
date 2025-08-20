@@ -43,6 +43,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useAuth } from "@/hooks/use-auth"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const formSchema = z.object({
   patientId: z.string().min(1, "Patient is required."),
@@ -130,15 +131,16 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Session' : 'Schedule New Session'}</DialogTitle>
                     <DialogDescription>
                         {isEditing ? 'Update the details of the existing session.' : 'Fill in the details for the new session.'}
                     </DialogDescription>
                 </DialogHeader>
+                <ScrollArea className="pr-4 -mr-4">
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4 max-h-[80vh] overflow-y-auto pr-4">
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
                         <FormField
                             control={form.control}
                             name="patientId"
@@ -296,32 +298,33 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                                 </FormItem>
                             )}
                         />
-                         <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between w-full pt-4 sticky bottom-0 bg-background">
-                           {isEditing && user?.role !== 'therapist' && (
-                             <AlertDialog>
-                               <AlertDialogTrigger asChild>
-                                <Button type="button" variant="destructive">Delete Session</Button>
-                               </AlertDialogTrigger>
-                               <AlertDialogContent>
-                                 <AlertDialogHeader>
-                                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                   <AlertDialogDescription>
-                                     This action cannot be undone. This will permanently cancel this session.
-                                   </AlertDialogDescription>
-                                 </AlertDialogHeader>
-                                 <AlertDialogFooter>
-                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                   <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(session.id)}>Delete</AlertDialogAction>
-                                 </AlertDialogFooter>
-                               </AlertDialogContent>
-                             </AlertDialog>
-                           )}
-                           <div className="flex justify-end">
-                             <Button type="submit">{isEditing ? 'Save Changes' : 'Create Session'}</Button>
-                           </div>
-                        </DialogFooter>
                     </form>
                 </Form>
+                </ScrollArea>
+                <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between w-full pt-4 sticky bottom-0 bg-background">
+                    {isEditing && user?.role !== 'therapist' && (
+                        <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                        <Button type="button" variant="destructive">Delete Session</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently cancel this session.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(session.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                    <div className="flex justify-end">
+                        <Button type="button" onClick={form.handleSubmit(handleFormSubmit)}>{isEditing ? 'Save Changes' : 'Create Session'}</Button>
+                    </div>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )
