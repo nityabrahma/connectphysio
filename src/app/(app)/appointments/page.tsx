@@ -333,11 +333,13 @@ export default function AppointmentsPage() {
                         <TabsTrigger value="week">Week</TabsTrigger>
                         <TabsTrigger value="month">Month</TabsTrigger>
                     </TabsList>
-                    <ScrollArea className="flex-1 mt-4 pr-4">
-                        <TabsContent value="day"><SessionList view="day" /></TabsContent>
-                        <TabsContent value="week"><SessionList view="week" /></TabsContent>
-                        <TabsContent value="month"><SessionList view="month" /></TabsContent>
-                    </ScrollArea>
+                    <div className="flex-1 mt-4 relative">
+                      <ScrollArea className="absolute inset-0 pr-4">
+                          <TabsContent value="day"><SessionList view="day" /></TabsContent>
+                          <TabsContent value="week"><SessionList view="week" /></TabsContent>
+                          <TabsContent value="month"><SessionList view="month" /></TabsContent>
+                      </ScrollArea>
+                    </div>
                 </Tabs>
             </div>
         </CardContent>
