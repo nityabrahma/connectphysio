@@ -10,11 +10,13 @@ import { useState } from "react";
 import { PatientForm } from "./patient-form";
 import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
+import { AssignPackageModal } from "./assign-package-modal";
 
 export default function PatientsPage() {
     const { user } = useAuth();
-    const { patients, addPatient, updatePatient, deletePatient, togglePatientPackage } = usePatients();
+    const { patients, addPatient, updatePatient, deletePatient } = usePatients();
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
 
     const handleAddPatient = () => {
@@ -31,8 +33,9 @@ export default function PatientsPage() {
         deletePatient(patientId);
     };
 
-    const handleTogglePackage = (patient: Patient) => {
-        togglePatientPackage(patient.id);
+    const handleAssignPackage = (patient: Patient) => {
+        setSelectedPatient(patient);
+        setIsPackageModalOpen(true);
     };
 
     const handleFormSubmit = (values: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -62,7 +65,7 @@ export default function PatientsPage() {
                 columns={columns({ 
                     onEdit: handleEditPatient, 
                     onDelete: handleDeletePatient,
-                    onTogglePackage: handleTogglePackage,
+                    onAssignPackage: handleAssignPackage,
                     canManage: canManagePatients,
                 })} 
                 data={patients} 
@@ -73,6 +76,14 @@ export default function PatientsPage() {
                     isOpen={isFormOpen}
                     onOpenChange={setIsFormOpen}
                     onSubmit={handleFormSubmit}
+                    patient={selectedPatient}
+                />
+            )}
+
+            {selectedPatient && canManagePatients && (
+                <AssignPackageModal
+                    isOpen={isPackageModalOpen}
+                    onOpenChange={setIsPackageModalOpen}
                     patient={selectedPatient}
                 />
             )}

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { useEffect } from "react"
 import { Textarea } from "@/components/ui/textarea"
+import { useAuth } from "@/hooks/use-auth"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -39,11 +40,12 @@ type PatientFormValues = z.infer<typeof formSchema>
 interface PatientFormProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (values: PatientFormValues) => void;
+    onSubmit: (values: PatientFormValues & { centreId: string }) => void;
     patient?: Patient;
 }
 
 export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: PatientFormProps) {
+    const { user: currentUser } = useAuth();
     const form = useForm<PatientFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -81,6 +83,11 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
 
     const isEditing = !!patient;
 
+    const handleFormSubmit = (values: PatientFormValues) => {
+        if (!currentUser) return;
+        onSubmit({ ...values, centreId: currentUser.centreId });
+    }
+
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
@@ -91,7 +98,7 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
                         <FormField
                             control={form.control}
                             name="name"

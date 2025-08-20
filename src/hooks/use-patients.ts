@@ -6,10 +6,14 @@ import { LS_KEYS } from '@/lib/constants';
 import type { Patient } from '@/types/domain';
 import { generateId } from '@/lib/ids';
 import { useToast } from './use-toast';
+import { useAuth } from './use-auth';
 
 export function usePatients() {
+  const { user: currentUser } = useAuth();
   const [patients, setPatients] = useLocalStorage<Patient[]>(LS_KEYS.PATIENTS, []);
   const { toast } = useToast();
+
+  const centrePatients = patients.filter(p => p.centreId === currentUser?.centreId);
 
   const addPatient = (patientData: Omit<Patient, 'id' | 'createdAt'>) => {
     const newPatient: Patient = {
@@ -49,35 +53,11 @@ export function usePatients() {
     }
   };
 
-  const togglePatientPackage = (id: string) => {
-    const patient = patients.find(p => p.id === id);
-    if (patient) {
-      if (patient.packageSaleId) {
-        // Remove package
-        updatePatient(id, { ...patient, packageSaleId: undefined });
-        toast({
-          title: "Package Removed",
-          description: `${patient.name} no longer has an active package.`,
-        });
-      } else {
-        // Add a dummy package for now. A real implementation would show a package selection modal.
-        const dummyPackageSaleId = `sale-${generateId()}`;
-        updatePatient(id, { ...patient, packageSaleId: dummyPackageSaleId });
-         toast({
-          title: "Package Assigned",
-          description: `A package has been assigned to ${patient.name}.`,
-        });
-      }
-    }
-  };
-
-
   return {
-    patients,
+    patients: centrePatients,
     addPatient,
     getPatient,
     updatePatient,
     deletePatient,
-    togglePatientPackage
   };
 }

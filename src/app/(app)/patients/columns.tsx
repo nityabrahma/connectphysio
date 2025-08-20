@@ -2,7 +2,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, PackageCheck, PackageX } from "lucide-react"
+import { MoreHorizontal, PackageCheck } from "lucide-react"
  
 import { Button } from "@/components/ui/button"
 import {
@@ -30,11 +30,11 @@ import {
 type PatientColumnsProps = {
   onEdit: (patient: Patient) => void;
   onDelete: (patientId: string) => void;
-  onTogglePackage: (patient: Patient) => void;
+  onAssignPackage: (patient: Patient) => void;
   canManage: boolean;
 }
 
-export const columns = ({ onEdit, onDelete, onTogglePackage, canManage }: PatientColumnsProps): ColumnDef<Patient>[] => [
+export const columns = ({ onEdit, onDelete, onAssignPackage, canManage }: PatientColumnsProps): ColumnDef<Patient>[] => [
   {
     accessorKey: "name",
     header: "Name",
@@ -59,7 +59,6 @@ export const columns = ({ onEdit, onDelete, onTogglePackage, canManage }: Patien
     id: "actions",
     cell: ({ row }) => {
       const patient = row.original
-      const hasPackage = !!patient.packageSaleId;
  
       if (!canManage) {
         return null;
@@ -85,8 +84,8 @@ export const columns = ({ onEdit, onDelete, onTogglePackage, canManage }: Patien
               <DropdownMenuItem onSelect={() => onEdit(patient)}>
                 Edit details
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => onTogglePackage(patient)}>
-                {hasPackage ? <><PackageX/>Remove Package</> : <><PackageCheck/>Assign Package</>}
+              <DropdownMenuItem onSelect={() => onAssignPackage(patient)}>
+                <PackageCheck/>Assign Package
               </DropdownMenuItem>
               <AlertDialogTrigger asChild>
                 <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>

@@ -4,11 +4,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { PlusCircle } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Patient, Session, Therapist } from "@/types/domain";
+import type { Patient, Session, Therapist, PackageSale } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { usePatients } from "@/hooks/use-patients";
-import { useUsers } from "@/hooks/use-users";
 import { Button } from "@/components/ui/button";
 import { SessionForm } from "./session-form";
 import { useToast } from "@/hooks/use-toast";
@@ -17,28 +16,33 @@ import { useAuth } from "@/hooks/use-auth";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, isSameDay, isSameMonth, isSameWeek } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
   const { patients } = usePatients();
-  const { users } = useUsers();
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
+  const [packageSales] = useLocalStorage<PackageSale[]>(LS_KEYS.PACKAGE_SALES, []);
+
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
-  const therapistsData: Therapist[] = useMemo(() => {
-    const therapistUsers = users.filter(u => u.role === 'therapist');
-    return therapists.filter(t => therapistUsers.some(u => u.therapistId === t.id));
-  }, [users, therapists]);
+  const centreTherapists = useMemo(() => {
+    return therapists.filter(t => t.centreId === user?.centreId);
+  }, [therapists, user]);
+  
+  const centreSessions = useMemo(() => {
+    return sessions.filter(s => s.centreId === user?.centreId);
+  }, [sessions, user]);
   
   const filteredSessions = (view: "day" | "week" | "month") => {
     if (!selectedDate) return [];
     
-    let dateFilteredSessions = sessions.filter(session => {
+    let dateFilteredSessions = centreSessions.filter(session => {
         const sessionDate = new Date(session.date);
         switch (view) {
             case "day": return isSameDay(sessionDate, selectedDate);
@@ -49,8 +53,7 @@ export default function AppointmentsPage() {
     });
 
     if (user?.role === 'therapist') {
-      const therapistUser = users.find(u => u.id === user.id);
-      dateFilteredSessions = dateFilteredSessions.filter(s => s.therapistId === therapistUser?.therapistId);
+      dateFilteredSessions = dateFilteredSessions.filter(s => s.therapistId === user?.therapistId);
     }
     
     return dateFilteredSessions.sort((a,b) => a.startTime.localeCompare(b.startTime));
@@ -61,11 +64,19 @@ export default function AppointmentsPage() {
       setSessions(sessions.map(s => s.id === selectedSession.id ? { ...selectedSession, ...values } : s));
       toast({ title: "Session updated" });
     } else {
+      const patient = patients.find(p => p.id === values.patientId);
+      let packageSaleId = patient?.packageSaleId;
+      
+      if(packageSaleId) {
+        setPackageSales(sales => sales.map(s => s.id === packageSaleId ? { ...s, sessionsUsed: s.sessionsUsed + 1 } : s));
+      }
+
       const newSession: Session = {
         ...values,
         id: generateId(),
         createdAt: new Date().toISOString(),
-        status: 'scheduled'
+        status: 'scheduled',
+        packageSaleId,
       };
       setSessions([...sessions, newSession]);
       toast({ title: "Session scheduled" });
@@ -104,6 +115,10 @@ export default function AppointmentsPage() {
                     <div>
                         <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d')} &middot; {session.startTime} - {session.endTime}</p>
                         <p className="text-sm text-muted-foreground">{getPatientName(session.patientId)} with {getTherapistName(session.therapistId)}</p>
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">{session.paymentStatus}</Badge>
+                          <Badge variant="outline" className="capitalize">{session.status}</Badge>
+                        </div>
                     </div>
                     <Button variant="ghost" onClick={() => {
                         setSelectedSession(session);
@@ -162,7 +177,7 @@ export default function AppointmentsPage() {
         session={selectedSession}
         slot={selectedDate ? { start: selectedDate, end: selectedDate } : undefined}
         patients={patients}
-        therapists={therapistsData}
+        therapists={centreTherapists}
       />
     </div>
   );

@@ -1,12 +1,12 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { LS_KEYS } from '@/lib/constants';
 import { generateId } from '@/lib/ids';
 import type { User, AuthSession, Role } from '@/types/domain';
-import { storage } from '@/lib/storage';
 
 // Mock password hashing for demo purposes. DO NOT use in production.
 const mockHash = (password: string) => `hashed_${password}`;
@@ -16,7 +16,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
-  register: (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'passwordHash'>) => Promise<User | null>;
+  registerAdmin: (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'passwordHash' | 'role' | 'centreId'> & { password?: string, centreName: string }) => Promise<User | null>;
   updateUser: (userId: string, updates: Partial<User>) => void;
 }
 
@@ -28,7 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useLocalStorage<User[]>(LS_KEYS.USERS, []);
   const [session, setSession] = useLocalStorage<AuthSession | null>(LS_KEYS.AUTH_SESSION, null);
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     const validateSession = () => {
@@ -72,15 +71,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const register = async (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'passwordHash' | 'role'> & { role: Role }): Promise<User | null> => {
+  const registerAdmin = async (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'passwordHash' | 'role' | 'centreId'> & { password?: string, centreName: string }): Promise<User | null> => {
     const existingUser = users.find(u => u.email.toLowerCase() === userData.email.toLowerCase());
     if (existingUser) {
       throw new Error('An account with this email already exists.');
     }
     
+    if (!userData.password) {
+        throw new Error('Password is required.');
+    }
+    
     const newUser: User = {
       ...userData,
       id: generateId(),
+      role: 'admin',
+      centreId: generateId(),
       passwordHash: mockHash(userData.password),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -114,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
 
-  const value = { user, loading, login, logout, register, updateUser };
+  const value = { user, loading, login, logout, registerAdmin, updateUser };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

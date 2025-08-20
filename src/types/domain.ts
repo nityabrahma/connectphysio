@@ -8,8 +8,8 @@ export type User = {
   email: string;
   phone?: string;
   role: Role;
+  centreId: ID;
   therapistId?: ID; // link if role === "therapist"
-  centreName?: string; // only for admin
   createdAt: string;
   updatedAt: string;
   passwordHash: string;
@@ -27,6 +27,7 @@ export type Patient = {
   name: string;
   phone: string;
   email: string;
+  centreId: ID;
   age?: number;
   medicalInfo?: string;
   createdAt: string;
@@ -38,6 +39,7 @@ export type Patient = {
 export type Therapist = {
   id: ID;
   name: string;
+  centreId: ID;
   specialty?: string;
   workingDays: number[]; // 0-6 (Sun-Sat)
   startHour: string; // "09:00"
@@ -48,6 +50,7 @@ export type Therapist = {
 export type PackageDef = {
   id: ID;
   name: string; // "7-Day Therapy Package"
+  centreId: ID;
   durationDays: number; // 7 | 10 | 14
   price: number; // 499, 699, 899
   sessions: number;
@@ -58,6 +61,7 @@ export type PackageSale = {
   id: ID;
   patientId: ID;
   packageId: ID;
+  centreId: ID;
   startDate: string;
   sessionsTotal: number;
   sessionsUsed: number;
@@ -72,8 +76,11 @@ export type Session = {
   endTime: string; // "11:00"
   therapistId: ID;
   patientId: ID;
+  centreId: ID;
   packageSaleId?: ID;
   status: "scheduled" | "checked-in" | "completed" | "cancelled" | "no-show";
+  paymentStatus: 'paid' | 'unpaid';
+  healthNotes?: string;
   notes?: string;
   createdAt: string;
 };

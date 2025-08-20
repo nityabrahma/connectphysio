@@ -31,6 +31,7 @@ import {
     SelectValue,
   } from "@/components/ui/select"
 import { useEffect } from "react"
+import { useAuth } from "@/hooks/use-auth"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -45,11 +46,12 @@ type UserFormValues = z.infer<typeof formSchema>
 interface UserFormProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (values: UserFormValues) => void;
+    onSubmit: (values: UserFormValues & { centreId: string }) => void;
     user?: User;
 }
 
 export function UserForm({ isOpen, onOpenChange, onSubmit, user }: UserFormProps) {
+    const { user: currentUser } = useAuth();
     const isEditing = !!user;
 
     const form = useForm<UserFormValues>({
@@ -94,6 +96,11 @@ export function UserForm({ isOpen, onOpenChange, onSubmit, user }: UserFormProps
         password: z.string().min(6, "Password is required and must be at least 6 characters."),
       });
 
+    const handleFormSubmit = (values: UserFormValues) => {
+        if (!currentUser) return;
+        onSubmit({ ...values, centreId: currentUser.centreId });
+    }
+
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -105,7 +112,7 @@ export function UserForm({ isOpen, onOpenChange, onSubmit, user }: UserFormProps
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
                         <FormField
                             control={form.control}
                             name="name"

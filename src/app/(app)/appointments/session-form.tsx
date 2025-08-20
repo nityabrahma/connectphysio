@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useAuth } from "@/hooks/use-auth"
 
 const formSchema = z.object({
   patientId: z.string().min(1, "Patient is required."),
@@ -49,6 +50,8 @@ const formSchema = z.object({
   date: z.date({ required_error: "A date is required."}),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)."),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)."),
+  paymentStatus: z.enum(["paid", "unpaid"]),
+  healthNotes: z.string().optional(),
   notes: z.string().optional(),
 })
 
@@ -66,6 +69,7 @@ interface SessionFormProps {
 }
 
 export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session, slot, patients, therapists }: SessionFormProps) {
+    const { user } = useAuth();
     const form = useForm<SessionFormValues>({
         resolver: zodResolver(formSchema),
     });
@@ -79,6 +83,8 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                     date: new Date(session.date),
                     startTime: session.startTime,
                     endTime: session.endTime,
+                    paymentStatus: session.paymentStatus,
+                    healthNotes: session.healthNotes || "",
                     notes: session.notes || "",
                 });
             } else if (slot) {
@@ -88,6 +94,8 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                     date: slot.start,
                     startTime: format(slot.start, "HH:mm"),
                     endTime: format(slot.end, "HH:mm"),
+                    paymentStatus: "unpaid",
+                    healthNotes: "",
                     notes: "",
                 });
             }
@@ -98,6 +106,8 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                     date: new Date(),
                     startTime: "",
                     endTime: "",
+                    paymentStatus: "unpaid",
+                    healthNotes: "",
                     notes: "",
                 });
             }
@@ -105,14 +115,18 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
     }, [session, slot, form, isOpen]);
 
     const handleFormSubmit = (values: SessionFormValues) => {
+        if (!user) return;
         onSubmit({
             ...values,
             date: format(values.date, "yyyy-MM-dd"),
+            centreId: user.centreId,
         });
     }
 
 
     const isEditing = !!session;
+    const canEditPayment = user?.role === 'admin' || user?.role === 'receptionist';
+    const canEditHealthNotes = user?.role === 'admin' || user?.role === 'therapist';
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -124,7 +138,7 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4 max-h-[80vh] overflow-y-auto pr-4">
                         <FormField
                             control={form.control}
                             name="patientId"
@@ -231,21 +245,59 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                                 )}
                             />
                          </div>
+                        {isEditing && canEditPayment && (
+                             <FormField
+                                control={form.control}
+                                name="paymentStatus"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Payment Status</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select status" />
+                                            </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="unpaid">Unpaid</SelectItem>
+                                                <SelectItem value="paid">Paid</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+                        {isEditing && canEditHealthNotes && (
+                            <FormField
+                                control={form.control}
+                                name="healthNotes"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Health Notes</FormLabel>
+                                        <FormControl>
+                                            <Textarea placeholder="Session health notes..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
                         <FormField
                             control={form.control}
                             name="notes"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Notes (Optional)</FormLabel>
+                                    <FormLabel>Internal Notes (Optional)</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="Session notes..." {...field} />
+                                        <Textarea placeholder="Internal session notes..." {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                         <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between w-full">
-                           {isEditing && (
+                         <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between w-full pt-4 sticky bottom-0 bg-background">
+                           {isEditing && user?.role !== 'therapist' && (
                              <AlertDialog>
                                <AlertDialogTrigger asChild>
                                 <Button type="button" variant="destructive">Delete Session</Button>

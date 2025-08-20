@@ -1,3 +1,4 @@
+
 'use client';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { add, isAfter, isBefore, isSameDay } from 'date-fns';
+import { add, isAfter, isBefore, isSameDay, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { usePatients } from '@/hooks/use-patients';
 
 const renderAdminDashboard = () => (
     <>
@@ -66,45 +68,46 @@ const renderAdminDashboard = () => (
   );
 
 const ReceptionistDashboard = () => {
+  const { user } = useAuth();
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
-  const [patients] = useLocalStorage<Patient[]>(LS_KEYS.PATIENTS, []);
+  const { patients } = usePatients();
   const [filter, setFilter] = useState('today');
   const { toast } = useToast();
 
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-  
+  const centreSessions = useMemo(() => {
+    return sessions.filter(s => s.centreId === user?.centreId);
+  }, [sessions, user]);
+
   const todaysSessions = useMemo(() => {
-    return sessions.filter(s => s.date === todayStr);
-  }, [sessions, todayStr]);
+    return centreSessions.filter(s => isSameDay(new Date(s.date), new Date()));
+  }, [centreSessions]);
 
   const filteredSessions = useMemo(() => {
     const now = new Date();
     const oneHourFromNow = add(now, { hours: 1 });
-    const endOfWeek = add(now, { days: 7 });
-
-    let filtered = todaysSessions;
+    
+    let filtered = centreSessions;
 
     switch (filter) {
       case 'within_hour':
-        filtered = todaysSessions.filter(s => {
+        filtered = centreSessions.filter(s => {
           const startTime = new Date(`${s.date}T${s.startTime}`);
           return isAfter(startTime, now) && isBefore(startTime, oneHourFromNow);
         });
         break;
       case 'today':
-        filtered = sessions.filter(s => isSameDay(new Date(s.date), now));
+        filtered = centreSessions.filter(s => isSameDay(new Date(s.date), now));
         break;
       case 'this_week':
-        filtered = sessions.filter(s => {
+        filtered = centreSessions.filter(s => {
           const sessionDate = new Date(s.date);
-          return isAfter(sessionDate, now) && isBefore(sessionDate, endOfWeek);
+          return isWithinInterval(sessionDate, { start: startOfWeek(now), end: endOfWeek(now) });
         });
         break;
     }
     // sort by start time
     return filtered.sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [filter, sessions, todaysSessions]);
+  }, [filter, centreSessions]);
 
   const handleCheckIn = (sessionId: string) => {
     setSessions(sessions.map(s => 
