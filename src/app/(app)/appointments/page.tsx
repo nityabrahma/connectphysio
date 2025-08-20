@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, LogOut, PlusCircle } from "lucide-react";
+import { Check, LogOut, PlusCircle, ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Patient, Session, Therapist, PackageSale } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -17,6 +17,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, isSameDay, isSameMonth, isSameWeek } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
@@ -108,14 +110,26 @@ export default function AppointmentsPage() {
 
   const SessionList = ({ view }: { view: "day" | "week" | "month" }) => {
     const data = filteredSessions(view);
-    const getPatientName = (patientId: string) => patients.find(p => p.id === patientId)?.name || 'Unknown';
+    const getPatient = (patientId: string) => patients.find(p => p.id === patientId);
     const getTherapistName = (therapistId: string) => therapists.find(t => t.id === therapistId)?.name || 'Unknown';
+    const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
     
     const canManageSession = (session: Session) => {
         if (user?.role === 'admin' || user?.role === 'receptionist') return true;
         if (user?.role === 'therapist' && user.therapistId === session.therapistId) return true;
         return false;
     }
+
+    const groupedSessions = useMemo(() => {
+      return data.reduce<Record<string, Session[]>>((acc, session) => {
+        if (!acc[session.patientId]) {
+          acc[session.patientId] = [];
+        }
+        acc[session.patientId].push(session);
+        return acc;
+      }, {});
+    }, [data]);
+
 
     if (data.length === 0) {
       return (
@@ -126,36 +140,65 @@ export default function AppointmentsPage() {
     }
 
     return (
-        <ul className="space-y-4 pt-4">
-            {data.map(session => (
-                <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div className="flex-1">
-                        <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d')} &middot; {session.startTime} - {session.endTime}</p>
-                        <p className="text-sm text-muted-foreground">{getPatientName(session.patientId)} with {getTherapistName(session.therapistId)}</p>
-                        <div className="flex gap-2 mt-2 flex-wrap">
-                          <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">{session.paymentStatus}</Badge>
-                          <Badge variant="outline" className="capitalize">{session.status}</Badge>
-                        </div>
-                    </div>
-                    {canManageSession(session) && (
-                        <div className="flex gap-2 mt-4 sm:mt-0 flex-wrap">
-                            {session.status === 'scheduled' && user?.role === 'receptionist' && (
-                                <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}><Check/> Check In</Button>
-                            )}
-                            {session.status === 'checked-in' && (
-                                <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'completed')}><LogOut/> End Session</Button>
-                            )}
-                            <Button variant="ghost" size="sm" onClick={() => {
-                                setSelectedSession(session);
-                                setIsFormOpen(true);
-                            }}>
-                                Edit
-                            </Button>
-                        </div>
-                    )}
-                </li>
-            ))}
-        </ul>
+      <div className="space-y-4 pt-4">
+        {Object.entries(groupedSessions).map(([patientId, patientSessions]) => {
+          const patient = getPatient(patientId);
+          if (!patient) return null;
+
+          return (
+            <Collapsible key={patientId} defaultOpen={true}>
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg w-full">
+                   <div className="flex items-center gap-3">
+                     <Avatar>
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                          {getInitials(patient.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold text-left">{patient.name}</p>
+                        <p className="text-sm text-muted-foreground text-left">{patientSessions.length} appointment(s) this {view}</p>
+                      </div>
+                   </div>
+                   <ChevronDown className="h-5 w-5 transition-transform [&[data-state=open]]:rotate-180" />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                  <ul className="space-y-2 pt-2 pl-4 border-l ml-5">
+                      {patientSessions.map(session => (
+                          <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                              <div className="flex-1">
+                                  <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d')} &middot; {session.startTime} - {session.endTime}</p>
+                                  <p className="text-sm text-muted-foreground">with {getTherapistName(session.therapistId)}</p>
+                                  <div className="flex gap-2 mt-2 flex-wrap">
+                                    <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">{session.paymentStatus}</Badge>
+                                    <Badge variant="outline" className="capitalize">{session.status}</Badge>
+                                  </div>
+                              </div>
+                              {canManageSession(session) && (
+                                  <div className="flex gap-2 mt-4 sm:mt-0 flex-wrap">
+                                      {session.status === 'scheduled' && user?.role === 'receptionist' && (
+                                          <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}><Check/> Check In</Button>
+                                      )}
+                                      {session.status === 'checked-in' && (
+                                          <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'completed')}><LogOut/> End Session</Button>
+                                      )}
+                                      <Button variant="ghost" size="sm" onClick={() => {
+                                          setSelectedSession(session);
+                                          setIsFormOpen(true);
+                                      }}>
+                                          Edit
+                                      </Button>
+                                  </div>
+                              )}
+                          </li>
+                      ))}
+                  </ul>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
+      </div>
     )
   }
 
