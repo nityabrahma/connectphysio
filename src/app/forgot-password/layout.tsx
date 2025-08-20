@@ -11,7 +11,7 @@ export default function AuthLayout({
        <div className="w-full max-w-sm">
         <div className="mb-8 flex justify-center">
             <Link href="/" className="flex items-center gap-2 text-primary">
-                <Icons.logo className="h-8 w-8" />
+                <Icons.logo className="h-10 w-10" />
                 <span className="text-2xl font-bold tracking-tight text-foreground">ConnectPhysio</span>
             </Link>
         </div>

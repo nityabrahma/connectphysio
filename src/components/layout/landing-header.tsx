@@ -15,7 +15,7 @@ export function LandingHeader() {
     <header className="px-4 lg:px-6 h-16 flex items-center bg-background/95 backdrop-blur-sm sticky top-0 z-50 border-b">
       <div className="container mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center justify-center">
-          <Icons.logo className="h-6 w-6 text-primary" />
+          <Icons.logo className="h-10 w-10 text-primary" />
           <span className="ml-2 text-lg font-semibold">ConnectPhysio</span>
         </Link>
         <nav className="hidden lg:flex gap-4 sm:gap-6">
@@ -51,7 +51,7 @@ export function LandingHeader() {
                 href="#"
                 className="flex items-center gap-2 text-lg font-semibold mb-4"
                 >
-                <Icons.logo className="h-6 w-6 text-primary" />
+                <Icons.logo className="h-9 w-9 text-primary" />
                 <span>ConnectPhysio</span>
                 </Link>
                 {navLinks.map(link => (

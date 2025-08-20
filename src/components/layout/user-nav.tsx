@@ -1,8 +1,7 @@
+"use client";
 
-'use client';
-
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,13 +14,19 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
   DropdownMenuSubContent,
-} from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/hooks/use-auth';
-import { Badge } from '../ui/badge';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { LifeBuoy, LogOut, Settings, User as UserIcon, Users } from 'lucide-react';
-import { useUsers } from '@/hooks/use-users';
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/use-auth";
+import { Badge } from "../ui/badge";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  LifeBuoy,
+  LogOut,
+  Settings,
+  User as UserIcon,
+  Users,
+} from "lucide-react";
+import { useUsers } from "@/hooks/use-users";
 
 export function UserNav() {
   const { user, logout } = useAuth();
@@ -37,19 +42,24 @@ export function UserNav() {
     router.push(`/login?email=${encodeURIComponent(email)}`);
   };
 
-  const getFirstLetter = (name: string) => {
-    return name ? name.charAt(0).toUpperCase() : '';
+  const getFirstLetters = (name: string) => {
+    if (!name) return "";
+
+    const parts = name.trim().split(/\s+/);
+    const first = parts[0]?.charAt(0).toUpperCase() || "";
+    const last =
+      parts.length > 1 ? parts[parts.length - 1].charAt(0).toUpperCase() : "";
+
+    return first + last;
   };
-  
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarFallback 
-              className="bg-gradient-to-br from-primary via-primary/80 to-accent text-primary-foreground font-semibold"
-            >
-              {getFirstLetter(user.name)}
+            <AvatarFallback className="bg-gradient-to-br from-primary via-primary/80 to-accent text-primary-foreground font-semibold">
+              {getFirstLetters(user.name)}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -66,28 +76,47 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/profile"><UserIcon/>Profile</Link>
+            <Link href="/profile">
+              <UserIcon />
+              Profile
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/settings"><Settings/>Settings</Link>
+            <Link href="/settings">
+              <Settings />
+              Settings
+            </Link>
           </DropdownMenuItem>
-           <DropdownMenuItem>
-             <LifeBuoy/>
+          <DropdownMenuItem>
+            <LifeBuoy />
             Support
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-         <DropdownMenuGroup>
-           <DropdownMenuItem disabled>
-            <Badge variant="outline" className="capitalize">{user.role}</Badge>
+        <DropdownMenuGroup>
+          <DropdownMenuItem disabled>
+            <Badge variant="outline" className="capitalize">
+              {user.role}
+            </Badge>
           </DropdownMenuItem>
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger><Users />Switch User (Demo)</DropdownMenuSubTrigger>
+            <DropdownMenuSubTrigger>
+              <Users />
+              Switch User (Demo)
+            </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent>
-                {users.map(demoUser => (
-                  <DropdownMenuItem key={demoUser.email} onClick={() => handleSwitchUser(demoUser.email)}>
-                    <span>{demoUser.name} <span className="text-muted-foreground capitalize">({demoUser.role})</span></span>
+                {users.map((demoUser) => (
+                  <DropdownMenuItem
+                    key={demoUser.email}
+                    onClick={() => handleSwitchUser(demoUser.email)}
+                  >
+                    <span>
+                      {demoUser.name}{" "}
+                      <span className="text-muted-foreground capitalize">
+                        ({demoUser.role})
+                      </span>
+                    </span>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>
@@ -96,7 +125,7 @@ export function UserNav() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>
-          <LogOut/>
+          <LogOut />
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>

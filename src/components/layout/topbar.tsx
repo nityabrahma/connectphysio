@@ -55,7 +55,7 @@ export function Topbar() {
               href="#"
               className="flex items-center gap-2 text-lg font-semibold"
             >
-              <Icons.logo className="h-6 w-6 text-primary" />
+              <Icons.logo className="h-10 w-10 text-primary" />
               <span className="sr-only">ConnectPhysio</span>
             </Link>
             {navItems.map((item) =>
