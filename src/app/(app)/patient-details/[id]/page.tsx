@@ -158,7 +158,7 @@ export default function PatientDetailPage() {
                     </TableHeader>
                     <TableBody>
                         {patientSessions.length > 0 ? patientSessions.map((session) => (
-                        <Collapsible asChild key={session.id} open={openCollapsibles[session.id] || false} onOpenChange={() => toggleCollapsible(session.id)}>
+                        <Collapsible key={session.id} open={openCollapsibles[session.id] || false} onOpenChange={() => toggleCollapsible(session.id)} asChild>
                             <>
                                 <TableRow className="cursor-pointer">
                                     <TableCell className="w-12 px-4">
