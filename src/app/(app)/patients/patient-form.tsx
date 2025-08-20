@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -25,12 +26,13 @@ import {
 import { useEffect } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/hooks/use-auth"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
   phone: z.string().min(10, "Phone number must be at least 10 digits."),
-  age: z.coerce.number().int().positive().optional(),
+  age: z.coerce.number().int().positive().optional().or(z.literal('')),
   medicalInfo: z.string().optional(),
   notes: z.string().optional(),
 })
@@ -52,31 +54,33 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
             name: "",
             email: "",
             phone: "",
-            age: undefined,
+            age: '',
             medicalInfo: "",
             notes: "",
         },
     });
 
     useEffect(() => {
-        if (patient) {
-            form.reset({
-                name: patient.name,
-                email: patient.email,
-                phone: patient.phone,
-                age: patient.age,
-                medicalInfo: patient.medicalInfo,
-                notes: patient.notes,
-            });
-        } else {
-            form.reset({
-                name: "",
-                email: "",
-                phone: "",
-                age: undefined,
-                medicalInfo: "",
-                notes: "",
-            });
+        if (isOpen) {
+            if (patient) {
+                form.reset({
+                    name: patient.name || "",
+                    email: patient.email || "",
+                    phone: patient.phone || "",
+                    age: patient.age || '',
+                    medicalInfo: patient.medicalInfo || "",
+                    notes: patient.notes || "",
+                });
+            } else {
+                form.reset({
+                    name: "",
+                    email: "",
+                    phone: "",
+                    age: '',
+                    medicalInfo: "",
+                    notes: "",
+                });
+            }
         }
     }, [patient, form, isOpen]);
 
@@ -90,13 +94,14 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Patient' : 'Add New Patient'}</DialogTitle>
                     <DialogDescription>
                         {isEditing ? 'Update the details of the existing patient.' : 'Enter the details for the new patient.'}
                     </DialogDescription>
                 </DialogHeader>
+                <ScrollArea className="pr-4 -mr-4">
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
                         <FormField
@@ -177,11 +182,12 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
                                 </FormItem>
                             )}
                         />
-                         <DialogFooter>
+                         <DialogFooter className="pt-4 sticky bottom-0 bg-background">
                             <Button type="submit">{isEditing ? 'Save Changes' : 'Create Patient'}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
+                </ScrollArea>
             </DialogContent>
         </Dialog>
     )
