@@ -2,26 +2,17 @@
 'use client';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Calendar, Package, Clock, ChevronDown, MoreVertical } from 'lucide-react';
+import { Users, Calendar, Package, Clock } from 'lucide-react';
 import type { Patient, Session } from '@/types/domain';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { LS_KEYS } from '@/lib/constants';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { useMemo, useState } from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { add, isAfter, isBefore, isSameDay, startOfWeek, endOfWeek, isWithinInterval, format } from 'date-fns';
+import { useMemo } from 'react';
+import { isSameDay, format } from 'date-fns';
 import { usePatients } from '@/hooks/use-patients';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const TodaysAppointmentsList = () => {
     const { user } = useAuth();
@@ -63,45 +54,44 @@ const TodaysAppointmentsList = () => {
 
     return (
         <ScrollArea className="flex-auto">
-            <div className="space-y-4 pr-4">
-            {Object.entries(groupedSessions).map(([patientId, patientSessions]) => {
-            const patient = getPatient(patientId);
-            if (!patient) return null;
+            <Accordion type="single" collapsible className="w-full space-y-4 pr-4">
+              {Object.entries(groupedSessions).map(([patientId, patientSessions]) => {
+              const patient = getPatient(patientId);
+              if (!patient) return null;
 
-            return (
-                <Collapsible key={patientId}>
-                    <CollapsibleTrigger className="flex items-center gap-3 w-full text-left p-3 bg-muted/30 rounded-lg">
-                        <Avatar>
-                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {getInitials(patient.name)}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                            <p className="font-semibold">{patient.name}</p>
-                            <p className="text-sm text-muted-foreground">{patientSessions.length} appointment(s) today</p>
-                        </div>
-                        <ChevronDown className="h-5 w-5 ml-auto transition-transform [&[data-state=open]]:rotate-180" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                        <ul className="space-y-2 pt-2 pl-4 border-l ml-5">
-                            {patientSessions.map(session => (
-                                <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4">
-                                    <div className="flex-1">
-                                        <p className="font-semibold">{session.startTime} - {session.endTime}</p>
-                                        <p className="text-sm text-muted-foreground">with {getTherapistName(session.therapistId)}</p>
-                                        <div className="flex gap-2 mt-2 flex-wrap">
-                                            <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">{session.paymentStatus}</Badge>
-                                            <Badge variant="outline" className="capitalize">{session.status}</Badge>
-                                        </div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    </CollapsibleContent>
-                </Collapsible>
-            );
-            })}
-            </div>
+              return (
+                  <AccordionItem value={patientId} key={patientId} className="border-none">
+                      <AccordionTrigger className="flex items-center gap-3 w-full text-left p-3 bg-muted/30 rounded-lg hover:no-underline">
+                          <Avatar>
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              {getInitials(patient.name)}
+                              </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                              <p className="font-semibold">{patient.name}</p>
+                              <p className="text-sm text-muted-foreground">{patientSessions.length} appointment(s) today</p>
+                          </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                          <ul className="space-y-2 pt-2 pl-4 border-l ml-5">
+                              {patientSessions.map(session => (
+                                  <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4">
+                                      <div className="flex-1">
+                                          <p className="font-semibold">{session.startTime} - {session.endTime}</p>
+                                          <p className="text-sm text-muted-foreground">with {getTherapistName(session.therapistId)}</p>
+                                          <div className="flex gap-2 mt-2 flex-wrap">
+                                              <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">{session.paymentStatus}</Badge>
+                                              <Badge variant="outline" className="capitalize">{session.status}</Badge>
+                                          </div>
+                                      </div>
+                                  </li>
+                              ))}
+                          </ul>
+                      </AccordionContent>
+                  </AccordionItem>
+              );
+              })}
+            </Accordion>
         </ScrollArea>
     )
 }
@@ -156,7 +146,6 @@ const AdminDashboard = () => {
 const ReceptionistDashboard = () => {
   const { user } = useAuth();
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
-  const { patients } = usePatients();
   
   const centreSessions = useMemo(() => {
     return sessions.filter(s => s.centreId === user?.centreId);
@@ -224,7 +213,7 @@ const TherapistDashboard = () => {
     const nextAppointment = useMemo(() => {
         const now = new Date();
         return todaysSessions
-            .filter(s => isAfter(new Date(`${s.date}T${s.startTime}`), now) && s.status === 'scheduled')
+            .filter(s => s.startTime > format(now, "HH:mm") && s.status === 'scheduled')
             .sort((a,b) => a.startTime.localeCompare(b.startTime))[0];
     }, [todaysSessions]);
 
@@ -300,7 +289,7 @@ export default function DashboardPage() {
           <CardHeader>
               <CardTitle>Today's Schedule</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col">
+          <CardContent className="flex-1 flex flex-col p-0">
               <TodaysAppointmentsList/>
           </CardContent>
       </Card>

@@ -17,7 +17,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, isSameDay, isSameMonth, isSameWeek, isFuture } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -40,6 +39,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 export default function AppointmentsPage() {
@@ -180,33 +180,32 @@ export default function AppointmentsPage() {
     }
 
     return (
-      <div className="space-y-4 pt-4">
+      <Accordion type="single" collapsible className="w-full space-y-4 pt-4">
         {Object.entries(groupedSessions).map(([patientId, patientSessions]) => {
           const patient = getPatient(patientId);
           if (!patient) return null;
 
           return (
-            <Collapsible key={patientId}>
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg w-full">
-                <CollapsibleTrigger className="flex items-center gap-3 flex-1 text-left">
-                  <Avatar>
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {getInitials(patient.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">{patient.name}</p>
-                    <p className="text-sm text-muted-foreground">{patientSessions.length} appointment(s) this {view}</p>
+            <AccordionItem value={patientId} key={patientId} className="border-none">
+              <AccordionTrigger className="flex items-center justify-between p-3 bg-muted/30 rounded-lg w-full hover:no-underline">
+                  <div className="flex items-center gap-3 flex-1 text-left">
+                    <Avatar>
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {getInitials(patient.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">{patient.name}</p>
+                      <p className="text-sm text-muted-foreground">{patientSessions.length} appointment(s) this {view}</p>
+                    </div>
                   </div>
-                  <ChevronDown className="h-5 w-5 ml-auto transition-transform [&[data-state=open]]:rotate-180" />
-                </CollapsibleTrigger>
-                {canManagePayments && (
-                  <Button variant="ghost" size="sm" className="ml-2" onClick={() => setBulkUpdatePatient(patient)}>
-                    <DollarSign className="mr-2" /> Bulk Update
-                  </Button>
-                )}
-              </div>
-              <CollapsibleContent>
+                   {canManagePayments && (
+                    <Button variant="ghost" size="sm" className="ml-2" onClick={(e) => { e.stopPropagation(); setBulkUpdatePatient(patient); }}>
+                      <DollarSign className="mr-2 h-4 w-4" /> Bulk Update
+                    </Button>
+                  )}
+              </AccordionTrigger>
+              <AccordionContent>
                   <ul className="space-y-2 pt-2 pl-4 border-l ml-5">
                       {patientSessions.map(session => (
                           <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4">
@@ -258,11 +257,11 @@ export default function AppointmentsPage() {
                           </li>
                       ))}
                   </ul>
-              </CollapsibleContent>
-            </Collapsible>
+              </AccordionContent>
+            </AccordionItem>
           );
         })}
-      </div>
+      </Accordion>
     )
   }
 
