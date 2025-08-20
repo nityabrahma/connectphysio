@@ -8,10 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format } from 'date-fns';
+import { format, isFuture, parseISO } from 'date-fns';
 import { Mail, Phone, User, Calendar as CalendarIcon, ChevronDown, ChevronRight, Stethoscope, StickyNote, ArrowLeft } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useParams, useRouter } from 'next/navigation';
 import { usePatients } from '@/hooks/use-patients';
@@ -29,6 +29,29 @@ export default function PatientDetailPage() {
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
   const [openCollapsibles, setOpenCollapsibles] = useState<Record<string, boolean>>({});
 
+  const patientSessions = useMemo(() => {
+    const now = new Date();
+    return sessions
+      .filter(s => s.patientId === patient?.id)
+      .sort((a, b) => {
+        const dateA = parseISO(`${a.date}T${a.startTime}`);
+        const dateB = parseISO(`${b.date}T${b.startTime}`);
+        const aIsFuture = isFuture(dateA);
+        const bIsFuture = isFuture(dateB);
+
+        if (aIsFuture && !bIsFuture) return -1; // Future dates first
+        if (!aIsFuture && bIsFuture) return 1;
+
+        if (aIsFuture && bIsFuture) {
+          return dateA.getTime() - dateB.getTime(); // Sort upcoming dates chronologically
+        }
+
+        // Both are in the past, sort by most recent
+        return dateB.getTime() - dateA.getTime();
+      });
+  }, [sessions, patient]);
+
+
   if (!patient) {
     return (
         <div className="flex flex-col items-center justify-center h-full text-center">
@@ -44,10 +67,6 @@ export default function PatientDetailPage() {
     );
   }
 
-  const patientSessions = sessions
-    .filter(s => s.patientId === patient.id)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
   const getTherapistName = (therapistId: string) => {
     return therapists.find(t => t.id === therapistId)?.name || 'Unknown';
   }
@@ -59,14 +78,14 @@ export default function PatientDetailPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 h-full">
         <div className="flex items-center gap-4">
              <Button variant="outline" size="icon" onClick={() => router.back()}>
                 <ArrowLeft className="h-4 w-4" />
              </Button>
              <h1 className="text-3xl font-bold tracking-tight">Patient Details</h1>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 min-h-0">
           {/* Left Column: Patient Info */}
           <div className="md:col-span-1 space-y-6">
             <Card>
@@ -126,9 +145,9 @@ export default function PatientDetailPage() {
                  <CardDescription>A log of all past and upcoming appointments for {patient.name}.</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col min-h-0">
-                <ScrollArea className="flex-auto -mx-6">
+                <ScrollArea className="flex-auto -mx-6 px-6">
                     <Table className="relative">
-                    <TableHeader className="sticky top-0 bg-card">
+                    <TableHeader className="sticky top-0 bg-card z-10">
                         <TableRow>
                         <TableHead className="w-12"></TableHead>
                         <TableHead>Date</TableHead>
