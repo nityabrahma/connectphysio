@@ -304,7 +304,7 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 h-full">
+    <div className="flex flex-col gap-8 h-full overflow-hidden">
        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
         {user?.role !== 'therapist' && (
@@ -315,8 +315,8 @@ export default function AppointmentsPage() {
         )}
       </div>
       
-      <Card className="flex-1 flex flex-col overflow-hidden">
-        <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-8 flex-1">
+      <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
+        <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-8 flex-1 min-h-0">
             <div className="md:col-span-1 flex justify-center">
                  <Calendar
                     mode="single"
@@ -326,14 +326,14 @@ export default function AppointmentsPage() {
                 />
             </div>
             <div className="md:col-span-2 flex flex-col min-h-0">
-                 <Tabs defaultValue="month" className="w-full flex flex-col flex-1">
+                 <Tabs defaultValue="month" className="w-full flex flex-col flex-1 min-h-0">
                     <TabsList>
                         <TabsTrigger value="day">Day</TabsTrigger>
                         <TabsTrigger value="week">Week</TabsTrigger>
                         <TabsTrigger value="month">Month</TabsTrigger>
                     </TabsList>
-                    <div className="flex-1 mt-4 relative">
-                      <ScrollArea className="absolute inset-0 pr-4">
+                    <div className="flex-1 mt-4 min-h-0">
+                      <ScrollArea className="h-full w-full pr-4">
                           <TabsContent value="day"><SessionList view="day" /></TabsContent>
                           <TabsContent value="week"><SessionList view="week" /></TabsContent>
                           <TabsContent value="month"><SessionList view="month" /></TabsContent>

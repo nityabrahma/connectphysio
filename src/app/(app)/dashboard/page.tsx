@@ -53,8 +53,8 @@ const TodaysAppointmentsList = () => {
     }
 
     return (
-        <ScrollArea className="flex-auto">
-            <Accordion type="single" collapsible className="w-full space-y-4 pr-4">
+        <ScrollArea className="h-full w-full px-6">
+            <Accordion type="single" collapsible className="w-full space-y-4 pt-4">
               {Object.entries(groupedSessions).map(([patientId, patientSessions]) => {
               const patient = getPatient(patientId);
               if (!patient) return null;
@@ -277,7 +277,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex flex-col gap-8 h-full">
+    <div className="flex flex-col gap-8 h-full overflow-hidden">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.name.split(' ')[0]}!</h1>
         <p className="text-muted-foreground">Here's a quick overview of your day.</p>
@@ -289,7 +289,7 @@ export default function DashboardPage() {
           <CardHeader>
               <CardTitle>Today's Schedule</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col p-0">
+          <CardContent className="flex-1 min-h-0 p-0">
               <TodaysAppointmentsList/>
           </CardContent>
       </Card>
