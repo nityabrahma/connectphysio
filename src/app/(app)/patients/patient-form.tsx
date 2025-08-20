@@ -185,7 +185,7 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
                         </form>
                     </Form>
                 </ScrollArea>
-                <DialogFooter className="sticky bottom-0 bg-background w-full">
+                <DialogFooter className="bg-background w-full">
                     <Button className="w-full" type="submit">{isEditing ? 'Save Changes' : 'Create Patient'}</Button>
                 </DialogFooter>
             </DialogContent>
