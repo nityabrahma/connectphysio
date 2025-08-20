@@ -159,7 +159,7 @@ export default function PatientDetailPage() {
                     <TableBody>
                         {patientSessions.length > 0 ? patientSessions.map((session) => (
                         <Collapsible asChild key={session.id} open={openCollapsibles[session.id] || false} onOpenChange={() => toggleCollapsible(session.id)}>
-                            
+                            <>
                                 <TableRow className="cursor-pointer">
                                     <TableCell className="w-12 px-4">
                                         <CollapsibleTrigger asChild>
@@ -195,7 +195,7 @@ export default function PatientDetailPage() {
                                         </TableCell>
                                     </tr>
                                 </CollapsibleContent>
-                            
+                            </>
                         </Collapsible>
                         )) : (
                         <TableRow>
