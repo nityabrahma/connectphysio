@@ -1,3 +1,4 @@
+
 import { AuthGate } from '@/components/auth-gate';
 import { Topbar } from '@/components/layout/topbar';
 
