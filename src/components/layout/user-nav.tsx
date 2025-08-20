@@ -37,12 +37,8 @@ export function UserNav() {
     router.push(`/login?email=${encodeURIComponent(email)}`);
   };
 
-  const getInitials = (name: string) => {
-    const names = name.split(' ');
-    if (names.length > 1) {
-      return `${names[0][0]}${names[names.length - 1][0]}`;
-    }
-    return name.substring(0, 2);
+  const getFirstLetter = (name: string) => {
+    return name ? name.charAt(0).toUpperCase() : '';
   };
   
   return (
@@ -50,8 +46,11 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={`https://placehold.co/32x32.png`} alt={user.name} data-ai-hint="person" />
-            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+            <AvatarFallback 
+              className="bg-gradient-to-br from-primary via-primary/80 to-accent text-primary-foreground font-semibold"
+            >
+              {getFirstLetter(user.name)}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
