@@ -6,8 +6,9 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/providers/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'ConnectPhysio',
-  description: 'Patient Booking & Therapy Management App',
+  title: 'ConnectPhysio - Streamline Your Physiotherapy Practice',
+  description: 'The all-in-one platform for patient booking, scheduling, and therapy management. Simplify your workflow and focus on what matters most - your patients.',
+  keywords: ['physiotherapy', 'clinic management', 'patient booking', 'scheduling software', 'therapy app'],
 };
 
 export default function RootLayout({
@@ -16,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="!scroll-smooth">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
