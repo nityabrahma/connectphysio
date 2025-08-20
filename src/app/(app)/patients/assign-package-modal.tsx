@@ -21,7 +21,7 @@ import { LS_KEYS } from "@/lib/constants";
 import { generateId } from "@/lib/ids";
 import { addDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
-import { usePatients } from "./use-patients";
+import { usePatients } from "@/hooks/use-patients";
 
 interface AssignPackageModalProps {
     isOpen: boolean;
