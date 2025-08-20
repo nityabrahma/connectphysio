@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { Icons } from "../icons";
-import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "../ui/sheet";
 import { Menu } from "lucide-react";
 
 const navLinks = [
@@ -42,6 +42,10 @@ export function LandingHeader() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Mobile Navigation</SheetTitle>
+              <SheetDescription>Main menu for navigating the ConnectPhysio landing page.</SheetDescription>
+            </SheetHeader>
             <nav className="grid gap-6 text-lg font-medium">
                 <Link
                 href="#"
