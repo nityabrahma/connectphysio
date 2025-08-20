@@ -12,6 +12,8 @@ import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
 import { AssignPackageModal } from "./assign-package-modal";
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function PatientsPage() {
     const { user } = useAuth();
@@ -56,9 +58,12 @@ export default function PatientsPage() {
     const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 h-full overflow-hidden">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">Patients</h1>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Patients</h1>
+                    <p className="text-muted-foreground">Manage all patient records for your centre.</p>
+                </div>
                 {canManagePatients && (
                     <Button onClick={handleAddPatient}>
                         <PlusCircle />
@@ -67,16 +72,24 @@ export default function PatientsPage() {
                 )}
             </div>
             
-            <DataTable 
-                columns={columns({ 
-                    onEdit: handleEditPatient, 
-                    onDelete: handleDeletePatient,
-                    onAssignPackage: handleAssignPackage,
-                    onView: handleViewPatient,
-                    canManage: canManagePatients,
-                })} 
-                data={patients} 
-            />
+            <Card className="flex-1 flex flex-col min-h-0">
+                <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+                    <ScrollArea className="h-full w-full">
+                         <div className="p-4 md:p-6">
+                            <DataTable 
+                                columns={columns({ 
+                                    onEdit: handleEditPatient, 
+                                    onDelete: handleDeletePatient,
+                                    onAssignPackage: handleAssignPackage,
+                                    onView: handleViewPatient,
+                                    canManage: canManagePatients,
+                                })} 
+                                data={patients} 
+                            />
+                        </div>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
 
             {canManagePatients && (
                  <PatientForm 
