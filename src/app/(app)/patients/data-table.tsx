@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -30,7 +31,6 @@ export function DataTable<TData, TValue>({
   table
 }: DataTableProps<TData, TValue>) {
   return (
-    <div className="rounded-md border relative">
       <Table>
           <TableHeader className="sticky top-0 bg-background z-10">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -73,6 +73,5 @@ export function DataTable<TData, TValue>({
           )}
           </TableBody>
       </Table>
-    </div>
   )
 }
