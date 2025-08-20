@@ -12,8 +12,10 @@ import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
 import { AssignPackageModal } from "./assign-package-modal";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useReactTable, getCoreRowModel, getPaginationRowModel } from "@tanstack/react-table";
+
 
 export default function PatientsPage() {
     const { user } = useAuth();
@@ -56,6 +58,21 @@ export default function PatientsPage() {
     };
     
     const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
+    
+    const tableColumns = columns({ 
+        onEdit: handleEditPatient, 
+        onDelete: handleDeletePatient,
+        onAssignPackage: handleAssignPackage,
+        onView: handleViewPatient,
+        canManage: canManagePatients,
+    });
+
+    const table = useReactTable({
+        data: patients,
+        columns: tableColumns,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+    });
 
     return (
         <div className="flex flex-col gap-8 h-full overflow-hidden">
@@ -73,22 +90,33 @@ export default function PatientsPage() {
             </div>
             
             <Card className="flex-1 flex flex-col min-h-0">
-                <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-                    <ScrollArea className="h-full w-full">
-                         <div className="p-4 md:p-6">
-                            <DataTable 
-                                columns={columns({ 
-                                    onEdit: handleEditPatient, 
-                                    onDelete: handleDeletePatient,
-                                    onAssignPackage: handleAssignPackage,
-                                    onView: handleViewPatient,
-                                    canManage: canManagePatients,
-                                })} 
-                                data={patients} 
-                            />
-                        </div>
-                    </ScrollArea>
+                <CardContent className="flex-1 min-h-0 p-4 md:p-6 overflow-y-auto">
+                    <DataTable 
+                        columns={tableColumns} 
+                        data={patients} 
+                        table={table}
+                    />
                 </CardContent>
+                <CardFooter className="py-4 border-t">
+                    <div className="flex items-center justify-end space-x-2 w-full">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => table.previousPage()}
+                            disabled={!table.getCanPreviousPage()}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => table.nextPage()}
+                            disabled={!table.getCanNextPage()}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </CardFooter>
             </Card>
 
             {canManagePatients && (
