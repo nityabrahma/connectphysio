@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -13,6 +14,22 @@ const fadeIn = {
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.6, ease: "easeInOut" },
 };
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+};
+
+const fadeInFromBottom = {
+  hidden: { opacity: 0, y: 50 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
+};
+
 
 export default function LandingPage() {
   const features = [
@@ -84,8 +101,13 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="w-full py-20 md:py-32 lg:py-40 bg-secondary/50">
           <div className="container px-4 md:px-6">
-            <motion.div {...fadeIn} className="grid gap-6 lg:grid-cols-2 lg:gap-12 xl:gap-24 items-center">
-              <div className="flex flex-col justify-center space-y-4">
+            <motion.div 
+              className="grid gap-6 lg:grid-cols-2 lg:gap-12 xl:gap-24 items-center"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="show"
+            >
+              <motion.div className="flex flex-col justify-center space-y-4" variants={fadeInFromBottom}>
                 <div className="space-y-4">
                   <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
                     Streamline Your Clinic, Elevate Your Care
@@ -102,8 +124,12 @@ export default function LandingPage() {
                     <Button size="lg" variant="outline" className="w-full min-[400px]:w-auto">Learn More</Button>
                   </Link>
                 </div>
-              </div>
-               <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2, ease: "backOut" }}>
+              </motion.div>
+               <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                transition={{ duration: 0.8, delay: 0.4, ease: "backOut" }}
+               >
                  <Image
                     src="https://placehold.co/600x400.png"
                     data-ai-hint="dashboard physiotherapy"
@@ -120,7 +146,13 @@ export default function LandingPage() {
         {/* Features Section */}
         <section id="features" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
-            <motion.div {...fadeIn} className="flex flex-col items-center justify-center space-y-4 text-center">
+            <motion.div 
+              className="flex flex-col items-center justify-center space-y-4 text-center"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeInFromBottom}
+            >
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Key Features</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need to Run Your Practice</h2>
@@ -129,14 +161,17 @@ export default function LandingPage() {
                 </p>
               </div>
             </motion.div>
-            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
-              {features.map((feature, index) => (
+            <motion.div 
+              className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+              variants={staggerContainer}
+            >
+              {features.map((feature) => (
                 <motion.div
                   key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  variants={fadeInFromBottom}
                   className="grid gap-2 text-center"
                 >
                   <div className="flex justify-center">{feature.icon}</div>
@@ -144,27 +179,36 @@ export default function LandingPage() {
                   <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
 
         {/* Testimonials Section */}
         <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary/50">
           <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
-            <motion.div {...fadeIn} className="space-y-3">
+            <motion.div 
+              className="space-y-3"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeInFromBottom}
+            >
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">Trusted by Clinics of All Sizes</h2>
               <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                 See what our satisfied users are saying about how ConnectPhysio has improved their practice.
               </p>
             </motion.div>
-            <div className="grid w-full grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-              {testimonials.map((testimonial, index) => (
+            <motion.div 
+              className="grid w-full grid-cols-1 lg:grid-cols-3 gap-8 mt-8"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+              variants={staggerContainer}
+            >
+              {testimonials.map((testimonial) => (
                 <motion.div
                   key={testimonial.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.15 }}
+                  variants={fadeInFromBottom}
                 >
                   <Card>
                     <CardContent className="flex flex-col items-center text-center p-6">
@@ -184,14 +228,20 @@ export default function LandingPage() {
                   </Card>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
 
         {/* FAQ Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32">
+        <section id="faq" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
-            <motion.div {...fadeIn} className="flex flex-col items-center justify-center space-y-4 text-center">
+            <motion.div 
+              className="flex flex-col items-center justify-center space-y-4 text-center"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeInFromBottom}
+            >
               <div className="space-y-2">
                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Frequently Asked Questions</h2>
                  <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
@@ -200,10 +250,10 @@ export default function LandingPage() {
               </div>
             </motion.div>
              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.2 }}
+                variants={fadeInFromBottom}
                 className="mx-auto max-w-3xl w-full mt-12"
              >
                 <Accordion type="single" collapsible className="w-full">
@@ -224,7 +274,13 @@ export default function LandingPage() {
         {/* CTA Section */}
         <section className="w-full py-12 md:py-24 lg:py-32 bg-primary text-primary-foreground">
           <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
-            <motion.div {...fadeIn} className="space-y-3">
+            <motion.div 
+              className="space-y-3"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeInFromBottom}
+            >
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">Ready to Transform Your Practice?</h2>
               <p className="mx-auto max-w-[600px] md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                 Join dozens of clinics who trust ConnectPhysio. Get started today and get back to what you do best.
