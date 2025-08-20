@@ -46,8 +46,8 @@ export function PatientDetailModal({ isOpen, onOpenChange, patient }: PatientDet
         <DialogHeader>
           <DialogTitle>Patient Details</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="pr-4 -mr-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <ScrollArea className="flex-1 -mr-6 pr-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-4">
           {/* Left Column: Patient Info */}
           <div className="md:col-span-1 space-y-6">
             <Card>
