@@ -8,9 +8,8 @@ import { useMemo, useState } from "react";
 import { PatientForm } from "./patient-form";
 import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
-import { AssignPackageModal } from "./assign-package-modal";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { PatientCard } from "./patient-card";
 
 export default function PatientsPage() {
@@ -18,7 +17,6 @@ export default function PatientsPage() {
     const router = useRouter();
     const { patients, addPatient, updatePatient, deletePatient } = usePatients();
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
     const [currentPage, setCurrentPage] = useState(1);
     const PATIENTS_PER_PAGE = 10;
@@ -38,8 +36,7 @@ export default function PatientsPage() {
     };
 
     const handleAssignPackage = (patient: Patient) => {
-        setSelectedPatient(patient);
-        setIsPackageModalOpen(true);
+        router.push(`/assign-package/${patient.id}`);
     };
 
     const handleViewPatient = (patient: Patient) => {
@@ -83,18 +80,16 @@ export default function PatientsPage() {
             </div>
 
             <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <CardHeader className="border-b">
+                <CardHeader className="border-b shrink-0">
                     <div
-                        className="grid px-4 font-semibold text-sm flex justify-center items-center text-muted-foreground"
-                        style={{ gridTemplateColumns: "3fr 2fr 2fr 1fr" }}
+                        className="grid px-4 font-semibold text-sm text-muted-foreground"
+                        style={{ gridTemplateColumns: "2fr 2fr 1fr 1fr" }}
                     >
-                        <div className="text-center">Name</div>
-                        <div className="text-center">Phone</div>
-                        <div className="text-center">Package Status</div>
+                        <div>Patient</div>
+                        <div>Package</div>
                         <div className="text-right">Actions</div>
                     </div>
                 </CardHeader>
-
 
                 <CardContent className="flex-1 p-2 md:p-4 overflow-y-auto">
                     {paginatedPatients.length > 0 ? (
@@ -117,8 +112,9 @@ export default function PatientsPage() {
                         </div>
                     )}
                 </CardContent>
+                
                 {totalPages > 1 && (
-                    <CardFooter className="py-4 border-t">
+                    <CardFooter className="py-4 border-t shrink-0">
                         <div className="flex items-center justify-end space-x-2 w-full">
                             <div className="flex-1 text-sm text-muted-foreground">
                                 Page {currentPage} of {totalPages}
@@ -149,14 +145,6 @@ export default function PatientsPage() {
                     isOpen={isFormOpen}
                     onOpenChange={setIsFormOpen}
                     onSubmit={handleFormSubmit}
-                    patient={selectedPatient}
-                />
-            )}
-
-            {selectedPatient && canManagePatients && (
-                <AssignPackageModal
-                    isOpen={isPackageModalOpen}
-                    onOpenChange={setIsPackageModalOpen}
                     patient={selectedPatient}
                 />
             )}

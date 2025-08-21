@@ -1,7 +1,7 @@
 
 "use client"
 
-import type { Patient } from "@/types/domain"
+import type { PackageDef, Patient, PackageSale } from "@/types/domain"
 import { MoreHorizontal, PackageCheck, Eye, Edit, Trash2, Mail, Phone } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useLocalStorage } from "@/hooks/use-local-storage"
+import { LS_KEYS } from "@/lib/constants"
 
 interface PatientCardProps {
     patient: Patient;
@@ -36,13 +38,27 @@ interface PatientCardProps {
 }
 
 export function PatientCard({ patient, onView, onEdit, onAssignPackage, onDelete, canManage }: PatientCardProps) {
+    const [packages] = useLocalStorage<PackageDef[]>(LS_KEYS.PACKAGES, []);
+    const [packageSales] = useLocalStorage<PackageSale[]>(LS_KEYS.PACKAGE_SALES, []);
 
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+    const getPackageName = () => {
+        if (!patient.packageSaleId) return <Badge variant="secondary">None</Badge>;
+        
+        const sale = packageSales.find(s => s.id === patient.packageSaleId);
+        if (!sale) return <Badge variant="secondary">None</Badge>;
+        
+        const pkg = packages.find(p => p.id === sale.packageId);
+        if (!pkg) return <Badge variant="outline">Unknown Package</Badge>;
+        
+        return <Badge variant={sale.status === 'active' ? 'default' : 'secondary'}>{pkg.name}</Badge>;
+    }
 
     return (
         <div
             className="grid gap-4 items-center p-4 rounded-lg bg-card hover:bg-muted/50 transition-colors"
-            style={{ gridTemplateColumns: "3fr 2fr 2fr 1fr" }}
+            style={{ gridTemplateColumns: "2fr 2fr 1fr 1fr" }}
         >
             <div className="flex items-center gap-4">
                 <Avatar>
@@ -56,13 +72,15 @@ export function PatientCard({ patient, onView, onEdit, onAssignPackage, onDelete
                     </button>
                     <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
                         <span className="flex items-center gap-1.5"><Mail className="w-3 h-3" /> {patient.email}</span>
+                        <span className="flex items-center gap-1.5"><Phone className="w-3 h-3" /> {patient.phone}</span>
                     </div>
                 </div>
             </div>
+            
             <div>
-                <span className="flex items-center gap-1.5 text-sm text-muted-foreground"><Phone className="w-3 h-3" /> {patient.phone}</span>
+                {getPackageName()}
             </div>
-            <div>{patient.packageSaleId ? <Badge>Active</Badge> : <Badge variant="secondary">None</Badge>}</div>
+            
             <div className="text-right">
                 <AlertDialog>
                     <DropdownMenu>
@@ -75,20 +93,20 @@ export function PatientCard({ patient, onView, onEdit, onAssignPackage, onDelete
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem onSelect={() => onView(patient)}>
-                                <Eye className="mr-2"/>View History
+                                <Eye className="mr-2"/>View Details
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {canManage && (
                                 <>
                                     <DropdownMenuItem onSelect={() => onEdit(patient)}>
-                                        <Edit className="mr-2"/>Edit details
+                                        <Edit className="mr-2"/>Edit Patient
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => onAssignPackage(patient)}>
                                         <PackageCheck className="mr-2"/>Assign Package
                                     </DropdownMenuItem>
                                     <AlertDialogTrigger asChild>
                                         <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                            <Trash2 className="mr-2"/>Delete patient
+                                            <Trash2 className="mr-2"/>Delete Patient
                                         </DropdownMenuItem>
                                     </AlertDialogTrigger>
                                 </>
