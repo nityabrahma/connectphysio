@@ -108,9 +108,10 @@ export function Topbar() {
         </Sheet>
         <Link
           href="/dashboard"
-          className="hidden md:flex items-center gap-3 font-semibold"
+          className="flex items-center gap-3 font-semibold"
         >
           <Icons.logo className="h-10 w-10" />
+          <span className="text-lg">{user?.centreName || "ConnectPhysio"}</span>
         </Link>
       </div>
 
