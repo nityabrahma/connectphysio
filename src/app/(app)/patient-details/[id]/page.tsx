@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -62,7 +63,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PatientForm } from "../patients/patient-form";
+import { PatientForm } from "../../patients/patient-form";
 
 
 export default function PatientDetailPage() {
