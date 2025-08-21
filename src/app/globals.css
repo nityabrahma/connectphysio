@@ -22,8 +22,9 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 173 80% 30%;
+    /* --ring: 173 80% 30%; */
     --radius: 0.75rem;
+    --ring: 0, 0%, 0%, 0;
   }
  
   .dark {

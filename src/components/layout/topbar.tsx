@@ -115,7 +115,7 @@ export function Topbar() {
           className="flex items-center gap-3 font-semibold"
         >
           <Icons.logo className="h-10 w-10" />
-          <span className="text-lg">{user?.centreName || "ConnectPhysio"}</span>
+          <span className="text-lg whitespace-nowrap">{user?.centreName || "ConnectPhysio"}</span>
         </Link>
       </div>
 
