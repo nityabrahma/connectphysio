@@ -53,8 +53,8 @@ const TodaysAppointmentsList = () => {
     }
 
     return (
-        <ScrollArea className="h-full w-full px-6">
-            <Accordion type="single" collapsible className="w-full space-y-4 pt-4">
+        <ScrollArea className="h-full w-full">
+            <Accordion type="single" collapsible className="w-full space-y-4 p-6 pt-0">
               {Object.entries(groupedSessions).map(([patientId, patientSessions]) => {
               const patient = getPatient(patientId);
               if (!patient) return null;
@@ -107,7 +107,7 @@ const AdminDashboard = () => {
      const centreSessions = useMemo(() => sessions.filter(s => s.centreId === user?.centreId), [sessions, user]);
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 overflow-auto h-full">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Active Patients</CardTitle>
@@ -277,7 +277,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 h-full">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.name.split(' ')[0]}!</h1>
         <p className="text-muted-foreground">Here's a quick overview of your day.</p>
@@ -296,3 +296,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
