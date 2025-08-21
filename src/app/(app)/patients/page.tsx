@@ -7,7 +7,7 @@ import { PlusCircle, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientCard } from "./patient-card";
 import { Input } from "@/components/ui/input";
@@ -15,13 +15,17 @@ import { Input } from "@/components/ui/input";
 export default function PatientsPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { patients, deletePatient } = usePatients();
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
     const PATIENTS_PER_PAGE = 10;
 
+    const isSelecting = searchParams.get('select') === 'true';
+
     const handleAddPatient = () => {
-        router.push('/patients/new');
+        const query = isSelecting ? '?redirectToAppointment=true' : '';
+        router.push(`/patients/new${query}`);
     };
 
     const handleEditPatient = (patient: Patient) => {
@@ -41,7 +45,11 @@ export default function PatientsPage() {
     };
 
     const handleViewPatient = (patient: Patient) => {
-        router.push(`/patient-details/${patient.id}`);
+        if (isSelecting) {
+            router.push(`/appointments/new?patientId=${patient.id}`);
+        } else {
+            router.push(`/patient-details/${patient.id}`);
+        }
     };
 
     const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
@@ -66,8 +74,10 @@ export default function PatientsPage() {
         <div className="flex flex-col gap-8 h-full">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Patients</h1>
-                    <p className="text-muted-foreground">Manage all patient records for your centre.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{isSelecting ? 'Select a Patient' : 'Patients'}</h1>
+                    <p className="text-muted-foreground">
+                        {isSelecting ? 'Choose a patient to create a walk-in appointment for.' : 'Manage all patient records for your centre.'}
+                    </p>
                 </div>
                 {canManagePatients && (
                     <Button onClick={handleAddPatient}>
@@ -108,6 +118,7 @@ export default function PatientsPage() {
                                     onNewAppointment={handleNewAppointment}
                                     onDelete={handleDeletePatient}
                                     canManage={canManagePatients}
+                                    isSelecting={isSelecting}
                                 />
                             ))}
                         </div>
@@ -147,3 +158,5 @@ export default function PatientsPage() {
         </div>
     );
 }
+
+    

@@ -106,7 +106,7 @@ export default function AppointmentsPage() {
   const SessionList = ({ view }: { view: "day" | "week" | "month" }) => {
     const data = filteredSessions(view).filter(s => s.status !== 'completed');
     const getPatient = (patientId: string) => patients.find(p => p.id === patientId);
-    const getTherapistName = (therapistId: string) => therapists.find(t => t.id === therapistId)?.name || 'Unknown';
+    const getTherapistName = (therapistsId: string) => therapists.find(t => t.id === therapistsId)?.name || 'Unknown';
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
     
     const canManageSession = (session: Session) => {
@@ -180,7 +180,7 @@ export default function AppointmentsPage() {
                                       )}
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
                                             <MoreVertical className="h-4 w-4" />
                                           </Button>
                                         </DropdownMenuTrigger>
@@ -232,7 +232,7 @@ export default function AppointmentsPage() {
                     <DropdownMenuItem onSelect={() => router.push('/patients?select=true')}>
                       <User /> Existing Patient
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => router.push('/patients?new=true')}>
+                    <DropdownMenuItem onSelect={() => router.push('/patients/new?redirectToAppointment=true')}>
                       <UserPlus /> New Patient
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
@@ -273,3 +273,5 @@ export default function AppointmentsPage() {
     </div>
   );
 }
+
+    

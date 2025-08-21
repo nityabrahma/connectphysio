@@ -3,19 +3,25 @@
 
 import { PatientForm, type PatientFormValues } from '../patient-form';
 import { usePatients } from '@/hooks/use-patients';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
 export default function NewPatientPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addPatient } = usePatients();
+  const redirectToAppointment = searchParams.get('redirectToAppointment');
 
   const handleFormSubmit = (values: PatientFormValues & { centreId: string }) => {
     const newPatient = addPatient(values);
     if (newPatient) {
-      router.push(`/patient-details/${newPatient.id}`);
+      if (redirectToAppointment) {
+        router.push(`/appointments/new?patientId=${newPatient.id}`);
+      } else {
+        router.push(`/patient-details/${newPatient.id}`);
+      }
     } else {
       router.push('/patients');
     }
@@ -40,3 +46,5 @@ export default function NewPatientPage() {
     </div>
   );
 }
+
+    

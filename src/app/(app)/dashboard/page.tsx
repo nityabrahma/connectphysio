@@ -1,7 +1,8 @@
+
 "use client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, Package, Clock, Check } from "lucide-react";
+import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus } from "lucide-react";
 import type { Patient, Session } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
@@ -11,13 +12,17 @@ import { isSameDay, format } from "date-fns";
 import { usePatients } from "@/hooks/use-patients";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 const TodaysAppointmentsList = () => {
   const { user } = useAuth();
@@ -335,6 +340,7 @@ const TherapistDashboard = () => {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
 
   const renderDashboardContent = () => {
     switch (user?.role) {
@@ -351,13 +357,45 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8 size-full">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Welcome back, {user?.name.split(" ")[0]}!
-        </h1>
-        <p className="text-muted-foreground">
-          Here's a quick overview of your day.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back, {user?.name.split(" ")[0]}!
+            </h1>
+            <p className="text-muted-foreground">
+            Here's a quick overview of your day.
+            </p>
+        </div>
+         {user?.role !== 'therapist' && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  <PlusCircle />
+                  New Appointment
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => router.push('/appointments/new')}>
+                  <Calendar />
+                  Scheduled Appointment
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Footprints />
+                    Walk-in
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onSelect={() => router.push('/patients')}>
+                      <User /> Existing Patient
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => router.push('/patients/new')}>
+                      <UserPlus /> New Patient
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuContent>
+            </DropdownMenu>
+        )}
       </div>
 
       {renderDashboardContent()}
@@ -373,3 +411,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
