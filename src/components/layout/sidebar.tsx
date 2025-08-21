@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -57,9 +58,7 @@ export function Sidebar() {
           href="/dashboard"
           className="flex items-center gap-3 font-semibold"
         >
-          {/* <div className="p-2 bg-primary text-primary-foreground rounded-full"> */}
           <Icons.logo className="h-10 w-10" />
-          {/* </div> */}
           <span className="text-lg">{user?.centreName || "ConnectPhysio"}</span>
         </Link>
       </div>

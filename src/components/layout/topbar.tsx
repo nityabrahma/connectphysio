@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -8,6 +9,7 @@ import {
   Package,
   CreditCard,
   Settings,
+  UserCog,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -53,7 +55,7 @@ const navItems = [
     roles: ["admin", "receptionist"],
   },
   { href: "/billing", label: "Billing", icon: CreditCard, roles: ["admin"] },
-  { href: "/users", label: "Users", icon: Users, roles: ["admin"] },
+  { href: "/users", label: "Users", icon: UserCog, roles: ["admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ];
 
@@ -63,50 +65,55 @@ export function Topbar() {
 
   return (
     <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
-      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6"></nav>
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Toggle navigation menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="p-0">
-          <SheetHeader className="sr-only">
-            <SheetTitle>Mobile Navigation</SheetTitle>
-            <SheetDescription>
-              Main menu for navigating the ConnectPhysio application.
-            </SheetDescription>
-          </SheetHeader>
-          <ScrollArea className="h-full w-full p-6">
-            <nav className="grid gap-6 text-lg font-medium">
-              <Link
-                href="#"
-                className="flex items-center gap-2 text-lg font-semibold"
-              >
-                <Icons.logo className="h-10 w-10 text-primary" />
-                <span className="sr-only">ConnectPhysio</span>
-              </Link>
-              {navItems.map((item) =>
-                user && item.roles.includes(user.role) ? (
-                  <SheetClose asChild key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                        pathname === item.href && "bg-muted text-primary"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {item.label}
-                    </Link>
-                  </SheetClose>
-                ) : null
-              )}
-            </nav>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+      <div className="flex items-center gap-4">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="shrink-0">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle navigation menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 flex flex-col">
+             <SheetHeader className="h-16 flex flex-row items-center border-b px-6">
+                <Link
+                href="/dashboard"
+                className="flex items-center gap-3 font-semibold"
+                >
+                <Icons.logo className="h-10 w-10" />
+                <span className="text-lg">{user?.centreName || "ConnectPhysio"}</span>
+                </Link>
+             </SheetHeader>
+            <ScrollArea className="flex-1 p-4">
+              <nav className="grid gap-2 text-lg font-medium">
+                {navItems.map((item) =>
+                  user && item.roles.includes(user.role) ? (
+                    <SheetClose asChild key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                          (pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))) &&
+                            "bg-accent text-accent-foreground font-semibold"
+                        )}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.label}
+                      </Link>
+                    </SheetClose>
+                  ) : null
+                )}
+              </nav>
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
+        <Link
+          href="/dashboard"
+          className="hidden md:flex items-center gap-3 font-semibold"
+        >
+          <Icons.logo className="h-10 w-10" />
+        </Link>
+      </div>
+
       <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <UserNav />
       </div>
