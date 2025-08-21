@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { usePatients } from '@/hooks/use-patients';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -16,7 +16,7 @@ import type {
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { generateId } from '@/lib/ids';
-import { addDays, format } from 'date-fns';
+import { addDays, format, isWeekend } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -37,6 +37,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
 
 export default function AssignPackagePage() {
   const router = useRouter();
@@ -61,21 +62,52 @@ export default function AssignPackagePage() {
   const [selectedPackageId, setSelectedPackageId] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedDates, setSelectedDates] = useState<Date[] | undefined>([]);
+  const [selectedTime, setSelectedTime] = useState<string>('10:00');
 
   const patient = getPatient(patientId);
   const availablePackages = packages.filter((p) => p.centreId === user?.centreId);
+  
+  const selectedPackage = availablePackages.find((p) => p.id === selectedPackageId);
+
+  useEffect(() => {
+    if (selectedPackage) {
+      const getNextBusinessDays = (count: number): Date[] => {
+        const dates: Date[] = [];
+        let currentDate = new Date();
+        while (dates.length < count) {
+          currentDate = addDays(currentDate, 1);
+          if (!isWeekend(currentDate)) {
+            dates.push(currentDate);
+          }
+        }
+        return dates;
+      };
+      setSelectedDates(getNextBusinessDays(selectedPackage.sessions));
+    } else {
+      setSelectedDates([]);
+    }
+  }, [selectedPackageId, selectedPackage]);
+
 
   const handleConfirm = () => {
     setIsLoading(true);
-    const selectedPackage = availablePackages.find(
-      (p) => p.id === selectedPackageId
-    );
 
-    if (!selectedPackage || !user || !patient) {
+    if (!selectedPackage || !user || !patient || !selectedDates || selectedDates.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Please select a package and ensure patient data is available.',
+        description: 'Please select a package and session dates.',
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    if (selectedDates.length !== selectedPackage.sessions) {
+      toast({
+        variant: 'destructive',
+        title: 'Incorrect number of dates',
+        description: `Please select exactly ${selectedPackage.sessions} dates for the sessions.`,
       });
       setIsLoading(false);
       return;
@@ -122,12 +154,15 @@ export default function AssignPackagePage() {
       return;
     }
 
-    let currentDate = new Date();
-    const newSessions = Array.from({ length: selectedPackage.sessions }).map(
-      (_, i) => {
+    const [startHour, startMinute] = selectedTime.split(':').map(Number);
+
+    const newSessions = selectedDates.map(
+      (sessionDate, i) => {
         const assignedTherapist =
           availableTherapists[i % availableTherapists.length];
-        const sessionDate = addDays(currentDate, i * 2); // Schedule every other day
+        
+        const endTimeDate = new Date(sessionDate);
+        endTimeDate.setHours(startHour, startMinute + 60);
 
         const newSession: Session = {
           id: generateId(),
@@ -135,8 +170,8 @@ export default function AssignPackagePage() {
           therapistId: assignedTherapist.id,
           centreId: user.centreId,
           date: format(sessionDate, 'yyyy-MM-dd'),
-          startTime: '10:00', // Default start time
-          endTime: '11:00', // Default end time
+          startTime: selectedTime,
+          endTime: format(endTimeDate, 'HH:mm'),
           status: 'scheduled',
           paymentStatus: 'unpaid',
           packageSaleId: newSale.id,
@@ -174,6 +209,12 @@ export default function AssignPackagePage() {
       </div>
     );
   }
+  
+  const timeSlots = Array.from({ length: 18 }, (_, i) => {
+    const hour = Math.floor(i / 2) + 8; // 8 AM to 5 PM
+    const minute = (i % 2) * 30;
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -190,7 +231,7 @@ export default function AssignPackagePage() {
         <CardHeader>
           <CardTitle>Select a Package</CardTitle>
           <CardDescription>
-            Choose from the available packages for your centre. Assigning a package will automatically schedule the corresponding number of sessions.
+            Choose from the available packages for your centre. This will pre-select dates on the calendar below.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -218,6 +259,42 @@ export default function AssignPackagePage() {
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
+
+          {selectedPackage && (
+             <div className="space-y-4 pt-4 border-t">
+                <div>
+                  <h3 className="font-semibold text-lg">Schedule Sessions</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Select {selectedPackage.sessions} dates for the sessions. {selectedDates?.length || 0} selected.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="md:col-span-1 space-y-2">
+                    <Label htmlFor="time-select">Session Time</Label>
+                    <Select value={selectedTime} onValueChange={setSelectedTime}>
+                      <SelectTrigger id="time-select">
+                        <SelectValue placeholder="Select a time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timeSlots.map(time => (
+                           <SelectItem key={time} value={time}>{time}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="md:col-span-3 flex justify-center">
+                    <Calendar
+                        mode="multiple"
+                        selected={selectedDates}
+                        onSelect={setSelectedDates}
+                        disabled={{ before: new Date() }}
+                        className="rounded-md"
+                        numberOfMonths={2}
+                    />
+                  </div>
+                </div>
+             </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-end gap-4">
           <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
