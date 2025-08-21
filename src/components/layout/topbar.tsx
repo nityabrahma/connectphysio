@@ -16,6 +16,9 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { UserNav } from './user-nav';
@@ -52,6 +55,10 @@ export function Topbar() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className='p-0'>
+          <SheetHeader className="sr-only">
+            <SheetTitle>Mobile Navigation</SheetTitle>
+            <SheetDescription>Main menu for navigating the TheraSuite application.</SheetDescription>
+          </SheetHeader>
           <ScrollArea className='h-full w-full p-6'>
             <nav className="grid gap-6 text-lg font-medium">
               <Link
