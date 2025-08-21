@@ -16,8 +16,6 @@ To get started, take a look at src/app/page.tsx.
 - At appointments form get patient automatically, and current time as default.
 - Add dropdown for walk-in for existing patient and new patient. if existing route to patient's list else new patient add form.
 - replace assign package modal with route and add options to choose therapy session as 1 day gap, 2 day gap, etc. and after selecting show a calendar with marked dates selected for schedule, then submit.
-- active patients data at dashboard
-- Do not let add more dates than the session's start and end.
 - remove payment status from session details.
 - remove email and phone number like data from patient's list. add option to create new appointment at patient's list dropdown menu.
 - Add delete, assign package, and edit options and patient-details page.
@@ -29,6 +27,8 @@ To get started, take a look at src/app/page.tsx.
 
 ## Future aspects
 
+- Do not let add more dates than the session's start and end.
+- active patients data at dashboard
 - Implement availability logic (prevent double booking).
 - Generate summary of completed vs pending sessions.
 - Daily session report for receptionist (how many patients checked in).
