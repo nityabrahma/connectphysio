@@ -62,7 +62,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PatientForm } from "../../patients/patient-form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 export default function PatientDetailPage() {
@@ -80,19 +80,28 @@ export default function PatientDetailPage() {
   );
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
 
-  const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
+  const patientSessions = useMemo(() => {
+    return sessions
+      .filter((s) => s.patientId === patientId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [sessions, patientId]);
+
+  const upcomingSessions = useMemo(() => {
+    return patientSessions.filter(
+      (s) =>
+        (s.status === "scheduled" || s.status === "checked-in") &&
+        (isFuture(parseISO(s.date)) || format(new Date(s.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'))
+    );
+  }, [patientSessions]);
+
+  const completedSessions = useMemo(() => {
+    return patientSessions.filter((s) => s.status === "completed");
+  }, [patientSessions]);
   
   const handleNewAppointmentClick = () => {
     router.push(`/appointments/new?patientId=${patientId}`);
   };
   
-  const handlePatientFormSubmit = (values: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (patient) {
-        updatePatient(patient.id, values);
-    }
-    setIsPatientFormOpen(false);
-  };
-
   const handleDeletePatient = () => {
     if(patient) {
         deletePatient(patient.id);
@@ -123,6 +132,56 @@ export default function PatientDetailPage() {
       .map((n) => n[0])
       .join("")
       .toUpperCase();
+
+  const getTherapistName = (therapistId: string) => {
+    return therapists.find(t => t.id === therapistId)?.name || 'Unknown Therapist';
+  }
+
+  const SessionList = ({ sessions }: { sessions: Session[] }) => {
+    if (sessions.length === 0) {
+      return (
+        <div className="text-center text-muted-foreground py-8">
+          <CalendarIcon className="mx-auto h-12 w-12" />
+          <p className="mt-4">No sessions found.</p>
+        </div>
+      );
+    }
+  
+    return (
+        <Accordion type="single" collapsible className="w-full space-y-3">
+            {sessions.map((session) => (
+                <AccordionItem value={session.id} key={session.id} className="border-none">
+                    <div className="p-3 bg-muted/30 rounded-lg w-full">
+                       <AccordionTrigger className="flex-1 p-0 hover:no-underline">
+                          <div className="flex justify-between items-center w-full">
+                            <div className="text-left">
+                                <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d, yyyy')} &middot; {session.startTime}</p>
+                                <p className="text-sm text-muted-foreground">with {getTherapistName(session.therapistId)}</p>
+                            </div>
+                            <Badge variant="outline" className="capitalize mr-4">{session.status}</Badge>
+                          </div>
+                       </AccordionTrigger>
+                    </div>
+                    <AccordionContent className="py-2 px-4 text-sm text-muted-foreground space-y-3">
+                         {session.healthNotes && (
+                             <div className="pt-2">
+                                <h4 className="font-semibold text-foreground flex items-center gap-2 mb-1"><Stethoscope size={16}/> Health Notes</h4>
+                                <p className="bg-secondary/50 p-2 rounded-md">{session.healthNotes}</p>
+                            </div>
+                         )}
+                         {session.notes && (
+                            <div>
+                                <h4 className="font-semibold text-foreground flex items-center gap-2 mb-1"><StickyNote size={16}/> Internal Notes</h4>
+                                <p className="bg-secondary/50 p-2 rounded-md">{session.notes}</p>
+                            </div>
+                         )}
+                         {!session.healthNotes && !session.notes && <p>No notes for this session.</p>}
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
+        </Accordion>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-8 h-full overflow-hidden">
@@ -240,21 +299,33 @@ export default function PatientDetailPage() {
         </div>
 
         {/* Right Column: Session History */}
-        <div className="md:col-span-2 flex flex-col min-h-full">
-           <Card className="flex flex-col min-h-full">
+        <div className="md:col-span-2 flex flex-col min-h-0">
+          <Card className="flex flex-col min-h-full">
             <CardHeader>
-                <CardTitle>Coming soon</CardTitle>
-                <CardDescription>
-                Session history will be displayed here in a future update.
-                </CardDescription>
+              <CardTitle>Session History</CardTitle>
+              <CardDescription>
+                View upcoming and past appointments for this patient.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                    <CalendarIcon className="mx-auto h-12 w-12" />
-                    <p className="mt-4">Session history is under construction.</p>
+            <CardContent className="flex-1 flex flex-col min-h-0 pt-4">
+               <Tabs defaultValue="upcoming" className="w-full flex flex-col flex-1 min-h-0">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                  <TabsTrigger value="completed">Completed</TabsTrigger>
+                </TabsList>
+                 <div className="flex-1 mt-4 relative">
+                    <ScrollArea className="absolute inset-0 w-full h-full pr-4">
+                        <TabsContent value="upcoming">
+                           <SessionList sessions={upcomingSessions} />
+                        </TabsContent>
+                        <TabsContent value="completed">
+                            <SessionList sessions={completedSessions} />
+                        </TabsContent>
+                    </ScrollArea>
                 </div>
+              </Tabs>
             </CardContent>
-            </Card>
+          </Card>
         </div>
       </div>
     </div>

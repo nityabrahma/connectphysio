@@ -302,7 +302,7 @@ export default function AssignPackagePage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-8">
+      <div className="flex-1 overflow-y-auto space-y-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Patient Details</CardTitle>
