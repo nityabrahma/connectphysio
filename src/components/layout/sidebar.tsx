@@ -51,7 +51,7 @@ export function Sidebar() {
   const { user } = useAuth();
 
   return (
-    <aside className="hidden w-64 flex-col border-r bg-card md:flex">
+    <aside className="hidden w-64 flex-col border-r bg-card md:flex h-full overflow-y-auto">
       <div className="flex h-16 items-center border-b px-6">
         <Link
           href="/dashboard"
