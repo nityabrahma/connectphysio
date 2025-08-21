@@ -93,14 +93,6 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-                 {!isEditing && (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      Note: The date and time are automatically set to the current date and time.
-                    </AlertDescription>
-                  </Alert>
-                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                         control={form.control}
@@ -142,6 +134,13 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                             </FormItem>
                         )}
                     />
+                    
+                     {!isEditing && (
+                      <p className="text-sm text-destructive md:col-span-2 -mb-2">
+                        Note: The date and time are automatically set to the current date and time.
+                      </p>
+                    )}
+
                      <FormField
                         control={form.control}
                         name="date"
