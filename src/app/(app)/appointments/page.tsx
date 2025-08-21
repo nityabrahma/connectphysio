@@ -187,24 +187,26 @@ export default function AppointmentsPage() {
 
           return (
             <AccordionItem value={patientId} key={patientId} className="border-none">
-              <AccordionTrigger className="flex items-center justify-between p-3 bg-muted/30 rounded-lg w-full hover:no-underline">
-                  <div className="flex items-center gap-3 flex-1 text-left">
-                    <Avatar>
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {getInitials(patient.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{patient.name}</p>
-                      <p className="text-sm text-muted-foreground">{patientSessions.length} appointment(s) this {view}</p>
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg w-full">
+                <AccordionTrigger className="flex-1 p-0 hover:no-underline">
+                    <div className="flex items-center gap-3 text-left">
+                      <Avatar>
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                          {getInitials(patient.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">{patient.name}</p>
+                        <p className="text-sm text-muted-foreground">{patientSessions.length} appointment(s) this {view}</p>
+                      </div>
                     </div>
-                  </div>
-                   {canManagePayments && (
-                    <Button variant="ghost" size="sm" className="ml-2" onClick={(e) => { e.stopPropagation(); setBulkUpdatePatient(patient); }}>
-                      <DollarSign className="mr-2 h-4 w-4" /> Bulk Update
-                    </Button>
-                  )}
-              </AccordionTrigger>
+                </AccordionTrigger>
+                 {canManagePayments && (
+                  <Button variant="ghost" size="sm" className="ml-2" onClick={(e) => { e.stopPropagation(); setBulkUpdatePatient(patient); }}>
+                    <DollarSign className="mr-2 h-4 w-4" /> Bulk Update
+                  </Button>
+                )}
+              </div>
               <AccordionContent>
                   <ul className="space-y-2 pt-2 pl-4 border-l ml-5">
                       {patientSessions.map(session => (
