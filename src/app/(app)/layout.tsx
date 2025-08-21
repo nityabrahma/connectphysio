@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const showSidebar = !pathname.startsWith("/patient-details");
+  const showSidebar = !pathname.startsWith("/patient-details") && !pathname.startsWith("/assign-package");
 
   return (
     <AuthGate>
