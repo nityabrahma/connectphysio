@@ -82,6 +82,10 @@ export function Topbar() {
                 <Icons.logo className="h-10 w-10" />
                 <span className="text-lg">{user?.centreName || "ConnectPhysio"}</span>
                 </Link>
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">
+                    Main navigation links for the application.
+                </SheetDescription>
              </SheetHeader>
             <ScrollArea className="flex-1 p-4">
               <nav className="grid gap-2 text-lg font-medium">
