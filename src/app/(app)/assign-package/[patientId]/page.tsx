@@ -81,58 +81,84 @@ export default function AssignPackagePage() {
     if (selectedPackage && startDate) {
       const calculateDates = (count: number): Date[] => {
         const dates: Date[] = [];
-        let daysToAdd = 0;
+        let currentDate = new Date(startDate);
         
         while (dates.length < count) {
-          let potentialDate = new Date(startDate);
           let shouldAdd = false;
 
           switch(frequency) {
             case "daily":
-              potentialDate = addDays(new Date(startDate), daysToAdd);
               shouldAdd = true;
-              daysToAdd++;
+              currentDate = addDays(currentDate, 1);
               break;
             case "daily_business":
-              potentialDate = addDays(new Date(startDate), daysToAdd);
-              if (!isSaturday(potentialDate) && !isSunday(potentialDate)) {
+              if (!isSaturday(currentDate) && !isSunday(currentDate)) {
                 shouldAdd = true;
               }
-              daysToAdd++;
+              currentDate = addDays(currentDate, 1);
               break;
             case "every_2_days":
-               if (dates.length === 0) { // First date
-                 shouldAdd = true;
-               } else {
-                 potentialDate = addDays(dates[dates.length - 1], 2);
-                 shouldAdd = true;
+               shouldAdd = true;
+               if (dates.length > 0) {
+                 currentDate = addDays(dates[dates.length - 1], 2);
                }
                break;
             case "every_3_days":
-               if (dates.length === 0) { // First date
-                 shouldAdd = true;
-               } else {
-                 potentialDate = addDays(dates[dates.length - 1], 3);
-                 shouldAdd = true;
+               shouldAdd = true;
+               if (dates.length > 0) {
+                 currentDate = addDays(dates[dates.length - 1], 3);
                }
                break;
             case "weekly":
-               if (dates.length === 0) {
-                 shouldAdd = true;
-               } else {
-                 potentialDate = addDays(dates[dates.length - 1], 7);
-                 shouldAdd = true;
+               shouldAdd = true;
+               if (dates.length > 0) {
+                 currentDate = addDays(dates[dates.length - 1], 7);
                }
                break;
           }
           
           if (shouldAdd) {
-            dates.push(potentialDate);
+            dates.push(new Date(currentDate.getTime() - (frequency === 'daily' || frequency === 'daily_business' ? 86400000 : 0)));
           }
         }
         return dates;
       };
-      setSelectedDates(calculateDates(selectedPackage.sessions));
+
+      let initialDates: Date[] = [];
+      let currentDate = new Date(startDate);
+      let attempts = 0; // Prevent infinite loop
+
+      while(initialDates.length < selectedPackage.sessions && attempts < 365) {
+          let nextDate = new Date(currentDate);
+          
+          if (initialDates.length > 0) {
+              const lastDate = initialDates[initialDates.length - 1];
+              switch(frequency) {
+                  case 'daily': nextDate = addDays(lastDate, 1); break;
+                  case 'every_2_days': nextDate = addDays(lastDate, 2); break;
+                  case 'every_3_days': nextDate = addDays(lastDate, 3); break;
+                  case 'weekly': nextDate = addDays(lastDate, 7); break;
+                  case 'daily_business': 
+                      let tempDate = addDays(lastDate, 1);
+                      while (isWeekend(tempDate)) {
+                          tempDate = addDays(tempDate, 1);
+                      }
+                      nextDate = tempDate;
+                      break;
+              }
+          } else {
+             if (frequency === 'daily_business' && isWeekend(nextDate)) {
+                while (isWeekend(nextDate)) {
+                  nextDate = addDays(nextDate, 1);
+                }
+             }
+          }
+          
+          initialDates.push(nextDate);
+          currentDate = nextDate; // for the next loop
+          attempts++;
+      }
+      setSelectedDates(initialDates);
     } else {
       setSelectedDates([]);
     }
@@ -222,7 +248,6 @@ export default function AssignPackagePage() {
           startTime: selectedTime,
           endTime: format(endTimeDate, 'HH:mm'),
           status: 'scheduled',
-          paymentStatus: 'unpaid',
           packageSaleId: newSale.id,
           createdAt: new Date().toISOString(),
           notes: i === 0 ? `Package sale notes: ${notes}` : undefined,
@@ -266,8 +291,8 @@ export default function AssignPackagePage() {
   });
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-4 sticky top-0 bg-background py-4 z-10">
         <Button variant="outline" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -277,6 +302,7 @@ export default function AssignPackagePage() {
         </div>
       </div>
 
+      <div className="flex-1 overflow-y-auto space-y-8 pb-8">
        <Card>
           <CardHeader>
             <CardTitle className="text-xl">Patient Details</CardTitle>
@@ -426,6 +452,7 @@ export default function AssignPackagePage() {
           </Button>
         </CardFooter>
       </Card>
+      </div>
     </div>
   );
 }
