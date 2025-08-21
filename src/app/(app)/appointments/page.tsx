@@ -2,16 +2,14 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, LogOut, PlusCircle, MoreVertical, UserPlus, Walking } from "lucide-react";
+import { Check, LogOut, PlusCircle, MoreVertical, UserPlus, Footprints, Calendar as CalendarIcon, User } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Patient, Session, Therapist, PackageSale } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { usePatients } from "@/hooks/use-patients";
 import { Button } from "@/components/ui/button";
-import { SessionForm } from "./session-form";
 import { useToast } from "@/hooks/use-toast";
-import { generateId } from "@/lib/ids";
 import { useAuth } from "@/hooks/use-auth";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -75,35 +73,6 @@ export default function AppointmentsPage() {
     
     return dateFilteredSessions.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.startTime.localeCompare(b.startTime));
   }
-
-  const handleFormSubmit = (values: Omit<Session, 'id' | 'createdAt'>) => {
-    if (selectedSession) {
-      setSessions(sessions.map(s => s.id === selectedSession.id ? { ...selectedSession, ...values } : s));
-      toast({ title: "Session updated" });
-    } else {
-      const patient = patients.find(p => p.id === values.patientId);
-      let packageSaleId = patient?.packageSaleId;
-      
-      if(packageSaleId) {
-        const sale = packageSales.find(s => s.id === packageSaleId);
-        if (sale && sale.sessionsUsed < sale.sessionsTotal) {
-          setPackageSales(sales => sales.map(s => s.id === packageSaleId ? { ...s, sessionsUsed: s.sessionsUsed + 1 } : s));
-        } else {
-           toast({ variant: "destructive", title: "Package Limit Reached", description: "This patient has used all sessions in their package." });
-        }
-      }
-
-      const newSession: Session = {
-        ...values,
-        id: generateId(),
-        createdAt: new Date().toISOString(),
-        packageSaleId,
-      };
-      setSessions([...sessions, newSession]);
-      toast({ title: "Session scheduled" });
-    }
-    setIsFormOpen(false);
-  };
 
   const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
     if (status === 'completed') {
@@ -256,7 +225,7 @@ export default function AppointmentsPage() {
                 </DropdownMenuItem>
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
-                    <Walking />
+                    <Footprints />
                     Walk-in
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
