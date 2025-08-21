@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/providers/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'ConnectPhysio - Streamline Your Physiotherapy Practice',
+  title: 'TheraSuite - Streamline Your Physiotherapy Practice',
   description: 'The all-in-one platform for patient booking, scheduling, and therapy management. Simplify your workflow and focus on what matters most - your patients.',
   keywords: ['physiotherapy', 'clinic management', 'patient booking', 'scheduling software', 'therapy app'],
 };

@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -65,7 +66,7 @@ export default function LandingPage() {
   const testimonials = [
     {
       quote:
-        "ConnectPhysio has revolutionized how we manage our clinic. Scheduling is a breeze and our patient records have never been more organized.",
+        "TheraSuite has revolutionized how we manage our clinic. Scheduling is a breeze and our patient records have never been more organized.",
       name: "Dr. Emily Carter",
       title: "Lead Physiotherapist, HealWell Clinic",
       avatar: "https://placehold.co/100x100.png",
@@ -88,7 +89,7 @@ export default function LandingPage() {
 
   const faqs = [
     {
-      question: "Is ConnectPhysio suitable for a solo practitioner?",
+      question: "Is TheraSuite suitable for a solo practitioner?",
       answer:
         "Absolutely! While it's powerful enough for multi-clinic franchises, its intuitive design makes it a perfect tool for solo practitioners looking to streamline their operations and present a professional image to their clients.",
     },
@@ -105,7 +106,7 @@ export default function LandingPage() {
     {
       question: "Does it work on mobile devices?",
       answer:
-        "Yes, ConnectPhysio is fully responsive, allowing you and your staff to manage the clinic from a desktop, tablet, or smartphone, ensuring you're always connected.",
+        "Yes, TheraSuite is fully responsive, allowing you and your staff to manage the clinic from a desktop, tablet, or smartphone, ensuring you're always connected.",
     },
   ];
 
@@ -130,7 +131,7 @@ export default function LandingPage() {
                     Streamline Your Clinic, Elevate Your Care
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    ConnectPhysio is the all-in-one platform designed to
+                    TheraSuite is the all-in-one platform designed to
                     simplify your physiotherapy practice management, from
                     patient bookings to multi-clinic oversight.
                   </p>
@@ -138,7 +139,7 @@ export default function LandingPage() {
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Link href="/login">
                     <Button size="lg" className="w-full min-[400px]:w-auto">
-                      Get Started
+                      Access Dashboard
                     </Button>
                   </Link>
                   <Link href="#features">
@@ -162,7 +163,7 @@ export default function LandingPage() {
                   data-ai-hint="dashboard physiotherapy"
                   width="600"
                   height="400"
-                  alt="ConnectPhysio Dashboard"
+                  alt="TheraSuite Dashboard"
                   className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full"
                 />
               </motion.div>
@@ -231,7 +232,7 @@ export default function LandingPage() {
                 Trusted by Clinics of All Sizes
               </h2>
               <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                See what our satisfied users are saying about how ConnectPhysio
+                See what our satisfied users are saying about how TheraSuite
                 has improved their practice.
               </p>
             </motion.div>
@@ -326,12 +327,12 @@ export default function LandingPage() {
                 Ready to Transform Your Practice?
               </h2>
               <p className="mx-auto max-w-[600px] md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Join dozens of clinics who trust ConnectPhysio. Get started
+                Join dozens of clinics who trust TheraSuite. Get started
                 today and get back to what you do best.
               </p>
               <Link href="/login">
                 <Button size="lg" variant="secondary" className="mt-4">
-                  Start Your Free Trial <ArrowRight className="ml-2" />
+                  Go to Dashboard <ArrowRight className="ml-2" />
                 </Button>
               </Link>
             </motion.div>

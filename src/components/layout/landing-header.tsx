@@ -16,7 +16,7 @@ export function LandingHeader() {
       <div className="container mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center justify-center">
           <Icons.logo className="h-10 w-10 text-primary" />
-          <span className="ml-2 text-lg font-semibold">ConnectPhysio</span>
+          <span className="ml-2 text-lg font-semibold">TheraSuite</span>
         </Link>
         <nav className="hidden lg:flex gap-4 sm:gap-6">
           {navLinks.map(link => (
@@ -27,10 +27,7 @@ export function LandingHeader() {
         </nav>
          <div className="hidden lg:flex items-center gap-4">
             <Link href="/login">
-                <Button variant="ghost">Sign In</Button>
-            </Link>
-            <Link href="/register-admin">
-                <Button>Get Started</Button>
+                <Button>Sign In</Button>
             </Link>
         </div>
 
@@ -44,7 +41,7 @@ export function LandingHeader() {
           <SheetContent side="left">
             <SheetHeader className="sr-only">
               <SheetTitle>Mobile Navigation</SheetTitle>
-              <SheetDescription>Main menu for navigating the ConnectPhysio landing page.</SheetDescription>
+              <SheetDescription>Main menu for navigating the TheraSuite landing page.</SheetDescription>
             </SheetHeader>
             <nav className="grid gap-6 text-lg font-medium">
                 <Link
@@ -52,7 +49,7 @@ export function LandingHeader() {
                 className="flex items-center gap-2 text-lg font-semibold mb-4"
                 >
                 <Icons.logo className="h-9 w-9 text-primary" />
-                <span>ConnectPhysio</span>
+                <span>TheraSuite</span>
                 </Link>
                 {navLinks.map(link => (
                     <Link key={link.href} href={link.href} className="text-muted-foreground hover:text-foreground">
@@ -61,10 +58,7 @@ export function LandingHeader() {
                 ))}
                 <div className="flex flex-col gap-4 mt-4">
                     <Link href="/login">
-                        <Button variant="ghost" className="w-full">Sign In</Button>
-                    </Link>
-                    <Link href="/register-admin">
-                        <Button className="w-full">Get Started</Button>
+                        <Button className="w-full">Sign In</Button>
                     </Link>
                 </div>
             </nav>
