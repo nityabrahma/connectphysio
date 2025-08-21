@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 const formSchema = z.object({
-  healthNotes: z.string().optional(),
+  healthNotes: z.string().min(1, "Health notes are required to complete the session."),
 })
 
 type EndSessionFormValues = z.infer<typeof formSchema>
@@ -35,7 +35,7 @@ type EndSessionFormValues = z.infer<typeof formSchema>
 interface EndSessionFormProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (sessionId: string, healthNotes: string) => void;
+    onSubmit: (sessionId: string, healthNotes?: string) => void;
     session: Session;
     patient?: Patient;
 }
@@ -57,7 +57,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
     }, [session, form, isOpen]);
 
     const handleFormSubmit = (values: EndSessionFormValues) => {
-        onSubmit(session.id, values.healthNotes || "");
+        onSubmit(session.id, values.healthNotes);
     }
 
     return (

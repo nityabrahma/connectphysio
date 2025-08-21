@@ -151,7 +151,7 @@ export default function PatientDetailPage() {
         <Accordion type="single" collapsible className="w-full space-y-3">
             {sessions.map((session) => (
                 <AccordionItem value={session.id} key={session.id} className="border-none">
-                    <div className="p-3 bg-muted/30 rounded-lg w-full">
+                    <div className="p-3 bg-muted/30 rounded-lg w-full flex items-center justify-between">
                        <AccordionTrigger className="flex-1 p-0 hover:no-underline">
                           <div className="flex justify-between items-center w-full">
                             <div className="text-left">
@@ -161,6 +161,9 @@ export default function PatientDetailPage() {
                             <Badge variant="outline" className="capitalize mr-4">{session.status}</Badge>
                           </div>
                        </AccordionTrigger>
+                        <Button variant="outline" size="sm" onClick={() => router.push(`/appointments/edit/${session.id}`)} className="ml-4">
+                            <Edit className="h-4 w-4 mr-2" /> Edit
+                        </Button>
                     </div>
                     <AccordionContent className="py-2 px-4 text-sm text-muted-foreground space-y-3">
                          {session.healthNotes && (

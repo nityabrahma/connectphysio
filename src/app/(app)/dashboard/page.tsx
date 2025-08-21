@@ -50,7 +50,11 @@ const TodaysAppointmentsList = () => {
     toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
   };
   
-  const handleEndSessionSubmit = (sessionId: string, healthNotes: string) => {
+  const handleEndSessionSubmit = (sessionId: string, healthNotes: string | undefined) => {
+    if (!healthNotes || healthNotes.trim() === '') {
+       toast({ title: 'Health notes are required to complete the session.', variant: 'destructive' });
+       return;
+    }
     setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
     toast({ title: 'Session Completed' });
     setSessionToEnd(null);
