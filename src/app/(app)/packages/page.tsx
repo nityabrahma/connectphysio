@@ -89,7 +89,7 @@ export default function PackagesPage() {
                   <TableCell className="font-medium">{pkg.name}</TableCell>
                   <TableCell>{pkg.sessions}</TableCell>
                   <TableCell>{pkg.durationDays} days</TableCell>
-                  <TableCell>${pkg.price}</TableCell>
+                  <TableCell>₹{pkg.price}</TableCell>
                   {isAdmin && (
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => handleEditClick(pkg)}>
