@@ -74,7 +74,7 @@ export default function AssignPackagePage() {
 
   const patient = getPatient(patientId);
   const availablePackages = packages.filter((p) => p.centreId === user?.centreId);
-  
+
   const selectedPackage = availablePackages.find((p) => p.id === selectedPackageId);
 
   useEffect(() => {
@@ -82,11 +82,11 @@ export default function AssignPackagePage() {
       const calculateDates = (count: number): Date[] => {
         const dates: Date[] = [];
         let currentDate = new Date(startDate);
-        
+
         while (dates.length < count) {
           let shouldAdd = false;
 
-          switch(frequency) {
+          switch (frequency) {
             case "daily":
               shouldAdd = true;
               currentDate = addDays(currentDate, 1);
@@ -98,25 +98,25 @@ export default function AssignPackagePage() {
               currentDate = addDays(currentDate, 1);
               break;
             case "every_2_days":
-               shouldAdd = true;
-               if (dates.length > 0) {
-                 currentDate = addDays(dates[dates.length - 1], 2);
-               }
-               break;
+              shouldAdd = true;
+              if (dates.length > 0) {
+                currentDate = addDays(dates[dates.length - 1], 2);
+              }
+              break;
             case "every_3_days":
-               shouldAdd = true;
-               if (dates.length > 0) {
-                 currentDate = addDays(dates[dates.length - 1], 3);
-               }
-               break;
+              shouldAdd = true;
+              if (dates.length > 0) {
+                currentDate = addDays(dates[dates.length - 1], 3);
+              }
+              break;
             case "weekly":
-               shouldAdd = true;
-               if (dates.length > 0) {
-                 currentDate = addDays(dates[dates.length - 1], 7);
-               }
-               break;
+              shouldAdd = true;
+              if (dates.length > 0) {
+                currentDate = addDays(dates[dates.length - 1], 7);
+              }
+              break;
           }
-          
+
           if (shouldAdd) {
             dates.push(new Date(currentDate.getTime() - (frequency === 'daily' || frequency === 'daily_business' ? 86400000 : 0)));
           }
@@ -128,35 +128,35 @@ export default function AssignPackagePage() {
       let currentDate = new Date(startDate);
       let attempts = 0; // Prevent infinite loop
 
-      while(initialDates.length < selectedPackage.sessions && attempts < 365) {
-          let nextDate = new Date(currentDate);
-          
-          if (initialDates.length > 0) {
-              const lastDate = initialDates[initialDates.length - 1];
-              switch(frequency) {
-                  case 'daily': nextDate = addDays(lastDate, 1); break;
-                  case 'every_2_days': nextDate = addDays(lastDate, 2); break;
-                  case 'every_3_days': nextDate = addDays(lastDate, 3); break;
-                  case 'weekly': nextDate = addDays(lastDate, 7); break;
-                  case 'daily_business': 
-                      let tempDate = addDays(lastDate, 1);
-                      while (isWeekend(tempDate)) {
-                          tempDate = addDays(tempDate, 1);
-                      }
-                      nextDate = tempDate;
-                      break;
+      while (initialDates.length < selectedPackage.sessions && attempts < 365) {
+        let nextDate = new Date(currentDate);
+
+        if (initialDates.length > 0) {
+          const lastDate = initialDates[initialDates.length - 1];
+          switch (frequency) {
+            case 'daily': nextDate = addDays(lastDate, 1); break;
+            case 'every_2_days': nextDate = addDays(lastDate, 2); break;
+            case 'every_3_days': nextDate = addDays(lastDate, 3); break;
+            case 'weekly': nextDate = addDays(lastDate, 7); break;
+            case 'daily_business':
+              let tempDate = addDays(lastDate, 1);
+              while (isWeekend(tempDate)) {
+                tempDate = addDays(tempDate, 1);
               }
-          } else {
-             if (frequency === 'daily_business' && isWeekend(nextDate)) {
-                while (isWeekend(nextDate)) {
-                  nextDate = addDays(nextDate, 1);
-                }
-             }
+              nextDate = tempDate;
+              break;
           }
-          
-          initialDates.push(nextDate);
-          currentDate = nextDate; // for the next loop
-          attempts++;
+        } else {
+          if (frequency === 'daily_business' && isWeekend(nextDate)) {
+            while (isWeekend(nextDate)) {
+              nextDate = addDays(nextDate, 1);
+            }
+          }
+        }
+
+        initialDates.push(nextDate);
+        currentDate = nextDate; // for the next loop
+        attempts++;
       }
       setSelectedDates(initialDates);
     } else {
@@ -177,7 +177,7 @@ export default function AssignPackagePage() {
       setIsLoading(false);
       return;
     }
-    
+
     if (selectedDates.length !== selectedPackage.sessions) {
       toast({
         variant: 'destructive',
@@ -235,7 +235,7 @@ export default function AssignPackagePage() {
       (sessionDate, i) => {
         const assignedTherapist =
           availableTherapists[i % availableTherapists.length];
-        
+
         const endTimeDate = new Date(sessionDate);
         endTimeDate.setHours(startHour, startMinute + 60);
 
@@ -283,7 +283,7 @@ export default function AssignPackagePage() {
       </div>
     );
   }
-  
+
   const timeSlots = Array.from({ length: 18 }, (_, i) => {
     const hour = Math.floor(i / 2) + 8; // 8 AM to 5 PM
     const minute = (i % 2) * 30;
@@ -292,18 +292,18 @@ export default function AssignPackagePage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-4 sticky top-0 bg-background py-4 z-10">
+      <div className="flex items-center gap-4 sticky top-0 py-4 z-10">
         <Button variant="outline" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">Assign Package</h1>
-            <p className="text-muted-foreground">Assign a new therapy package to a patient.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Assign Package</h1>
+          <p className="text-muted-foreground">Assign a new therapy package to a patient.</p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-8 pb-8">
-       <Card>
+      <div className="flex-1 overflow-y-auto space-y-8">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl">Patient Details</CardTitle>
           </CardHeader>
@@ -314,56 +314,56 @@ export default function AssignPackagePage() {
             </div>
             <div>
               <Label className="text-sm text-muted-foreground">Email</Label>
-               <p className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  {patient.email}
-                </p>
+              <p className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-muted-foreground" />
+                {patient.email}
+              </p>
             </div>
-             <div>
+            <div>
               <Label className="text-sm text-muted-foreground">Phone</Label>
-                <p className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  {patient.phone}
-                </p>
+              <p className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-muted-foreground" />
+                {patient.phone}
+              </p>
             </div>
           </CardContent>
-      </Card>
+        </Card>
 
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Select a Package</CardTitle>
-          <CardDescription>
-            Choose from the available packages for your centre. This will pre-select dates on the calendar below.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="package-select">Package</Label>
-            <Select value={selectedPackageId} onValueChange={setSelectedPackageId}>
-              <SelectTrigger id="package-select">
-                <SelectValue placeholder="Select a package" />
-              </SelectTrigger>
-              <SelectContent>
-                {availablePackages.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name} - {p.sessions} sessions, {p.durationDays} days for ₹{p.price}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
-            <Textarea 
-              id="notes"
-              placeholder="Any notes related to this package sale..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>Select a Package</CardTitle>
+            <CardDescription>
+              Choose from the available packages for your centre. This will pre-select dates on the calendar below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="package-select">Package</Label>
+              <Select value={selectedPackageId} onValueChange={setSelectedPackageId}>
+                <SelectTrigger id="package-select">
+                  <SelectValue placeholder="Select a package" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePackages.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} - {p.sessions} sessions, {p.durationDays} days for ₹{p.price}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Any notes related to this package sale..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
 
-          {selectedPackage && (
-             <div className="space-y-4 pt-4 border-t">
+            {selectedPackage && (
+              <div className="space-y-4 pt-4 border-t">
                 <div>
                   <h3 className="font-semibold text-lg">Schedule Sessions</h3>
                   <p className="text-muted-foreground text-sm">
@@ -373,47 +373,47 @@ export default function AssignPackagePage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div className="md:col-span-1 space-y-4">
-                     <div className="space-y-2">
-                       <Label>Start Date</Label>
-                       <Popover>
+                    <div className="space-y-2">
+                      <Label>Start Date</Label>
+                      <Popover>
                         <PopoverTrigger asChild>
-                            <Button
+                          <Button
                             variant={"outline"}
                             className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !startDate && "text-muted-foreground"
+                              "w-full justify-start text-left font-normal",
+                              !startDate && "text-muted-foreground"
                             )}
-                            >
+                          >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
-                            </Button>
+                          </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
-                            <Calendar
+                          <Calendar
                             mode="single"
                             selected={startDate}
                             onSelect={setStartDate}
                             disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
                             initialFocus
-                            />
+                          />
                         </PopoverContent>
-                       </Popover>
-                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="frequency-select">Frequency</Label>
-                        <Select value={frequency} onValueChange={(value: Frequency) => setFrequency(value)}>
-                          <SelectTrigger id="frequency-select">
-                            <SelectValue placeholder="Select frequency" />
-                          </SelectTrigger>
-                          <SelectContent>
-                             <SelectItem value="daily">Daily (incl. weekends)</SelectItem>
-                             <SelectItem value="daily_business">Daily (business days only)</SelectItem>
-                             <SelectItem value="every_2_days">Every 2 Days</SelectItem>
-                             <SelectItem value="every_3_days">Every 3 Days</SelectItem>
-                             <SelectItem value="weekly">Weekly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      </Popover>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="frequency-select">Frequency</Label>
+                      <Select value={frequency} onValueChange={(value: Frequency) => setFrequency(value)}>
+                        <SelectTrigger id="frequency-select">
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily (incl. weekends)</SelectItem>
+                          <SelectItem value="daily_business">Daily (business days only)</SelectItem>
+                          <SelectItem value="every_2_days">Every 2 Days</SelectItem>
+                          <SelectItem value="every_3_days">Every 3 Days</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="time-select">Session Time</Label>
                       <Select value={selectedTime} onValueChange={setSelectedTime}>
@@ -430,28 +430,28 @@ export default function AssignPackagePage() {
                   </div>
                   <div className="md:col-span-3 flex justify-center">
                     <Calendar
-                        mode="multiple"
-                        selected={selectedDates}
-                        onSelect={setSelectedDates}
-                        disabled={{ before: new Date() }}
-                        className="rounded-md"
-                        numberOfMonths={2}
+                      mode="multiple"
+                      selected={selectedDates}
+                      onSelect={setSelectedDates}
+                      disabled={{ before: new Date() }}
+                      className="rounded-md"
+                      numberOfMonths={2}
                     />
                   </div>
                 </div>
-             </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-end gap-4">
-          <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!selectedPackageId || isLoading}
-          >
-            {isLoading ? 'Assigning...' : 'Assign & Schedule Sessions'}
-          </Button>
-        </CardFooter>
-      </Card>
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="flex justify-end gap-4">
+            <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={!selectedPackageId || isLoading}
+            >
+              {isLoading ? 'Assigning...' : 'Assign & Schedule Sessions'}
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );
