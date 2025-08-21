@@ -2,19 +2,16 @@
 'use client';
 
 import { usePatients } from "@/hooks/use-patients";
-import { columns } from "./columns";
-import { DataTable } from "./data-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PatientForm } from "./patient-form";
 import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
 import { AssignPackageModal } from "./assign-package-modal";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { useReactTable, getCoreRowModel, getPaginationRowModel } from "@tanstack/react-table";
-
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { PatientCard } from "./patient-card";
 
 export default function PatientsPage() {
     const { user } = useAuth();
@@ -23,6 +20,8 @@ export default function PatientsPage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
+    const [currentPage, setCurrentPage] = useState(1);
+    const PATIENTS_PER_PAGE = 10;
 
     const handleAddPatient = () => {
         setSelectedPatient(undefined);
@@ -57,24 +56,19 @@ export default function PatientsPage() {
     };
     
     const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
-    
-    const tableColumns = columns({ 
-        onEdit: handleEditPatient, 
-        onDelete: handleDeletePatient,
-        onAssignPackage: handleAssignPackage,
-        onView: handleViewPatient,
-        canManage: canManagePatients,
-    });
 
-    const table = useReactTable({
-        data: patients,
-        columns: tableColumns,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-    });
+    const paginatedPatients = useMemo(() => {
+        const startIndex = (currentPage - 1) * PATIENTS_PER_PAGE;
+        const endIndex = startIndex + PATIENTS_PER_PAGE;
+        return patients.slice(startIndex, endIndex);
+    }, [patients, currentPage]);
+
+    const totalPages = Math.ceil(patients.length / PATIENTS_PER_PAGE);
+    const canGoNext = currentPage < totalPages;
+    const canGoPrev = currentPage > 1;
 
     return (
-        <div className="flex flex-col gap-8 h-full overflow-hidden">
+        <div className="flex flex-col gap-8 h-full">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Patients</h1>
@@ -89,28 +83,52 @@ export default function PatientsPage() {
             </div>
             
             <Card className="flex-1 flex flex-col min-h-0">
-                <CardContent className="flex-1 min-h-0 p-4 md:p-6 overflow-y-auto relative">
-                    <DataTable 
-                        columns={tableColumns} 
-                        data={patients} 
-                        table={table}
-                    />
+                 <CardHeader className="border-b">
+                    <div className="grid grid-cols-4 gap-4 px-4 font-semibold text-sm text-muted-foreground">
+                        <div className="col-span-2">Name</div>
+                        <div>Package Status</div>
+                        <div className="text-right">Actions</div>
+                    </div>
+                </CardHeader>
+                <CardContent className="flex-1 min-h-0 p-2 md:p-4 overflow-y-auto">
+                    {paginatedPatients.length > 0 ? (
+                        <div className="space-y-2">
+                             {paginatedPatients.map(patient => (
+                                <PatientCard 
+                                    key={patient.id}
+                                    patient={patient}
+                                    onView={handleViewPatient}
+                                    onEdit={handleEditPatient}
+                                    onAssignPackage={handleAssignPackage}
+                                    onDelete={handleDeletePatient}
+                                    canManage={canManagePatients}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                         <div className="flex items-center justify-center h-full text-muted-foreground">
+                            No patients found.
+                        </div>
+                    )}
                 </CardContent>
                 <CardFooter className="py-4 border-t">
                     <div className="flex items-center justify-end space-x-2 w-full">
+                         <div className="flex-1 text-sm text-muted-foreground">
+                            Page {currentPage} of {totalPages}
+                        </div>
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => table.previousPage()}
-                            disabled={!table.getCanPreviousPage()}
+                            onClick={() => setCurrentPage(prev => prev - 1)}
+                            disabled={!canGoPrev}
                         >
                             Previous
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => table.nextPage()}
-                            disabled={!table.getCanNextPage()}
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                            disabled={!canGoNext}
                         >
                             Next
                         </Button>

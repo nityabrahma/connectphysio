@@ -1,3 +1,4 @@
+
 "use client"
 
 import type { Patient } from "@/types/domain"

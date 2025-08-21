@@ -1,77 +1,115 @@
-
 "use client"
 
+import type { Patient } from "@/types/domain"
+import { MoreHorizontal, PackageCheck, Eye, Edit, Trash2, Mail, Phone } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  Table as ReactTable,
-  useReactTable,
-} from "@tanstack/react-table"
-
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  table: ReactTable<TData>
+interface PatientCardProps {
+    patient: Patient;
+    onView: (patient: Patient) => void;
+    onEdit: (patient: Patient) => void;
+    onAssignPackage: (patient: Patient) => void;
+    onDelete: (patientId: string) => void;
+    canManage: boolean;
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  table
-}: DataTableProps<TData, TValue>) {
-  return (
-      <Table>
-          <TableHeader className="sticky top-0 bg-background z-10">
-          {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                  return (
-                  <TableHead key={header.id}>
-                      {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                          )}
-                  </TableHead>
-                  )
-              })}
-              </TableRow>
-          ))}
-          </TableHeader>
-          <TableBody>
-          {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-              <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-              >
-                  {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                  ))}
-              </TableRow>
-              ))
-          ) : (
-              <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No patients found.
-              </TableCell>
-              </TableRow>
-          )}
-          </TableBody>
-      </Table>
-  )
+export function PatientCard({ patient, onView, onEdit, onAssignPackage, onDelete, canManage }: PatientCardProps) {
+
+    const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+    return (
+         <div className="grid grid-cols-4 gap-4 items-center p-4 rounded-lg bg-card hover:bg-muted/50 transition-colors">
+            <div className="col-span-2 flex items-center gap-4">
+                 <Avatar>
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {getInitials(patient.name)}
+                    </AvatarFallback>
+                </Avatar>
+                <div>
+                     <button onClick={() => onView(patient)} className="hover:underline font-semibold text-primary text-left">
+                        {patient.name}
+                    </button>
+                    <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
+                       <span className="flex items-center gap-1.5"><Mail className="w-3 h-3"/> {patient.email}</span>
+                       <span className="flex items-center gap-1.5"><Phone className="w-3 h-3"/> {patient.phone}</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                {patient.packageSaleId ? <Badge>Active</Badge> : <Badge variant="secondary">None</Badge>}
+            </div>
+            <div className="text-right">
+                <AlertDialog>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onSelect={() => onView(patient)}>
+                            <Eye/>View History
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {canManage && (
+                            <>
+                            <DropdownMenuItem onSelect={() => onEdit(patient)}>
+                                <Edit/>Edit details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onAssignPackage(patient)}>
+                                <PackageCheck/>Assign Package
+                            </DropdownMenuItem>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                    <Trash2/>Delete patient
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            </>
+                        )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the patient record for {patient.name}.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive hover:bg-destructive/90"
+                            onClick={() => onDelete(patient.id)}
+                        >
+                            Delete
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        </div>
+    )
 }
