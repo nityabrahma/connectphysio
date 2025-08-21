@@ -104,47 +104,16 @@ export function PatientCard({ patient, onView, onEdit, onAssignPackage, onNewApp
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => onView(patient)}>
-                                    <Eye className="mr-2"/>View Details
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => onNewAppointment(patient)}>
                                     <PlusCircle className="mr-2"/>New Appointment
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
                                 {canManage && (
-                                    <>
-                                        <DropdownMenuItem onSelect={() => onEdit(patient)}>
-                                            <Edit className="mr-2"/>Edit Patient
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => onAssignPackage(patient)}>
-                                            <PackageCheck className="mr-2"/>Assign Package
-                                        </DropdownMenuItem>
-                                        <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                                <Trash2 className="mr-2"/>Delete Patient
-                                            </DropdownMenuItem>
-                                        </AlertDialogTrigger>
-                                    </>
+                                    <DropdownMenuItem onSelect={() => onAssignPackage(patient)}>
+                                        <PackageCheck className="mr-2"/>Assign Package
+                                    </DropdownMenuItem>
                                 )}
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the patient record for {patient.name}.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    className="bg-destructive hover:bg-destructive/90"
-                                    onClick={() => onDelete(patient.id)}
-                                >
-                                    Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
                     </AlertDialog>
                 )}
             </div>
