@@ -54,7 +54,7 @@ export default function PatientsPage() {
         }
         setIsFormOpen(false);
     };
-    
+
     const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
 
     const paginatedPatients = useMemo(() => {
@@ -81,20 +81,26 @@ export default function PatientsPage() {
                     </Button>
                 )}
             </div>
-            
-            <Card className="flex-1 flex flex-col min-h-0">
-                 <CardHeader className="border-b">
-                    <div className="grid grid-cols-4 gap-4 px-4 font-semibold text-sm text-muted-foreground">
-                        <div className="col-span-2">Name</div>
+
+            <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <CardHeader className="border-b">
+                    <div
+                        className="grid px-4 font-semibold text-sm text-muted-foreground"
+                        style={{ gridTemplateColumns: "3fr 1.5fr 1fr 1fr" }}
+                    >
+                        <div>Name</div>
+                        <div>Phone</div>
                         <div>Package Status</div>
                         <div className="text-right">Actions</div>
                     </div>
                 </CardHeader>
-                <CardContent className="flex-1 min-h-0 p-2 md:p-4 overflow-y-auto">
+
+
+                <CardContent className="flex-1 p-2 md:p-4 overflow-y-auto">
                     {paginatedPatients.length > 0 ? (
                         <div className="space-y-2">
-                             {paginatedPatients.map(patient => (
-                                <PatientCard 
+                            {paginatedPatients.map(patient => (
+                                <PatientCard
                                     key={patient.id}
                                     patient={patient}
                                     onView={handleViewPatient}
@@ -106,38 +112,40 @@ export default function PatientsPage() {
                             ))}
                         </div>
                     ) : (
-                         <div className="flex items-center justify-center h-full text-muted-foreground">
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
                             No patients found.
                         </div>
                     )}
                 </CardContent>
-                <CardFooter className="py-4 border-t">
-                    <div className="flex items-center justify-end space-x-2 w-full">
-                         <div className="flex-1 text-sm text-muted-foreground">
-                            Page {currentPage} of {totalPages}
+                {totalPages > 1 && (
+                    <CardFooter className="py-4 border-t">
+                        <div className="flex items-center justify-end space-x-2 w-full">
+                            <div className="flex-1 text-sm text-muted-foreground">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                                disabled={!canGoPrev}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                disabled={!canGoNext}
+                            >
+                                Next
+                            </Button>
                         </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(prev => prev - 1)}
-                            disabled={!canGoPrev}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(prev => prev + 1)}
-                            disabled={!canGoNext}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </CardFooter>
+                    </CardFooter>
+                )}
             </Card>
 
             {canManagePatients && (
-                 <PatientForm 
+                <PatientForm
                     isOpen={isFormOpen}
                     onOpenChange={setIsFormOpen}
                     onSubmit={handleFormSubmit}

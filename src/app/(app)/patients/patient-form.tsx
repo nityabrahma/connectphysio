@@ -94,16 +94,16 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col py-4 px-0 space-y-0 rounded-lg">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Patient' : 'Add New Patient'}</DialogTitle>
                     <DialogDescription>
                         {isEditing ? 'Update the details of the existing patient.' : 'Enter the details for the new patient.'}
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-1 pr-6 -mr-6">
+                <ScrollArea className="flex-1 overflow-y-auto p-2">
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
+                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 flex-1 px-4">
                             <FormField
                                 control={form.control}
                                 name="name"
@@ -182,12 +182,10 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
                                     </FormItem>
                                 )}
                             />
+                            <Button className="w-full" type="submit">{isEditing ? 'Save Changes' : 'Create Patient'}</Button>
                         </form>
                     </Form>
                 </ScrollArea>
-                <DialogFooter className="pt-4 mt-auto">
-                    <Button onClick={form.handleSubmit(handleFormSubmit)} className="w-full" type="submit">{isEditing ? 'Save Changes' : 'Create Patient'}</Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     )
