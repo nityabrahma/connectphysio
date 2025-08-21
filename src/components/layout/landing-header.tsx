@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { Icons } from "../icons";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "../ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetTrigger,
+} from "../ui/sheet";
 import { Menu } from "lucide-react";
 
 const navLinks = [
@@ -16,19 +23,23 @@ export function LandingHeader() {
       <div className="container mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center justify-center">
           <Icons.logo className="h-10 w-10 text-primary" />
-          <span className="ml-2 text-lg font-semibold">TheraSuite</span>
+          <span className="ml-2 text-lg font-semibold">ConnectPhysio</span>
         </Link>
         <nav className="hidden lg:flex gap-4 sm:gap-6">
-          {navLinks.map(link => (
-            <Link key={link.href} href={link.href} className="text-sm font-medium hover:underline underline-offset-4">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-sm font-medium hover:underline underline-offset-4"
+            >
               {link.label}
             </Link>
           ))}
         </nav>
-         <div className="hidden lg:flex items-center gap-4">
-            <Link href="/login">
-                <Button>Sign In</Button>
-            </Link>
+        <div className="hidden lg:flex items-center gap-4">
+          <Link href="/login">
+            <Button>Sign In</Button>
+          </Link>
         </div>
 
         <Sheet>
@@ -41,30 +52,35 @@ export function LandingHeader() {
           <SheetContent side="left">
             <SheetHeader className="sr-only">
               <SheetTitle>Mobile Navigation</SheetTitle>
-              <SheetDescription>Main menu for navigating the TheraSuite landing page.</SheetDescription>
+              <SheetDescription>
+                Main menu for navigating the ConnectPhysio landing page.
+              </SheetDescription>
             </SheetHeader>
             <nav className="grid gap-6 text-lg font-medium">
-                <Link
+              <Link
                 href="#"
                 className="flex items-center gap-2 text-lg font-semibold mb-4"
-                >
+              >
                 <Icons.logo className="h-9 w-9 text-primary" />
-                <span>TheraSuite</span>
+                <span>ConnectPhysio</span>
+              </Link>
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  {link.label}
                 </Link>
-                {navLinks.map(link => (
-                    <Link key={link.href} href={link.href} className="text-muted-foreground hover:text-foreground">
-                    {link.label}
-                    </Link>
-                ))}
-                <div className="flex flex-col gap-4 mt-4">
-                    <Link href="/login">
-                        <Button className="w-full">Sign In</Button>
-                    </Link>
-                </div>
+              ))}
+              <div className="flex flex-col gap-4 mt-4">
+                <Link href="/login">
+                  <Button className="w-full">Sign In</Button>
+                </Link>
+              </div>
             </nav>
           </SheetContent>
         </Sheet>
-
       </div>
     </header>
   );

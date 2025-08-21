@@ -1,4 +1,4 @@
-# **App Name**: TheraSuite
+# **App Name**: ConnectPhysio
 
 ## Core Features:
 
