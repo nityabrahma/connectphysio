@@ -92,7 +92,7 @@ export default function PackagesPage() {
                   <TableCell>₹{pkg.price}</TableCell>
                   {isAdmin && (
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(pkg)}>
+                      <Button variant="outline" size="sm" onClick={() => handleEditClick(pkg)}>
                         Edit
                       </Button>
                     </TableCell>
