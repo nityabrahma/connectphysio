@@ -15,18 +15,9 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/components/ui/dialog"
 import { useEffect } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/hooks/use-auth"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
@@ -37,16 +28,14 @@ const formSchema = z.object({
     notes: z.string().optional(),
 })
 
-type PatientFormValues = z.infer<typeof formSchema>
+export type PatientFormValues = z.infer<typeof formSchema>
 
 interface PatientFormProps {
-    isOpen: boolean;
-    onOpenChange: (isOpen: boolean) => void;
     onSubmit: (values: PatientFormValues & { centreId: string }) => void;
     patient?: Patient;
 }
 
-export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: PatientFormProps) {
+export function PatientForm({ onSubmit, patient }: PatientFormProps) {
     const { user: currentUser } = useAuth();
     const form = useForm<PatientFormValues>({
         resolver: zodResolver(formSchema),
@@ -61,28 +50,17 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
     });
 
     useEffect(() => {
-        if (isOpen) {
-            if (patient) {
-                form.reset({
-                    name: patient.name || "",
-                    email: patient.email || "",
-                    phone: patient.phone || "",
-                    age: patient.age || '',
-                    medicalInfo: patient.medicalInfo || "",
-                    notes: patient.notes || "",
-                });
-            } else {
-                form.reset({
-                    name: "",
-                    email: "",
-                    phone: "",
-                    age: '',
-                    medicalInfo: "",
-                    notes: "",
-                });
-            }
+        if (patient) {
+            form.reset({
+                name: patient.name || "",
+                email: patient.email || "",
+                phone: patient.phone || "",
+                age: patient.age || '',
+                medicalInfo: patient.medicalInfo || "",
+                notes: patient.notes || "",
+            });
         }
-    }, [patient, form, isOpen]);
+    }, [patient, form]);
 
 
     const isEditing = !!patient;
@@ -93,100 +71,92 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col py-4 px-0 space-y-0 rounded-lg">
-                <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Edit Patient' : 'Add New Patient'}</DialogTitle>
-                    <DialogDescription>
-                        {isEditing ? 'Update the details of the existing patient.' : 'Enter the details for the new patient.'}
-                    </DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="flex-1 overflow-y-auto p-2">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 flex-1 px-4">
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Full Name</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="John Doe" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Email</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="john.doe@example.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="phone"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Phone</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="555-123-4567" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="age"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Age</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="35" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="medicalInfo"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Medical Info (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Textarea placeholder="Any relevant medical history..." {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="notes"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Notes (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Textarea placeholder="Initial consultation notes..." {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button className="w-full" type="submit">{isEditing ? 'Save Changes' : 'Create Patient'}</Button>
-                        </form>
-                    </Form>
-                </ScrollArea>
-            </DialogContent>
-        </Dialog>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Full Name</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="John Doe" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="age"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Age</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="35" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="john.doe@example.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Phone</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="555-123-4567" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                <FormField
+                    control={form.control}
+                    name="medicalInfo"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Medical Info (Optional)</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="Any relevant medical history..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Notes (Optional)</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="Initial consultation notes..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className="flex justify-end">
+                    <Button type="submit">{isEditing ? 'Save Changes' : 'Create Patient'}</Button>
+                </div>
+            </form>
+        </Form>
     )
 }

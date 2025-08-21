@@ -5,7 +5,6 @@ import { usePatients } from "@/hooks/use-patients";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { PatientForm } from "./patient-form";
 import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
@@ -16,21 +15,17 @@ import { Input } from "@/components/ui/input";
 export default function PatientsPage() {
     const { user } = useAuth();
     const router = useRouter();
-    const { patients, addPatient, updatePatient, deletePatient } = usePatients();
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
+    const { patients, deletePatient } = usePatients();
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
     const PATIENTS_PER_PAGE = 10;
 
     const handleAddPatient = () => {
-        setSelectedPatient(undefined);
-        setIsFormOpen(true);
+        router.push('/patients/new');
     };
 
     const handleEditPatient = (patient: Patient) => {
-        setSelectedPatient(patient);
-        setIsFormOpen(true);
+        router.push(`/patients/edit/${patient.id}`);
     };
 
     const handleDeletePatient = (patientId: string) => {
@@ -49,25 +44,11 @@ export default function PatientsPage() {
         router.push(`/patient-details/${patient.id}`);
     };
 
-    const handleFormSubmit = (values: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
-        if (selectedPatient) {
-            updatePatient(selectedPatient.id, values);
-        } else {
-            const newPatient = addPatient(values);
-            if (newPatient) {
-                router.push(`/patient-details/${newPatient.id}`);
-            }
-        }
-        setIsFormOpen(false);
-    };
-
     const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
 
     const filteredPatients = useMemo(() => {
         return patients.filter(patient =>
-            patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            patient.phone.includes(searchTerm)
+            patient.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [patients, searchTerm]);
 
@@ -102,10 +83,13 @@ export default function PatientsPage() {
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
-                                placeholder="Search by name, email, or phone..."
+                                placeholder="Search by name..."
                                 className="pl-10"
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                             />
                         </div>
                     </div>
@@ -160,15 +144,6 @@ export default function PatientsPage() {
                     </CardFooter>
                 )}
             </Card>
-
-            {canManagePatients && (
-                <PatientForm
-                    isOpen={isFormOpen}
-                    onOpenChange={setIsFormOpen}
-                    onSubmit={handleFormSubmit}
-                    patient={selectedPatient}
-                />
-            )}
         </div>
     );
 }

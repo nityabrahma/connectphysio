@@ -41,7 +41,6 @@ import { useParams, useRouter } from "next/navigation";
 import { usePatients } from "@/hooks/use-patients";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { SessionForm } from "@/app/(app)/appointments/session-form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -81,58 +80,10 @@ export default function PatientDetailPage() {
   );
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
 
-  const [isSessionFormOpen, setIsSessionFormOpen] = useState(false);
   const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
-  const [selectedSession, setSelectedSession] = useState<Session | undefined>(
-    undefined
-  );
-
-  const centreTherapists = useMemo(() => {
-    return therapists.filter((t) => t.centreId === user?.centreId);
-  }, [therapists, user]);
-
-  const patientSessions = useMemo(() => {
-    return sessions
-      .filter((s) => s.patientId === patient?.id)
-      .sort((a, b) => {
-        const dateA = parseISO(`${a.date}T${a.startTime}`);
-        const dateB = parseISO(`${b.date}T${b.startTime}`);
-        const aIsFuture = isFuture(dateA);
-        const bIsFuture = isFuture(dateB);
-
-        if (aIsFuture && !bIsFuture) return -1; // Future dates first
-        if (!aIsFuture && bIsFuture) return 1;
-
-        if (aIsFuture && bIsFuture) {
-          return dateA.getTime() - dateB.getTime(); // Sort upcoming dates chronologically
-        }
-
-        // Both are in the past, sort by most recent
-        return dateB.getTime() - a.startTime.localeCompare(b.startTime);
-      });
-  }, [sessions, patient]);
-
-  const handleEditSessionClick = (session: Session) => {
-    setSelectedSession(session);
-    setIsSessionFormOpen(true);
-  };
   
   const handleNewAppointmentClick = () => {
     router.push(`/appointments/new?patientId=${patientId}`);
-  };
-
-  const handleSessionFormSubmit = (
-    values: Omit<Session, "id" | "createdAt" | "status">
-  ) => {
-    if (selectedSession) {
-      setSessions(
-        sessions.map((s) =>
-          s.id === selectedSession.id ? { ...selectedSession, ...values } : s
-        )
-      );
-      toast({ title: "Session updated" });
-    }
-    setIsSessionFormOpen(false);
   };
   
   const handlePatientFormSubmit = (values: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -142,12 +93,6 @@ export default function PatientDetailPage() {
     setIsPatientFormOpen(false);
   };
 
-  const handleSessionDelete = (sessionId: string) => {
-    setSessions(sessions.filter((s) => s.id !== sessionId));
-    toast({ title: "Session cancelled", variant: "destructive" });
-    setIsSessionFormOpen(false);
-  };
-  
   const handleDeletePatient = () => {
     if(patient) {
         deletePatient(patient.id);
@@ -171,10 +116,6 @@ export default function PatientDetailPage() {
       </div>
     );
   }
-
-  const getTherapistName = (therapistId: string) => {
-    return therapists.find((t) => t.id === therapistId)?.name || "Unknown";
-  };
 
   const getInitials = (name: string) =>
     name
@@ -206,7 +147,7 @@ export default function PatientDetailPage() {
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Patient Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => setIsPatientFormOpen(true)}>
+                        <DropdownMenuItem onSelect={() => router.push(`/patients/edit/${patient.id}`)}>
                             <Edit className="mr-2 h-4 w-4" /> Edit Details
                         </DropdownMenuItem>
                          <DropdownMenuItem onSelect={() => router.push(`/assign-package/${patient.id}`)}>
@@ -237,7 +178,7 @@ export default function PatientDetailPage() {
             </AlertDialog>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
         {/* Left Column: Patient Info */}
         <div className="md:col-span-1 space-y-6 flex-[1/3]">
           <Card>
@@ -300,97 +241,22 @@ export default function PatientDetailPage() {
 
         {/* Right Column: Session History */}
         <div className="md:col-span-2 flex flex-col min-h-full">
-          <Card className="flex flex-col min-h-full">
+           <Card className="flex flex-col min-h-full">
             <CardHeader>
-              <CardTitle>Session History</CardTitle>
-              <CardDescription>
-                A log of all past and upcoming appointments for {patient.name}.
-              </CardDescription>
+                <CardTitle>Coming soon</CardTitle>
+                <CardDescription>
+                Session history will be displayed here in a future update.
+                </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0 p-0">
-              <ScrollArea className="h-full w-full px-6">
-                <Accordion type="single" collapsible className="w-full">
-                  {patientSessions.length > 0 ? (
-                    patientSessions.map((session) => (
-                      <AccordionItem value={session.id} key={session.id}>
-                        <AccordionTrigger className="w-full hover:no-underline p-4 rounded-lg hover:bg-muted/50 my-1">
-                          <div className="grid grid-cols-3 items-center flex-1 text-left text-sm">
-                            <span className="font-medium">
-                              {format(
-                                new Date(session.date),
-                                "EEE, MMM d, yyyy"
-                              )}
-                            </span>
-                            <span>{getTherapistName(session.therapistId)}</span>
-                            <span>
-                              <Badge variant="outline" className="capitalize">
-                                {session.status}
-                              </Badge>
-                            </span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="p-1">
-                          <div className="p-6 bg-muted/50 grid grid-cols-1 md:grid-cols-2 gap-6 rounded-lg">
-                            <div>
-                              <h4 className="font-semibold flex items-center gap-2 mb-2">
-                                <Stethoscope className="w-4 h-4" /> Health Notes
-                              </h4>
-                              <p className="text-sm text-muted-foreground p-3 bg-background rounded-md min-h-[5rem]">
-                                {session.healthNotes ||
-                                  "No health notes for this session."}
-                              </p>
-                            </div>
-                            <div className="flex flex-col">
-                              <h4 className="font-semibold flex items-center gap-2 mb-2">
-                                <StickyNote className="w-4 h-4" /> Internal
-                                Notes
-                              </h4>
-                              <p className="text-sm text-muted-foreground p-3 bg-background rounded-md min-h-[5rem] flex-1">
-                                {session.notes ||
-                                  "No internal notes for this session."}
-                              </p>
-                              <div className="flex justify-end mt-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEditSessionClick(session)}
-                                >
-                                  <Edit className="mr-2 h-3 w-3" />
-                                  Edit Session
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-muted-foreground h-48">
-                      <CalendarIcon className="w-12 h-12 mb-2" />
-                      <p>No session history found for this patient.</p>
-                    </div>
-                  )}
-                </Accordion>
-              </ScrollArea>
+            <CardContent className="flex-1 flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                    <CalendarIcon className="mx-auto h-12 w-12" />
+                    <p className="mt-4">Session history is under construction.</p>
+                </div>
             </CardContent>
-          </Card>
+            </Card>
         </div>
       </div>
-      <SessionForm
-        isOpen={isSessionFormOpen}
-        onOpenChange={setIsSessionFormOpen}
-        onSubmit={handleSessionFormSubmit}
-        onDelete={handleSessionDelete}
-        session={selectedSession}
-        patients={[patient]}
-        therapists={centreTherapists}
-      />
-      <PatientForm
-        isOpen={isPatientFormOpen}
-        onOpenChange={setIsPatientFormOpen}
-        onSubmit={handlePatientFormSubmit}
-        patient={patient}
-       />
     </div>
   );
 }
