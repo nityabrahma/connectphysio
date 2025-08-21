@@ -317,7 +317,7 @@ export default function AppointmentsPage() {
         )}
       </div>
       
-      <Card className="flex-1 flex flex-col min-h-0">
+      <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-8 flex-1">
             <div className="md:col-span-1 flex justify-center">
                  <Calendar
