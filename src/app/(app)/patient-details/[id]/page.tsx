@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -22,6 +23,10 @@ import {
   StickyNote,
   ArrowLeft,
   Edit,
+  Trash2,
+  PackagePlus,
+  PlusCircle,
+  MoreVertical,
 } from "lucide-react";
 import {
   Accordion,
@@ -38,13 +43,34 @@ import Link from "next/link";
 import { SessionForm } from "@/app/(app)/appointments/session-form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { PatientForm } from "../patients/patient-form";
+
 
 export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { getPatient } = usePatients();
+  const { getPatient, deletePatient, updatePatient } = usePatients();
   const patientId = params.id as string;
   const patient = getPatient(patientId);
 
@@ -54,7 +80,8 @@ export default function PatientDetailPage() {
   );
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSessionFormOpen, setIsSessionFormOpen] = useState(false);
+  const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | undefined>(
     undefined
   );
@@ -80,16 +107,20 @@ export default function PatientDetailPage() {
         }
 
         // Both are in the past, sort by most recent
-        return dateB.getTime() - dateA.getTime();
+        return dateB.getTime() - a.startTime.localeCompare(b.startTime);
       });
   }, [sessions, patient]);
 
-  const handleEditClick = (session: Session) => {
+  const handleEditSessionClick = (session: Session) => {
     setSelectedSession(session);
-    setIsFormOpen(true);
+    setIsSessionFormOpen(true);
+  };
+  
+  const handleNewAppointmentClick = () => {
+    router.push(`/appointments/new?patientId=${patientId}`);
   };
 
-  const handleFormSubmit = (
+  const handleSessionFormSubmit = (
     values: Omit<Session, "id" | "createdAt" | "status">
   ) => {
     if (selectedSession) {
@@ -100,14 +131,28 @@ export default function PatientDetailPage() {
       );
       toast({ title: "Session updated" });
     }
-    setIsFormOpen(false);
+    setIsSessionFormOpen(false);
+  };
+  
+  const handlePatientFormSubmit = (values: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (patient) {
+        updatePatient(patient.id, values);
+    }
+    setIsPatientFormOpen(false);
   };
 
-  const handleDelete = (sessionId: string) => {
+  const handleSessionDelete = (sessionId: string) => {
     setSessions(sessions.filter((s) => s.id !== sessionId));
     toast({ title: "Session cancelled", variant: "destructive" });
-    setIsFormOpen(false);
+    setIsSessionFormOpen(false);
   };
+  
+  const handleDeletePatient = () => {
+    if(patient) {
+        deletePatient(patient.id);
+        router.push('/patients');
+    }
+  }
 
   if (!patient) {
     return (
@@ -139,11 +184,57 @@ export default function PatientDetailPage() {
 
   return (
     <div className="flex flex-col gap-8 h-full overflow-hidden">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Patient Details</h1>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => router.back()}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight">Patient Details</h1>
+        </div>
+        <div className="flex items-center gap-2">
+            <Button onClick={handleNewAppointmentClick}>
+                <PlusCircle/> New Appointment
+            </Button>
+            <AlertDialog>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Patient Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => setIsPatientFormOpen(true)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit Details
+                        </DropdownMenuItem>
+                         <DropdownMenuItem onSelect={() => router.push(`/assign-package/${patient.id}`)}>
+                            <PackagePlus className="mr-2 h-4 w-4" /> Assign Package
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <AlertDialogTrigger asChild>
+                           <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Patient
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the patient record for {patient.name} and all associated data.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeletePatient} className="bg-destructive hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
         {/* Left Column: Patient Info */}
@@ -222,7 +313,7 @@ export default function PatientDetailPage() {
                     patientSessions.map((session) => (
                       <AccordionItem value={session.id} key={session.id}>
                         <AccordionTrigger className="w-full hover:no-underline p-4 rounded-lg hover:bg-muted/50 my-1">
-                          <div className="grid grid-cols-4 items-center flex-1 text-left text-sm">
+                          <div className="grid grid-cols-3 items-center flex-1 text-left text-sm">
                             <span className="font-medium">
                               {format(
                                 new Date(session.date),
@@ -233,18 +324,6 @@ export default function PatientDetailPage() {
                             <span>
                               <Badge variant="outline" className="capitalize">
                                 {session.status}
-                              </Badge>
-                            </span>
-                            <span>
-                              <Badge
-                                variant={
-                                  session.paymentStatus === "paid"
-                                    ? "default"
-                                    : "secondary"
-                                }
-                                className="capitalize"
-                              >
-                                {session.paymentStatus}
                               </Badge>
                             </span>
                           </div>
@@ -273,7 +352,7 @@ export default function PatientDetailPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleEditClick(session)}
+                                  onClick={() => handleEditSessionClick(session)}
                                 >
                                   <Edit className="mr-2 h-3 w-3" />
                                   Edit Session
@@ -297,14 +376,20 @@ export default function PatientDetailPage() {
         </div>
       </div>
       <SessionForm
-        isOpen={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        onSubmit={handleFormSubmit}
-        onDelete={handleDelete}
+        isOpen={isSessionFormOpen}
+        onOpenChange={setIsSessionFormOpen}
+        onSubmit={handleSessionFormSubmit}
+        onDelete={handleSessionDelete}
         session={selectedSession}
         patients={[patient]}
         therapists={centreTherapists}
       />
+      <PatientForm
+        isOpen={isPatientFormOpen}
+        onOpenChange={setIsPatientFormOpen}
+        onSubmit={handlePatientFormSubmit}
+        patient={patient}
+       />
     </div>
   );
 }

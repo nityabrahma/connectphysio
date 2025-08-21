@@ -80,7 +80,6 @@ export type Session = {
   centreId: ID;
   packageSaleId?: ID;
   status: "scheduled" | "checked-in" | "completed" | "cancelled" | "no-show";
-  paymentStatus: 'paid' | 'unpaid';
   healthNotes?: string;
   notes?: string;
   createdAt: string;

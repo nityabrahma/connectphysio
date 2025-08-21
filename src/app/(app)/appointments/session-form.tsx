@@ -51,7 +51,7 @@ const formSchema = z.object({
   date: z.date({ required_error: "A date is required."}),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)."),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)."),
-  paymentStatus: z.enum(["paid", "unpaid"]),
+  status: z.enum(["scheduled", "checked-in", "completed", "cancelled", "no-show"]),
   healthNotes: z.string().optional(),
   notes: z.string().optional(),
 })
@@ -61,7 +61,7 @@ type SessionFormValues = z.infer<typeof formSchema>
 interface SessionFormProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (values: Omit<Session, 'id' | 'createdAt' | 'status'>) => void;
+    onSubmit: (values: Omit<Session, 'id' | 'createdAt'>) => void;
     onDelete: (sessionId: string) => void;
     session?: Session;
     slot?: { start: Date, end: Date };
@@ -84,7 +84,7 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                     date: new Date(session.date),
                     startTime: session.startTime,
                     endTime: session.endTime,
-                    paymentStatus: session.paymentStatus,
+                    status: session.status,
                     healthNotes: session.healthNotes || "",
                     notes: session.notes || "",
                 });
@@ -95,7 +95,7 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                     date: slot.start,
                     startTime: format(slot.start, "HH:mm"),
                     endTime: format(slot.end, "HH:mm"),
-                    paymentStatus: "unpaid",
+                    status: 'scheduled',
                     healthNotes: "",
                     notes: "",
                 });
@@ -107,7 +107,7 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                     date: new Date(),
                     startTime: "",
                     endTime: "",
-                    paymentStatus: "unpaid",
+                    status: 'scheduled',
                     healthNotes: "",
                     notes: "",
                 });
@@ -126,7 +126,6 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
 
 
     const isEditing = !!session;
-    const canEditPayment = user?.role === 'admin' || user?.role === 'receptionist';
     const canEditHealthNotes = user?.role === 'admin' || user?.role === 'therapist';
 
     return (
@@ -247,13 +246,13 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                                 )}
                             />
                          </div>
-                        {isEditing && canEditPayment && (
+                        {isEditing && (
                              <FormField
                                 control={form.control}
-                                name="paymentStatus"
+                                name="status"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Payment Status</FormLabel>
+                                        <FormLabel>Status</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
                                             <SelectTrigger>
@@ -261,8 +260,11 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                                             </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="unpaid">Unpaid</SelectItem>
-                                                <SelectItem value="paid">Paid</SelectItem>
+                                                <SelectItem value="scheduled">Scheduled</SelectItem>
+                                                <SelectItem value="checked-in">Checked In</SelectItem>
+                                                <SelectItem value="completed">Completed</SelectItem>
+                                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                                                <SelectItem value="no-show">No Show</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -302,7 +304,7 @@ export function SessionForm({ isOpen, onOpenChange, onSubmit, onDelete, session,
                 </Form>
                 </ScrollArea>
                 <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between w-full pt-4 sticky bottom-0 bg-background">
-                    {isEditing && user?.role !== 'therapist' && (
+                    {isEditing && session && user?.role !== 'therapist' && (
                         <AlertDialog>
                         <AlertDialogTrigger asChild>
                         <Button type="button" variant="destructive">Delete Session</Button>

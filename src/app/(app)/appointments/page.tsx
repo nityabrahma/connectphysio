@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, LogOut, PlusCircle, ChevronDown, MoreVertical, DollarSign } from "lucide-react";
+import { Check, LogOut, PlusCircle, MoreVertical, UserPlus, Walking } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Patient, Session, Therapist, PackageSale } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -15,7 +15,7 @@ import { generateId } from "@/lib/ids";
 import { useAuth } from "@/hooks/use-auth";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, isSameDay, isSameMonth, isSameWeek, isFuture } from "date-fns";
+import { format, isSameDay, isSameMonth, isSameWeek } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -25,26 +25,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useRouter } from "next/navigation";
 
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
@@ -54,7 +47,6 @@ export default function AppointmentsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [bulkUpdatePatient, setBulkUpdatePatient] = useState<Patient | null>(null);
 
   const centreTherapists = useMemo(() => {
     return therapists.filter(t => t.centreId === user?.centreId);
@@ -84,7 +76,7 @@ export default function AppointmentsPage() {
     return dateFilteredSessions.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.startTime.localeCompare(b.startTime));
   }
 
-  const handleFormSubmit = (values: Omit<Session, 'id' | 'createdAt' | 'status'>) => {
+  const handleFormSubmit = (values: Omit<Session, 'id' | 'createdAt'>) => {
     if (selectedSession) {
       setSessions(sessions.map(s => s.id === selectedSession.id ? { ...selectedSession, ...values } : s));
       toast({ title: "Session updated" });
@@ -105,7 +97,6 @@ export default function AppointmentsPage() {
         ...values,
         id: generateId(),
         createdAt: new Date().toISOString(),
-        status: 'scheduled',
         packageSaleId,
       };
       setSessions([...sessions, newSession]);
@@ -115,29 +106,26 @@ export default function AppointmentsPage() {
   };
 
   const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
+    if (status === 'completed') {
+      const session = sessions.find(s => s.id === sessionId);
+      if (session) {
+        // Mark session as completed
+        const updatedSessions = sessions.map(s => s.id === sessionId ? { ...s, status } : s);
+        setSessions(updatedSessions);
+        
+        // Remove from today's appointments if it was today
+        // This is handled by filtering logic in UI.
+        
+        toast({ title: `Session Completed` });
+        return;
+      }
+    }
     setSessions(sessions.map(s => s.id === sessionId ? { ...s, status } : s));
     toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
   };
-  
-  const handleUpdatePaymentStatus = (sessionId: string, paymentStatus: Session['paymentStatus']) => {
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, paymentStatus } : s));
-    toast({ title: `Payment status updated to ${paymentStatus}` });
-  };
-  
-  const handleBulkUpdatePaymentStatus = (patientId: string, paymentStatus: Session['paymentStatus']) => {
-    setSessions(sessions.map(s => {
-      if (s.patientId === patientId && isFuture(new Date(`${s.date}T${s.startTime}`))) {
-        return { ...s, paymentStatus };
-      }
-      return s;
-    }));
-    toast({ title: "Bulk Payment Update", description: `Upcoming sessions for ${bulkUpdatePatient?.name} set to ${paymentStatus}.` });
-    setBulkUpdatePatient(null);
-  };
 
   const handleAddClick = () => {
-    setSelectedSession(undefined);
-    setIsFormOpen(true);
+    router.push('/appointments/new');
   }
 
   const handleDelete = (sessionId: string) => {
@@ -147,7 +135,7 @@ export default function AppointmentsPage() {
   }
 
   const SessionList = ({ view }: { view: "day" | "week" | "month" }) => {
-    const data = filteredSessions(view);
+    const data = filteredSessions(view).filter(s => s.status !== 'completed');
     const getPatient = (patientId: string) => patients.find(p => p.id === patientId);
     const getTherapistName = (therapistId: string) => therapists.find(t => t.id === therapistId)?.name || 'Unknown';
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -201,11 +189,6 @@ export default function AppointmentsPage() {
                       </div>
                     </div>
                 </AccordionTrigger>
-                 {canManagePayments && (
-                  <Button variant="ghost" size="sm" className="ml-2" onClick={() => setBulkUpdatePatient(patient)}>
-                    <DollarSign className="mr-2 h-4 w-4" /> Bulk Update
-                  </Button>
-                )}
               </div>
               <AccordionContent>
                   <ul className="space-y-2 pt-2 pl-4 border-l ml-5">
@@ -215,7 +198,6 @@ export default function AppointmentsPage() {
                                   <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d')} &middot; {session.startTime} - {session.endTime}</p>
                                   <p className="text-sm text-muted-foreground">with {getTherapistName(session.therapistId)}</p>
                                   <div className="flex gap-2 mt-2 flex-wrap">
-                                    <Badge variant={session.paymentStatus === 'paid' ? 'default' : 'secondary'} className="capitalize">{session.paymentStatus}</Badge>
                                     <Badge variant="outline" className="capitalize">{session.status}</Badge>
                                   </div>
                               </div>
@@ -236,22 +218,10 @@ export default function AppointmentsPage() {
                                         <DropdownMenuContent align="end">
                                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                            <DropdownMenuItem onSelect={() => {
-                                              setSelectedSession(session);
-                                              setIsFormOpen(true);
+                                              router.push(`/appointments/edit/${session.id}`);
                                           }}>
                                               Edit Details
                                           </DropdownMenuItem>
-                                          {canManagePayments && (
-                                            <>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onSelect={() => handleUpdatePaymentStatus(session.id, 'paid')} disabled={session.paymentStatus === 'paid'}>
-                                              Mark as Paid
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleUpdatePaymentStatus(session.id, 'unpaid')} disabled={session.paymentStatus === 'unpaid'}>
-                                              Mark as Unpaid
-                                            </DropdownMenuItem>
-                                            </>
-                                          )}
                                         </DropdownMenuContent>
                                       </DropdownMenu>
                                   </div>
@@ -267,53 +237,39 @@ export default function AppointmentsPage() {
     )
   }
 
-  const BulkUpdatePaymentDialog = () => {
-    const [status, setStatus] = useState<Session['paymentStatus']>('unpaid');
-    
-    if (!bulkUpdatePatient) return null;
-
-    return (
-      <AlertDialog open={!!bulkUpdatePatient} onOpenChange={() => setBulkUpdatePatient(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Bulk Update Payments for {bulkUpdatePatient.name}</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will update the payment status for all upcoming sessions for this patient. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Label className="mb-2 block">Payment Status</Label>
-            <RadioGroup defaultValue="unpaid" onValueChange={(value: Session['paymentStatus']) => setStatus(value)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="unpaid" id="r-unpaid" />
-                <Label htmlFor="r-unpaid">Unpaid</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="paid" id="r-paid" />
-                <Label htmlFor="r-paid">Paid</Label>
-              </div>
-            </RadioGroup>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleBulkUpdatePaymentStatus(bulkUpdatePatient.id, status)}>
-              Update Sessions
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-8 h-full">
        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
         {user?.role !== 'therapist' && (
-          <Button onClick={handleAddClick}>
-              <PlusCircle />
-              New Appointment
-          </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  <PlusCircle />
+                  New Appointment
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={handleAddClick}>
+                  <CalendarIcon />
+                  Scheduled Appointment
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Walking />
+                    Walk-in
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onSelect={() => router.push('/patients?select=true')}>
+                      <User /> Existing Patient
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => router.push('/patients?new=true')}>
+                      <UserPlus /> New Patient
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuContent>
+            </DropdownMenu>
         )}
       </div>
       
@@ -345,18 +301,6 @@ export default function AppointmentsPage() {
             </div>
         </CardContent>
       </Card>
-
-      <SessionForm 
-        isOpen={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        onSubmit={handleFormSubmit}
-        onDelete={handleDelete}
-        session={selectedSession}
-        slot={selectedDate ? { start: selectedDate, end: selectedDate } : undefined}
-        patients={patients}
-        therapists={centreTherapists}
-      />
-      <BulkUpdatePaymentDialog />
     </div>
   );
 }

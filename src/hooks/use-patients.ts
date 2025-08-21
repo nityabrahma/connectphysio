@@ -7,13 +7,16 @@ import type { Patient } from '@/types/domain';
 import { generateId } from '@/lib/ids';
 import { useToast } from './use-toast';
 import { useAuth } from './use-auth';
+import { useMemo } from 'react';
 
 export function usePatients() {
   const { user: currentUser } = useAuth();
   const [patients, setPatients] = useLocalStorage<Patient[]>(LS_KEYS.PATIENTS, []);
   const { toast } = useToast();
 
-  const centrePatients = patients.filter(p => p.centreId === currentUser?.centreId);
+  const centrePatients = useMemo(() => {
+    return patients.filter(p => p.centreId === currentUser?.centreId)
+  },[patients, currentUser]);
 
   const addPatient = (patientData: Omit<Patient, 'id' | 'createdAt'>) => {
     const newPatient: Patient = {

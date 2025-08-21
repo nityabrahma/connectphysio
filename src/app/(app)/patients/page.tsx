@@ -3,14 +3,15 @@
 
 import { usePatients } from "@/hooks/use-patients";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PatientForm } from "./patient-form";
 import type { Patient } from "@/types/domain";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientCard } from "./patient-card";
+import { Input } from "@/components/ui/input";
 
 export default function PatientsPage() {
     const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function PatientsPage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
     const PATIENTS_PER_PAGE = 10;
 
     const handleAddPatient = () => {
@@ -38,6 +40,10 @@ export default function PatientsPage() {
     const handleAssignPackage = (patient: Patient) => {
         router.push(`/assign-package/${patient.id}`);
     };
+    
+    const handleNewAppointment = (patient: Patient) => {
+      router.push(`/appointments/new?patientId=${patient.id}`);
+    };
 
     const handleViewPatient = (patient: Patient) => {
         router.push(`/patient-details/${patient.id}`);
@@ -47,20 +53,31 @@ export default function PatientsPage() {
         if (selectedPatient) {
             updatePatient(selectedPatient.id, values);
         } else {
-            addPatient(values);
+            const newPatient = addPatient(values);
+            if (newPatient) {
+                router.push(`/patient-details/${newPatient.id}`);
+            }
         }
         setIsFormOpen(false);
     };
 
     const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
 
+    const filteredPatients = useMemo(() => {
+        return patients.filter(patient =>
+            patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.phone.includes(searchTerm)
+        );
+    }, [patients, searchTerm]);
+
     const paginatedPatients = useMemo(() => {
         const startIndex = (currentPage - 1) * PATIENTS_PER_PAGE;
         const endIndex = startIndex + PATIENTS_PER_PAGE;
-        return patients.slice(startIndex, endIndex);
-    }, [patients, currentPage]);
+        return filteredPatients.slice(startIndex, endIndex);
+    }, [filteredPatients, currentPage]);
 
-    const totalPages = Math.ceil(patients.length / PATIENTS_PER_PAGE);
+    const totalPages = Math.ceil(filteredPatients.length / PATIENTS_PER_PAGE);
     const canGoNext = currentPage < totalPages;
     const canGoPrev = currentPage > 1;
 
@@ -81,13 +98,16 @@ export default function PatientsPage() {
 
             <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <CardHeader className="border-b shrink-0">
-                    <div
-                        className="grid px-4 font-semibold text-sm text-muted-foreground"
-                        style={{ gridTemplateColumns: "2fr 2fr 1fr 1fr" }}
-                    >
-                        <div>Patient</div>
-                        <div>Package</div>
-                        <div className="text-right">Actions</div>
+                    <div className="flex items-center gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                                placeholder="Search by name, email, or phone..."
+                                className="pl-10"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </CardHeader>
 
@@ -101,6 +121,7 @@ export default function PatientsPage() {
                                     onView={handleViewPatient}
                                     onEdit={handleEditPatient}
                                     onAssignPackage={handleAssignPackage}
+                                    onNewAppointment={handleNewAppointment}
                                     onDelete={handleDeletePatient}
                                     canManage={canManagePatients}
                                 />
@@ -108,7 +129,7 @@ export default function PatientsPage() {
                         </div>
                     ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground">
-                            No patients found.
+                            <p>No patients found{searchTerm ? ' for your search' : ''}.</p>
                         </div>
                     )}
                 </CardContent>

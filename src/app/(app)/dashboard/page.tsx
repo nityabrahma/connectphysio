@@ -1,7 +1,7 @@
 "use client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, Package, Clock } from "lucide-react";
+import { Users, Calendar, Package, Clock, Check } from "lucide-react";
 import type { Patient, Session } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
@@ -16,10 +16,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const TodaysAppointmentsList = () => {
   const { user } = useAuth();
-  const [sessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
+  const { toast } = useToast();
+  const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<any[]>(LS_KEYS.THERAPISTS, []);
 
@@ -34,16 +37,11 @@ const TodaysAppointmentsList = () => {
     return filtered.sort((a, b) => a.startTime.localeCompare(b.startTime));
   }, [sessions, user]);
 
-  const groupedSessions = useMemo(() => {
-    return todaysSessions.reduce<Record<string, Session[]>>((acc, session) => {
-      if (!acc[session.patientId]) {
-        acc[session.patientId] = [];
-      }
-      acc[session.patientId].push(session);
-      return acc;
-    }, {});
-  }, [todaysSessions]);
-
+  const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
+    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status } : s));
+    toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
+  };
+  
   const getPatient = (patientId: string) =>
     patients.find((p) => p.id === patientId);
   const getTherapistName = (therapistId: string) =>
@@ -54,6 +52,8 @@ const TodaysAppointmentsList = () => {
       .map((n) => n[0])
       .join("")
       .toUpperCase();
+      
+  const canCheckIn = user?.role === 'admin' || user?.role === 'receptionist';
 
   if (todaysSessions.length === 0) {
     return (
@@ -66,68 +66,43 @@ const TodaysAppointmentsList = () => {
   }
 
   return (
-    <Accordion type="single" collapsible className="w-full space-y-4 p-6 pt-0">
-      {Object.entries(groupedSessions).map(([patientId, patientSessions]) => {
-        const patient = getPatient(patientId);
+    <ul className="space-y-3 p-6 pt-0">
+      {todaysSessions.map((session) => {
+        const patient = getPatient(session.patientId);
         if (!patient) return null;
-
+        
         return (
-          <AccordionItem
-            value={patientId}
-            key={patientId}
-            className="border-none"
+          <li
+            key={session.id}
+            className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4"
           >
-            <AccordionTrigger className="flex items-center gap-3 w-full text-left p-3 bg-muted/30 rounded-lg hover:no-underline">
-              <Avatar>
+            <div className="flex items-center gap-4 flex-1">
+               <Avatar>
                 <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                   {getInitials(patient.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <p className="font-semibold">{patient.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {patientSessions.length} appointment(s) today
+                 <p className="text-sm text-muted-foreground">
+                  {session.startTime} - {session.endTime} with {getTherapistName(session.therapistId)}
                 </p>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  <Badge variant="outline" className="capitalize">
+                    {session.status}
+                  </Badge>
+                </div>
               </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <ul className="space-y-2 pt-2 pl-4 border-l ml-5">
-                {patientSessions.map((session) => (
-                  <li
-                    key={session.id}
-                    className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4"
-                  >
-                    <div className="flex-1">
-                      <p className="font-semibold">
-                        {session.startTime} - {session.endTime}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        with {getTherapistName(session.therapistId)}
-                      </p>
-                      <div className="flex gap-2 mt-2 flex-wrap">
-                        <Badge
-                          variant={
-                            session.paymentStatus === "paid"
-                              ? "default"
-                              : "secondary"
-                          }
-                          className="capitalize"
-                        >
-                          {session.paymentStatus}
-                        </Badge>
-                        <Badge variant="outline" className="capitalize">
-                          {session.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </AccordionContent>
-          </AccordionItem>
+            </div>
+             {canCheckIn && session.status === 'scheduled' && (
+                <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}>
+                  <Check className="mr-2 h-4 w-4" /> Check In
+                </Button>
+              )}
+          </li>
         );
       })}
-    </Accordion>
+    </ul>
   );
 };
 
@@ -149,18 +124,39 @@ const AdminDashboard = () => {
     () => sessions.filter((s) => s.centreId === user?.centreId),
     [sessions, user]
   );
+  
+  const activePatients = useMemo(() => {
+    const activePatientIds = new Set(
+      centreSessions
+        .filter(s => new Date(s.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) // Active in last 30 days
+        .map(s => s.patientId)
+    );
+    return centrePatients.filter(p => activePatientIds.has(p.id));
+  }, [centreSessions, centrePatients]);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Patients</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{centrePatients.length}</div>
           <p className="text-xs text-muted-foreground">
             Total patients in centre
+          </p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Patients</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{activePatients.length}</div>
+          <p className="text-xs text-muted-foreground">
+            Patients with sessions in last 30 days
           </p>
         </CardContent>
       </Card>

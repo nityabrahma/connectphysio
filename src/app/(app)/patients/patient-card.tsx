@@ -2,7 +2,7 @@
 "use client"
 
 import type { PackageDef, Patient, PackageSale } from "@/types/domain"
-import { MoreHorizontal, PackageCheck, Eye, Edit, Trash2, Mail, Phone } from "lucide-react"
+import { MoreHorizontal, PackageCheck, Eye, Edit, Trash2, PlusCircle } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -33,11 +33,12 @@ interface PatientCardProps {
     onView: (patient: Patient) => void;
     onEdit: (patient: Patient) => void;
     onAssignPackage: (patient: Patient) => void;
+    onNewAppointment: (patient: Patient) => void;
     onDelete: (patientId: string) => void;
     canManage: boolean;
 }
 
-export function PatientCard({ patient, onView, onEdit, onAssignPackage, onDelete, canManage }: PatientCardProps) {
+export function PatientCard({ patient, onView, onEdit, onAssignPackage, onNewAppointment, onDelete, canManage }: PatientCardProps) {
     const [packages] = useLocalStorage<PackageDef[]>(LS_KEYS.PACKAGES, []);
     const [packageSales] = useLocalStorage<PackageSale[]>(LS_KEYS.PACKAGE_SALES, []);
 
@@ -58,7 +59,7 @@ export function PatientCard({ patient, onView, onEdit, onAssignPackage, onDelete
     return (
         <div
             className="grid gap-4 items-center p-4 rounded-lg bg-card hover:bg-muted/50 transition-colors"
-            style={{ gridTemplateColumns: "2fr 2fr 1fr 1fr" }}
+             style={{ gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr) minmax(0, 1fr)" }}
         >
             <div className="flex items-center gap-4">
                 <Avatar>
@@ -67,12 +68,11 @@ export function PatientCard({ patient, onView, onEdit, onAssignPackage, onDelete
                     </AvatarFallback>
                 </Avatar>
                 <div>
-                    <button onClick={() => onView(patient)} className="hover:underline font-semibold text-primary text-left">
+                    <button onClick={() => onView(patient)} className="hover:underline font-semibold text-primary text-left truncate">
                         {patient.name}
                     </button>
                     <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
-                        <span className="flex items-center gap-1.5"><Mail className="w-3 h-3" /> {patient.email}</span>
-                        <span className="flex items-center gap-1.5"><Phone className="w-3 h-3" /> {patient.phone}</span>
+                        {patient.age ? <span>{patient.age} years</span> : null}
                     </div>
                 </div>
             </div>
@@ -94,6 +94,9 @@ export function PatientCard({ patient, onView, onEdit, onAssignPackage, onDelete
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem onSelect={() => onView(patient)}>
                                 <Eye className="mr-2"/>View Details
+                            </DropdownMenuItem>
+                             <DropdownMenuItem onSelect={() => onNewAppointment(patient)}>
+                                <PlusCircle className="mr-2"/>New Appointment
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {canManage && (
