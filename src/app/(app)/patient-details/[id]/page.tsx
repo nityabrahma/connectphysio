@@ -63,6 +63,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EditSessionModal } from "./edit-session-modal";
 
 
 export default function PatientDetailPage() {
@@ -70,7 +71,7 @@ export default function PatientDetailPage() {
   const params = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { getPatient, deletePatient, updatePatient } = usePatients();
+  const { getPatient, deletePatient } = usePatients();
   const patientId = params.id as string;
   const patient = getPatient(patientId);
 
@@ -79,6 +80,8 @@ export default function PatientDetailPage() {
     []
   );
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
+
+  const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
 
   const patientSessions = useMemo(() => {
     return sessions
@@ -109,6 +112,12 @@ export default function PatientDetailPage() {
     }
   }
 
+  const handleUpdateSession = (updatedSession: Session) => {
+    setSessions(sessions.map(s => s.id === updatedSession.id ? updatedSession : s));
+    toast({ title: 'Session Updated' });
+    setSessionToEdit(null);
+  };
+
   if (!patient) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -137,7 +146,7 @@ export default function PatientDetailPage() {
     return therapists.find(t => t.id === therapistId)?.name || 'Unknown Therapist';
   }
 
-  const SessionList = ({ sessions }: { sessions: Session[] }) => {
+  const SessionList = ({ sessions, isCompletedList = false }: { sessions: Session[], isCompletedList?: boolean }) => {
     if (sessions.length === 0) {
       return (
         <div className="text-center text-muted-foreground py-8">
@@ -161,7 +170,7 @@ export default function PatientDetailPage() {
                             <Badge variant="outline" className="capitalize mr-4">{session.status}</Badge>
                           </div>
                        </AccordionTrigger>
-                        <Button variant="outline" size="sm" onClick={() => router.push(`/appointments/edit/${session.id}`)} className="ml-4">
+                        <Button variant="outline" size="sm" onClick={() => setSessionToEdit(session)} className="ml-4">
                             <Edit className="h-4 w-4 mr-2" /> Edit
                         </Button>
                     </div>
@@ -187,150 +196,160 @@ export default function PatientDetailPage() {
   };
 
   return (
-    <div className="flex flex-col gap-8 h-full overflow-hidden">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-3xl font-bold tracking-tight">Patient Details</h1>
+    <>
+      <div className="flex flex-col gap-8 h-full overflow-hidden">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+              <Button variant="outline" size="icon" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h1 className="text-3xl font-bold tracking-tight">Patient Details</h1>
+          </div>
+          <div className="flex items-center gap-2">
+              <Button onClick={handleNewAppointmentClick}>
+                  <PlusCircle/> New Appointment
+              </Button>
+              <AlertDialog>
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Patient Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => router.push(`/patients/edit/${patient.id}`)}>
+                              <Edit className="mr-2 h-4 w-4" /> Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => router.push(`/assign-package/${patient.id}`)}>
+                              <PackagePlus className="mr-2 h-4 w-4" /> Assign Package
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete Patient
+                              </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the patient record for {patient.name} and all associated data.
+                          </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeletePatient} className="bg-destructive hover:bg-destructive/90">
+                              Delete
+                          </AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-            <Button onClick={handleNewAppointmentClick}>
-                <PlusCircle/> New Appointment
-            </Button>
-            <AlertDialog>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Patient Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => router.push(`/patients/edit/${patient.id}`)}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit Details
-                        </DropdownMenuItem>
-                         <DropdownMenuItem onSelect={() => router.push(`/assign-package/${patient.id}`)}>
-                            <PackagePlus className="mr-2 h-4 w-4" /> Assign Package
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <AlertDialogTrigger asChild>
-                           <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Patient
-                            </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the patient record for {patient.name} and all associated data.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeletePatient} className="bg-destructive hover:bg-destructive/90">
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </div>
-      </div>
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
-        {/* Left Column: Patient Info */}
-        <div className="md:col-span-1 space-y-6 flex-[1/3]">
-          <Card>
-            <CardHeader className="flex flex-col sm:flex-row items-start gap-4 space-y-0">
-              <Avatar className="w-16 h-16 text-xl">
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {getInitials(patient.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <CardTitle className="text-2xl">{patient.name}</CardTitle>
-                <CardDescription>
-                  <div className="flex items-center gap-2 mt-2 text-sm break-all">
-                    <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />{" "}
-                    <span>{patient.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-sm">
-                    <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />{" "}
-                    <span>{patient.phone}</span>
-                  </div>
-                  {patient.age && (
-                    <div className="flex items-center gap-2 mt-1 text-sm">
-                      <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />{" "}
-                      <span>{patient.age} years old</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
+          {/* Left Column: Patient Info */}
+          <div className="md:col-span-1 space-y-6 flex-[1/3]">
+            <Card>
+              <CardHeader className="flex flex-col sm:flex-row items-start gap-4 space-y-0">
+                <Avatar className="w-16 h-16 text-xl">
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {getInitials(patient.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <CardTitle className="text-2xl">{patient.name}</CardTitle>
+                  <CardDescription>
+                    <div className="flex items-center gap-2 mt-2 text-sm break-all">
+                      <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />{" "}
+                      <span>{patient.email}</span>
                     </div>
-                  )}
-                </CardDescription>
-              </div>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Additional Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {patient.medicalInfo && (
-                <div>
-                  <h4 className="font-semibold mb-1 text-sm">Medical Info</h4>
-                  <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-md">
-                    {patient.medicalInfo}
-                  </p>
+                    <div className="flex items-center gap-2 mt-1 text-sm">
+                      <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />{" "}
+                      <span>{patient.phone}</span>
+                    </div>
+                    {patient.age && (
+                      <div className="flex items-center gap-2 mt-1 text-sm">
+                        <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />{" "}
+                        <span>{patient.age} years old</span>
+                      </div>
+                    )}
+                  </CardDescription>
                 </div>
-              )}
-              {patient.notes && (
-                <div className="mt-4">
-                  <h4 className="font-semibold mb-1 text-sm">Internal Notes</h4>
-                  <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-md">
-                    {patient.notes}
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Additional Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {patient.medicalInfo && (
+                  <div>
+                    <h4 className="font-semibold mb-1 text-sm">Medical Info</h4>
+                    <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-md">
+                      {patient.medicalInfo}
+                    </p>
+                  </div>
+                )}
+                {patient.notes && (
+                  <div className="mt-4">
+                    <h4 className="font-semibold mb-1 text-sm">Internal Notes</h4>
+                    <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-md">
+                      {patient.notes}
+                    </p>
+                  </div>
+                )}
+                {!patient.medicalInfo && !patient.notes && (
+                  <p className="text-sm text-muted-foreground">
+                    No additional information provided.
                   </p>
-                </div>
-              )}
-              {!patient.medicalInfo && !patient.notes && (
-                <p className="text-sm text-muted-foreground">
-                  No additional information provided.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Right Column: Session History */}
-        <div className="md:col-span-2 flex flex-col min-h-0">
-          <Card className="flex flex-col min-h-full">
-            <CardHeader>
-              <CardTitle>Session History</CardTitle>
-              <CardDescription>
-                View upcoming and past appointments for this patient.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col min-h-0 pt-4">
-               <Tabs defaultValue="upcoming" className="w-full flex flex-col flex-1 min-h-0">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                  <TabsTrigger value="completed">Completed</TabsTrigger>
-                </TabsList>
-                 <div className="flex-1 mt-4 relative">
-                    <ScrollArea className="absolute inset-0 w-full h-full pr-4">
-                        <TabsContent value="upcoming">
-                           <SessionList sessions={upcomingSessions} />
-                        </TabsContent>
-                        <TabsContent value="completed">
-                            <SessionList sessions={completedSessions} />
-                        </TabsContent>
-                    </ScrollArea>
-                </div>
-              </Tabs>
-            </CardContent>
-          </Card>
+          {/* Right Column: Session History */}
+          <div className="md:col-span-2 flex flex-col min-h-0">
+            <Card className="flex flex-col min-h-full">
+              <CardHeader>
+                <CardTitle>Session History</CardTitle>
+                <CardDescription>
+                  View upcoming and past appointments for this patient.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col min-h-0 pt-4">
+                <Tabs defaultValue="upcoming" className="w-full flex flex-col flex-1 min-h-0">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                    <TabsTrigger value="completed">Completed</TabsTrigger>
+                  </TabsList>
+                  <div className="flex-1 mt-4 relative">
+                      <ScrollArea className="absolute inset-0 w-full h-full pr-4">
+                          <TabsContent value="upcoming">
+                            <SessionList sessions={upcomingSessions} />
+                          </TabsContent>
+                          <TabsContent value="completed">
+                              <SessionList sessions={completedSessions} isCompletedList />
+                          </TabsContent>
+                      </ScrollArea>
+                  </div>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+      {sessionToEdit && (
+        <EditSessionModal
+            isOpen={!!sessionToEdit}
+            onOpenChange={(isOpen) => !isOpen && setSessionToEdit(null)}
+            session={sessionToEdit}
+            onUpdate={handleUpdateSession}
+        />
+      )}
+    </>
   );
 }
