@@ -187,7 +187,7 @@ export default function AppointmentsPage() {
 
           return (
             <AccordionItem value={patientId} key={patientId} className="border-none">
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg w-full">
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg w-full" onClick={(e) => e.stopPropagation()}>
                 <AccordionTrigger className="flex-1 p-0 hover:no-underline">
                     <div className="flex items-center gap-3 text-left">
                       <Avatar>
@@ -202,7 +202,7 @@ export default function AppointmentsPage() {
                     </div>
                 </AccordionTrigger>
                  {canManagePayments && (
-                  <Button variant="ghost" size="sm" className="ml-2" onClick={(e) => { e.stopPropagation(); setBulkUpdatePatient(patient); }}>
+                  <Button variant="ghost" size="sm" className="ml-2" onClick={() => setBulkUpdatePatient(patient)}>
                     <DollarSign className="mr-2 h-4 w-4" /> Bulk Update
                   </Button>
                 )}
@@ -328,14 +328,14 @@ export default function AppointmentsPage() {
                 />
             </div>
             <div className="md:col-span-2 flex flex-col min-h-0">
-                 <Tabs defaultValue="month" className="w-full flex flex-col flex-1">
+                 <Tabs defaultValue="month" className="w-full flex flex-col flex-1 min-h-0">
                     <TabsList>
                         <TabsTrigger value="day">Day</TabsTrigger>
                         <TabsTrigger value="week">Week</TabsTrigger>
                         <TabsTrigger value="month">Month</TabsTrigger>
                     </TabsList>
-                    <div className="flex-1 mt-4 min-h-0">
-                      <ScrollArea className="h-full w-full pr-4">
+                    <div className="flex-1 mt-4 relative">
+                      <ScrollArea className="absolute inset-0 w-full h-full pr-4">
                           <TabsContent value="day"><SessionList view="day" /></TabsContent>
                           <TabsContent value="week"><SessionList view="week" /></TabsContent>
                           <TabsContent value="month"><SessionList view="month" /></TabsContent>
@@ -360,5 +360,3 @@ export default function AppointmentsPage() {
     </div>
   );
 }
-
-    
