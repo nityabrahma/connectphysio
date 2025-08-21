@@ -101,7 +101,7 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
                         {isEditing ? 'Update the details of the existing patient.' : 'Enter the details for the new patient.'}
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-1 -mr-6 pr-6">
+                <ScrollArea className="flex-1 pr-6 -mr-6">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
                             <FormField
@@ -185,7 +185,7 @@ export function PatientForm({ isOpen, onOpenChange, onSubmit, patient }: Patient
                         </form>
                     </Form>
                 </ScrollArea>
-                <DialogFooter className="mt-auto pt-4">
+                <DialogFooter className="pt-4 mt-auto">
                     <Button onClick={form.handleSubmit(handleFormSubmit)} className="w-full" type="submit">{isEditing ? 'Save Changes' : 'Create Patient'}</Button>
                 </DialogFooter>
             </DialogContent>
