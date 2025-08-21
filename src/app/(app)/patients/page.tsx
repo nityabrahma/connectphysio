@@ -85,12 +85,12 @@ export default function PatientsPage() {
             <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <CardHeader className="border-b">
                     <div
-                        className="grid px-4 font-semibold text-sm text-muted-foreground"
-                        style={{ gridTemplateColumns: "3fr 1.5fr 1fr 1fr" }}
+                        className="grid px-4 font-semibold text-sm flex justify-center items-center text-muted-foreground"
+                        style={{ gridTemplateColumns: "3fr 2fr 2fr 1fr" }}
                     >
-                        <div>Name</div>
-                        <div>Phone</div>
-                        <div>Package Status</div>
+                        <div className="text-center">Name</div>
+                        <div className="text-center">Phone</div>
+                        <div className="text-center">Package Status</div>
                         <div className="text-right">Actions</div>
                     </div>
                 </CardHeader>

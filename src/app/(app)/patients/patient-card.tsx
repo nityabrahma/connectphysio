@@ -42,7 +42,7 @@ export function PatientCard({ patient, onView, onEdit, onAssignPackage, onDelete
     return (
         <div
             className="grid gap-4 items-center p-4 rounded-lg bg-card hover:bg-muted/50 transition-colors"
-            style={{ gridTemplateColumns: "3fr 1.5fr 1fr 1fr" }}
+            style={{ gridTemplateColumns: "3fr 2fr 2fr 1fr" }}
         >
             <div className="flex items-center gap-4">
                 <Avatar>
