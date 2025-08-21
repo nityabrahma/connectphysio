@@ -186,7 +186,7 @@ export default function AssignPackagePage() {
             <p className="text-muted-foreground">Assign a new therapy package to {patient.name}.</p>
         </div>
       </div>
-      <Card className="max-w-2xl mx-auto w-full">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Select a Package</CardTitle>
           <CardDescription>
