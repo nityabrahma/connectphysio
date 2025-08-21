@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -12,6 +13,10 @@ import { ArrowRight, Calendar, Users, BarChart, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -35,6 +40,15 @@ const fadeInFromBottom = {
 };
 
 export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
   const features = [
     {
       icon: <Calendar className="h-8 w-8 text-primary" />,
@@ -108,6 +122,20 @@ export default function LandingPage() {
         "Yes, ConnectPhysio is fully responsive, allowing you and your staff to manage the clinic from a desktop, tablet, or smartphone, ensuring you're always connected.",
     },
   ];
+
+  if (loading || user) {
+    return (
+       <div className="flex h-screen w-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+           <Skeleton className="h-12 w-12 rounded-full" />
+           <div className="space-y-2">
+             <Skeleton className="h-4 w-[250px]" />
+             <Skeleton className="h-4 w-[200px]" />
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
