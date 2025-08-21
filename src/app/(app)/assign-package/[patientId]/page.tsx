@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { usePatients } from '@/hooks/use-patients';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -16,7 +16,7 @@ import type {
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { generateId } from '@/lib/ids';
-import { addDays, format, isWeekend } from 'date-fns';
+import { addDays, format, isWeekend, isSaturday, isSunday } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -34,10 +34,15 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CalendarIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+
+
+type Frequency = "daily" | "daily_business" | "every_2_days" | "weekly";
 
 export default function AssignPackagePage() {
   const router = useRouter();
@@ -64,6 +69,8 @@ export default function AssignPackagePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDates, setSelectedDates] = useState<Date[] | undefined>([]);
   const [selectedTime, setSelectedTime] = useState<string>('10:00');
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
+  const [frequency, setFrequency] = useState<Frequency>('daily_business');
 
   const patient = getPatient(patientId);
   const availablePackages = packages.filter((p) => p.centreId === user?.centreId);
@@ -71,23 +78,58 @@ export default function AssignPackagePage() {
   const selectedPackage = availablePackages.find((p) => p.id === selectedPackageId);
 
   useEffect(() => {
-    if (selectedPackage) {
-      const getNextBusinessDays = (count: number): Date[] => {
+    if (selectedPackage && startDate) {
+      const calculateDates = (count: number): Date[] => {
         const dates: Date[] = [];
-        let currentDate = new Date();
+        let currentDate = new Date(startDate);
+        let daysToAdd = 0;
+        
         while (dates.length < count) {
-          currentDate = addDays(currentDate, 1);
-          if (!isWeekend(currentDate)) {
-            dates.push(currentDate);
+          let potentialDate = addDays(new Date(startDate), daysToAdd);
+          let shouldAdd = false;
+
+          switch(frequency) {
+            case "daily":
+              shouldAdd = true;
+              daysToAdd++;
+              break;
+            case "daily_business":
+              if (!isSaturday(potentialDate) && !isSunday(potentialDate)) {
+                shouldAdd = true;
+              }
+              daysToAdd++;
+              break;
+            case "every_2_days":
+               if (dates.length === 0) { // First date
+                 shouldAdd = true;
+                 daysToAdd = 2;
+               } else {
+                 potentialDate = addDays(dates[dates.length - 1], 2);
+                 shouldAdd = true;
+               }
+               break;
+            case "weekly":
+               if (dates.length === 0) {
+                 shouldAdd = true;
+                 daysToAdd = 7;
+               } else {
+                 potentialDate = addDays(dates[dates.length - 1], 7);
+                 shouldAdd = true;
+               }
+               break;
+          }
+          
+          if (shouldAdd) {
+            dates.push(potentialDate);
           }
         }
         return dates;
       };
-      setSelectedDates(getNextBusinessDays(selectedPackage.sessions));
+      setSelectedDates(calculateDates(selectedPackage.sessions));
     } else {
       setSelectedDates([]);
     }
-  }, [selectedPackageId, selectedPackage]);
+  }, [selectedPackageId, selectedPackage, startDate, frequency]);
 
 
   const handleConfirm = () => {
@@ -265,22 +307,65 @@ export default function AssignPackagePage() {
                 <div>
                   <h3 className="font-semibold text-lg">Schedule Sessions</h3>
                   <p className="text-muted-foreground text-sm">
-                    Select {selectedPackage.sessions} dates for the sessions. {selectedDates?.length || 0} selected.
+                    Select your scheduling preferences. {selectedPackage.sessions} sessions will be automatically selected on the calendar below.
+                    You can still manually adjust the dates. {selectedDates?.length || 0} selected.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="md:col-span-1 space-y-2">
-                    <Label htmlFor="time-select">Session Time</Label>
-                    <Select value={selectedTime} onValueChange={setSelectedTime}>
-                      <SelectTrigger id="time-select">
-                        <SelectValue placeholder="Select a time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeSlots.map(time => (
-                           <SelectItem key={time} value={time}>{time}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="md:col-span-1 space-y-4">
+                     <div className="space-y-2">
+                       <Label>Start Date</Label>
+                       <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !startDate && "text-muted-foreground"
+                            )}
+                            >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={setStartDate}
+                            disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
+                            initialFocus
+                            />
+                        </PopoverContent>
+                       </Popover>
+                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="frequency-select">Frequency</Label>
+                        <Select value={frequency} onValueChange={(value: Frequency) => setFrequency(value)}>
+                          <SelectTrigger id="frequency-select">
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                             <SelectItem value="daily">Daily (incl. weekends)</SelectItem>
+                             <SelectItem value="daily_business">Daily (business days only)</SelectItem>
+                             <SelectItem value="every_2_days">Every 2 Days</SelectItem>
+                             <SelectItem value="weekly">Weekly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="time-select">Session Time</Label>
+                      <Select value={selectedTime} onValueChange={setSelectedTime}>
+                        <SelectTrigger id="time-select">
+                          <SelectValue placeholder="Select a time" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {timeSlots.map(time => (
+                            <SelectItem key={time} value={time}>{time}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="md:col-span-3 flex justify-center">
                     <Calendar
