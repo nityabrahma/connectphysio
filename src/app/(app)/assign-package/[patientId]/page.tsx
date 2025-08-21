@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
@@ -42,7 +42,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 
 
-type Frequency = "daily" | "daily_business" | "every_2_days" | "weekly";
+type Frequency = "daily" | "daily_business" | "every_2_days" | "every_3_days" | "weekly";
 
 export default function AssignPackagePage() {
   const router = useRouter();
@@ -81,19 +81,20 @@ export default function AssignPackagePage() {
     if (selectedPackage && startDate) {
       const calculateDates = (count: number): Date[] => {
         const dates: Date[] = [];
-        let currentDate = new Date(startDate);
         let daysToAdd = 0;
         
         while (dates.length < count) {
-          let potentialDate = addDays(new Date(startDate), daysToAdd);
+          let potentialDate = new Date(startDate);
           let shouldAdd = false;
 
           switch(frequency) {
             case "daily":
+              potentialDate = addDays(new Date(startDate), daysToAdd);
               shouldAdd = true;
               daysToAdd++;
               break;
             case "daily_business":
+              potentialDate = addDays(new Date(startDate), daysToAdd);
               if (!isSaturday(potentialDate) && !isSunday(potentialDate)) {
                 shouldAdd = true;
               }
@@ -102,16 +103,22 @@ export default function AssignPackagePage() {
             case "every_2_days":
                if (dates.length === 0) { // First date
                  shouldAdd = true;
-                 daysToAdd = 2;
                } else {
                  potentialDate = addDays(dates[dates.length - 1], 2);
+                 shouldAdd = true;
+               }
+               break;
+            case "every_3_days":
+               if (dates.length === 0) { // First date
+                 shouldAdd = true;
+               } else {
+                 potentialDate = addDays(dates[dates.length - 1], 3);
                  shouldAdd = true;
                }
                break;
             case "weekly":
                if (dates.length === 0) {
                  shouldAdd = true;
-                 daysToAdd = 7;
                } else {
                  potentialDate = addDays(dates[dates.length - 1], 7);
                  shouldAdd = true;
@@ -266,9 +273,36 @@ export default function AssignPackagePage() {
         </Button>
         <div>
             <h1 className="text-3xl font-bold tracking-tight">Assign Package</h1>
-            <p className="text-muted-foreground">Assign a new therapy package to {patient.name}.</p>
+            <p className="text-muted-foreground">Assign a new therapy package to a patient.</p>
         </div>
       </div>
+
+       <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Patient Details</CardTitle>
+          </CardHeader>
+          <CardContent className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <Label className="text-sm text-muted-foreground">Name</Label>
+              <p className="font-semibold">{patient.name}</p>
+            </div>
+            <div>
+              <Label className="text-sm text-muted-foreground">Email</Label>
+               <p className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  {patient.email}
+                </p>
+            </div>
+             <div>
+              <Label className="text-sm text-muted-foreground">Phone</Label>
+                <p className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  {patient.phone}
+                </p>
+            </div>
+          </CardContent>
+      </Card>
+
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Select a Package</CardTitle>
@@ -349,6 +383,7 @@ export default function AssignPackagePage() {
                              <SelectItem value="daily">Daily (incl. weekends)</SelectItem>
                              <SelectItem value="daily_business">Daily (business days only)</SelectItem>
                              <SelectItem value="every_2_days">Every 2 Days</SelectItem>
+                             <SelectItem value="every_3_days">Every 3 Days</SelectItem>
                              <SelectItem value="weekly">Weekly</SelectItem>
                           </SelectContent>
                         </Select>
