@@ -2,12 +2,12 @@
 "use client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus } from "lucide-react";
+import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut } from "lucide-react";
 import type { Patient, Session } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { isSameDay, format } from "date-fns";
 import { usePatients } from "@/hooks/use-patients";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { EndSessionForm } from "./end-session-form";
 
 const TodaysAppointmentsList = () => {
   const { user } = useAuth();
@@ -31,10 +32,12 @@ const TodaysAppointmentsList = () => {
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<any[]>(LS_KEYS.THERAPISTS, []);
 
+  const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
+
   const todaysSessions = useMemo(() => {
     let filtered = sessions.filter(
       (s) =>
-        isSameDay(new Date(s.date), new Date()) && s.centreId === user?.centreId
+        isSameDay(new Date(s.date), new Date()) && s.centreId === user?.centreId && s.status !== 'completed'
     );
     if (user?.role === "therapist") {
       filtered = filtered.filter((s) => s.therapistId === user.therapistId);
@@ -47,6 +50,12 @@ const TodaysAppointmentsList = () => {
     toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
   };
   
+  const handleEndSessionSubmit = (sessionId: string, healthNotes: string) => {
+    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
+    toast({ title: 'Session Completed' });
+    setSessionToEnd(null);
+  }
+
   const getPatient = (patientId: string) =>
     patients.find((p) => p.id === patientId);
   const getTherapistName = (therapistId: string) =>
@@ -58,7 +67,11 @@ const TodaysAppointmentsList = () => {
       .join("")
       .toUpperCase();
       
-  const canCheckIn = user?.role === 'admin' || user?.role === 'receptionist';
+  const canManageSession = (session: Session) => {
+    if (user?.role === 'admin' || user?.role === 'receptionist') return true;
+    if (user?.role === 'therapist' && user.therapistId === session.therapistId) return true;
+    return false;
+  }
 
   if (todaysSessions.length === 0) {
     return (
@@ -71,43 +84,61 @@ const TodaysAppointmentsList = () => {
   }
 
   return (
-    <ul className="space-y-3 p-6 pt-0">
-      {todaysSessions.map((session) => {
-        const patient = getPatient(session.patientId);
-        if (!patient) return null;
-        
-        return (
-          <li
-            key={session.id}
-            className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4"
-          >
-            <div className="flex items-center gap-4 flex-1">
-               <Avatar>
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                  {getInitials(patient.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <p className="font-semibold">{patient.name}</p>
-                 <p className="text-sm text-muted-foreground">
-                  {session.startTime} - {session.endTime} with {getTherapistName(session.therapistId)}
-                </p>
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  <Badge variant="outline" className="capitalize">
-                    {session.status}
-                  </Badge>
+    <>
+      <ul className="space-y-3 p-6 pt-0">
+        {todaysSessions.map((session) => {
+          const patient = getPatient(session.patientId);
+          if (!patient) return null;
+          
+          return (
+            <li
+              key={session.id}
+              className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4"
+            >
+              <div className="flex items-center gap-4 flex-1">
+                 <Avatar>
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                    {getInitials(patient.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="font-semibold">{patient.name}</p>
+                   <p className="text-sm text-muted-foreground">
+                    {session.startTime} - {session.endTime} with {getTherapistName(session.therapistId)}
+                  </p>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <Badge variant="outline" className="capitalize">
+                      {session.status}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-            </div>
-             {canCheckIn && session.status === 'scheduled' && (
-                <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}>
-                  <Check className="mr-2 h-4 w-4" /> Check In
-                </Button>
-              )}
-          </li>
-        );
-      })}
-    </ul>
+               <div className="flex gap-2 items-center">
+                {canManageSession(session) && session.status === 'scheduled' && (
+                  <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}>
+                    <Check className="mr-2 h-4 w-4" /> Check In
+                  </Button>
+                )}
+                {canManageSession(session) && session.status === 'checked-in' && (
+                  <Button size="sm" variant="secondary" onClick={() => setSessionToEnd(session)}>
+                    <LogOut className="mr-2 h-4 w-4" /> End Session
+                  </Button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {sessionToEnd && (
+        <EndSessionForm
+          session={sessionToEnd}
+          patient={getPatient(sessionToEnd.patientId)}
+          isOpen={!!sessionToEnd}
+          onOpenChange={(isOpen) => !isOpen && setSessionToEnd(null)}
+          onSubmit={handleEndSessionSubmit}
+        />
+      )}
+    </>
   );
 };
 
@@ -411,5 +442,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
