@@ -83,17 +83,6 @@ export function Sidebar() {
             ) : null
           )}
         </nav>
-        <div className="px-4 py-4 mt-auto">
-          <Link
-            href="#"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            )}
-          >
-            <HelpCircle className="h-5 w-5" />
-            Help and docs
-          </Link>
-        </div>
       </div>
     </aside>
   );

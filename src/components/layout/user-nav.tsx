@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -86,10 +87,6 @@ export function UserNav() {
               <Settings />
               Settings
             </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <LifeBuoy />
-            Support
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
