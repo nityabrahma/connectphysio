@@ -215,20 +215,12 @@ export default function AppointmentsPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Footprints />
-                    Walk-in
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem onSelect={() => router.push('/patients?select=true')}>
-                      <User /> Existing Patient
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => router.push('/patients/new?redirectToAppointment=true')}>
-                      <UserPlus /> New Patient
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
+                <DropdownMenuItem onSelect={() => router.push('/patients/new?redirectToAppointment=true')}>
+                  <UserPlus /> New Patient
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => router.push('/patients?select=true')}>
+                  <User /> Existing Patient
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
         )}
