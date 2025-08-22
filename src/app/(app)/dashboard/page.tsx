@@ -51,8 +51,8 @@ const TodaysAppointmentsList = () => {
   };
   
   const handleEndSessionSubmit = (sessionId: string, healthNotes: string | undefined) => {
-    if (!healthNotes || healthNotes.trim() === '') {
-       toast({ title: 'Health notes are required to complete the session.', variant: 'destructive' });
+    if (!healthNotes || healthNotes.trim() === '' || healthNotes.trim() === '{}') {
+       toast({ title: 'Please fill out the session form to complete the session.', variant: 'destructive' });
        return;
     }
     setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));

@@ -1,3 +1,4 @@
+
 export type ID = string;
 
 export type Role = "admin" | "receptionist" | "therapist";
@@ -93,14 +94,13 @@ export type CheckIn = {
 };
 
 // Questionnaire Types
-export type QuestionType = 'text' | 'slider' | 'multiple-choice' | 'checkbox';
+export type QuestionType = 'text' | 'slider';
 
 export type Question = {
   id: ID;
   label: string;
   type: QuestionType;
   placeholder?: string;
-  options?: string[]; // for multiple-choice/checkbox
   min?: number;      // for slider
   max?: number;      // for slider
   step?: number;     // for slider
