@@ -22,13 +22,13 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Slider } from "@/components/ui/slider"
-import { Input } from "@/components/ui/input"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { LS_KEYS } from "@/lib/constants"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface EndSessionFormProps {
     isOpen: boolean;
@@ -40,16 +40,15 @@ interface EndSessionFormProps {
 
 export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patient }: EndSessionFormProps) {
     const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
-    
-    // For now, let's assume the first questionnaire is the one to use.
-    // In a real app, this could be linked to the session or centre.
-    const activeQuestionnaire = questionnaires[0]; 
-    
+    const [selectedQuestionnaireId, setSelectedQuestionnaireId] = useState<string | null>(null);
+
+    const activeQuestionnaire = useMemo(() => {
+        return questionnaires.find(q => q.id === selectedQuestionnaireId) || null;
+    }, [questionnaires, selectedQuestionnaireId]);
+
     const formSchema = useMemo(() => {
         if (!activeQuestionnaire) {
-            return z.object({
-                healthNotes: z.string().min(1, "Health notes are required to complete the session."),
-            });
+            return z.object({});
         }
 
         const schemaShape = activeQuestionnaire.questions.reduce((acc, q) => {
@@ -76,6 +75,14 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
 
     useEffect(() => {
         if (isOpen) {
+            // Reset selection when modal opens
+            setSelectedQuestionnaireId(null);
+            form.reset({});
+        }
+    }, [isOpen, form]);
+
+     useEffect(() => {
+        if (activeQuestionnaire) {
             let defaultValues = {};
             try {
                 if (session.healthNotes) {
@@ -85,32 +92,29 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                 console.warn("Could not parse healthNotes from session", e);
             }
             
-            if (activeQuestionnaire) {
-                const initialValues = activeQuestionnaire.questions.reduce((acc, q) => {
-                    const existingValue = (defaultValues as any)[q.id];
-                    if (existingValue) {
-                        return { ...acc, [q.id]: existingValue };
-                    }
+            const initialValues = activeQuestionnaire.questions.reduce((acc, q) => {
+                const existingValue = (defaultValues as any)[q.id];
+                if (existingValue) {
+                    return { ...acc, [q.id]: existingValue };
+                }
 
-                    switch (q.type) {
-                        case 'slider':
-                            return { ...acc, [q.id]: [q.min ?? 0] };
-                        case 'text':
-                        default:
-                            return { ...acc, [q.id]: '' };
-                    }
-                }, {});
-                form.reset(initialValues);
-            } else {
-                 form.reset({
-                    healthNotes: session.healthNotes || "",
-                });
-            }
+                switch (q.type) {
+                    case 'slider':
+                        return { ...acc, [q.id]: [q.min ?? 0] };
+                    case 'text':
+                    default:
+                        return { ...acc, [q.id]: '' };
+                }
+            }, {});
+            form.reset(initialValues);
         }
-    }, [session, form, isOpen, activeQuestionnaire]);
+    }, [session, form, activeQuestionnaire]);
 
     const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
-        const notes = JSON.stringify(values);
+        const notes = JSON.stringify({
+            questionnaireId: selectedQuestionnaireId,
+            answers: values
+        });
         onSubmit(session.id, notes);
     }
     
@@ -124,63 +128,62 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="flex-1 -mr-6 pr-6">
-                  <Form {...form}>
-                      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 py-4">
-                          {!activeQuestionnaire ? (
-                             <FormField
-                              control={form.control}
-                              name="healthNotes"
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Health Notes</FormLabel>
-                                      <FormControl>
-                                        <Textarea 
-                                            placeholder="Enter session notes here..." 
-                                            {...field}
-                                            rows={5} 
-                                        />
-                                    </FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                            />
-                          ) : (
-                              activeQuestionnaire.questions.map(q => (
-                                <FormField
-                                    key={q.id}
-                                    control={form.control}
-                                    name={q.id}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{q.label}</FormLabel>
-                                            <FormControl>
-                                                {q.type === 'slider' ? (
-                                                     <div className="flex items-center gap-4">
-                                                        <Slider
-                                                            min={q.min}
-                                                            max={q.max}
-                                                            step={q.step}
-                                                            onValueChange={(value) => field.onChange(value)}
-                                                            defaultValue={field.value}
-                                                        />
-                                                        <span className="text-sm font-semibold w-12 text-center">{field.value?.[0]}</span>
-                                                    </div>
-                                                ) : (
-                                                    <Textarea placeholder={q.placeholder || ''} {...field} />
-                                                )}
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                              ))
-                          )}
-                      </form>
-                  </Form>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label>Select a Questionnaire</Label>
+                        <Select onValueChange={setSelectedQuestionnaireId} value={selectedQuestionnaireId || ""}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Choose a form..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {questionnaires.map(q => (
+                                    <SelectItem key={q.id} value={q.id}>{q.title}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {activeQuestionnaire && (
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 pt-4 border-t">
+                                {activeQuestionnaire.questions.map(q => (
+                                  <FormField
+                                      key={q.id}
+                                      control={form.control}
+                                      name={q.id}
+                                      render={({ field }) => (
+                                          <FormItem>
+                                              <FormLabel>{q.label}</FormLabel>
+                                              <FormControl>
+                                                  {q.type === 'slider' ? (
+                                                       <div className="flex items-center gap-4">
+                                                          <Slider
+                                                              min={q.min}
+                                                              max={q.max}
+                                                              step={q.step}
+                                                              onValueChange={(value) => field.onChange(value)}
+                                                              value={field.value}
+                                                              defaultValue={field.value}
+                                                          />
+                                                          <span className="text-sm font-semibold w-12 text-center">{field.value?.[0]}</span>
+                                                      </div>
+                                                  ) : (
+                                                      <Textarea placeholder={q.placeholder || ''} {...field} />
+                                                  )}
+                                              </FormControl>
+                                              <FormMessage />
+                                          </FormItem>
+                                      )}
+                                  />
+                                ))}
+                            </form>
+                        </Form>
+                    )}
+                  </div>
                 </ScrollArea>
                 <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end w-full pt-4 mt-auto">
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button type="button" onClick={form.handleSubmit(handleFormSubmit)}>Confirm & Complete</Button>
+                    <Button type="button" onClick={form.handleSubmit(handleFormSubmit)} disabled={!activeQuestionnaire}>Confirm & Complete</Button>
                  </DialogFooter>
             </DialogContent>
         </Dialog>
