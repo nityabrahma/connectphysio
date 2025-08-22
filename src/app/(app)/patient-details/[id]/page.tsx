@@ -212,7 +212,7 @@ export default function PatientDetailPage() {
                             <Badge variant="outline" className="capitalize mr-4">{session.status}</Badge>
                           </div>
                        </AccordionTrigger>
-                       {!isCompletedList && (
+                       {(!isCompletedList && session.status !== 'completed') && (
                          <Button variant="outline" size="sm" onClick={() => setSessionToEdit(session)} className="ml-4">
                             <Edit className="h-4 w-4 mr-2" /> Edit
                          </Button>
