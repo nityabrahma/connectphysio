@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, isSameDay, isSameMonth, isSameWeek } from "date-fns";
+import { format, isSameDay, isSameMonth, isSameWeek, parse } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -65,7 +65,11 @@ export default function AppointmentsPage() {
       dateFilteredSessions = dateFilteredSessions.filter(s => s.therapistId === user?.therapistId);
     }
     
-    return dateFilteredSessions.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.startTime.localeCompare(b.startTime));
+    return dateFilteredSessions.sort((a, b) => {
+        const timeA = parse(`${a.date} ${a.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+        const timeB = parse(`${b.date} ${b.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+        return timeA.getTime() - timeB.getTime();
+    });
   }
 
   const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {

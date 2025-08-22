@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { format, isFuture, parseISO } from "date-fns";
+import { format, isFuture, parse, parseISO } from "date-fns";
 import {
   Mail,
   Phone,
@@ -88,7 +88,11 @@ export default function PatientDetailPage() {
   const patientSessions = useMemo(() => {
     return sessions
       .filter((s) => s.patientId === patientId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => {
+          const timeA = parse(`${a.date} ${a.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+          const timeB = parse(`${b.date} ${b.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+          return timeA.getTime() - timeB.getTime();
+      });
   }, [sessions, patientId]);
 
   const upcomingSessions = useMemo(() => {
@@ -208,9 +212,11 @@ export default function PatientDetailPage() {
                             <Badge variant="outline" className="capitalize mr-4">{session.status}</Badge>
                           </div>
                        </AccordionTrigger>
-                        <Button variant="outline" size="sm" onClick={() => setSessionToEdit(session)} className="ml-4">
+                       {!isCompletedList && (
+                         <Button variant="outline" size="sm" onClick={() => setSessionToEdit(session)} className="ml-4">
                             <Edit className="h-4 w-4 mr-2" /> Edit
-                        </Button>
+                         </Button>
+                       )}
                     </div>
                     <AccordionContent className="py-2 px-4 text-sm text-muted-foreground space-y-3">
                          {session.healthNotes && (

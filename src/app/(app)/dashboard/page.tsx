@@ -8,7 +8,7 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState } from "react";
-import { isSameDay, format } from "date-fns";
+import { isSameDay, format, parse } from "date-fns";
 import { usePatients } from "@/hooks/use-patients";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -42,7 +42,11 @@ const TodaysAppointmentsList = () => {
     if (user?.role === "therapist") {
       filtered = filtered.filter((s) => s.therapistId === user.therapistId);
     }
-    return filtered.sort((a, b) => a.startTime.localeCompare(b.startTime));
+     return filtered.sort((a, b) => {
+        const timeA = parse(`${a.date} ${a.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+        const timeB = parse(`${b.date} ${b.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+        return timeA.getTime() - timeB.getTime();
+    });
   }, [sessions, user]);
 
   const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
