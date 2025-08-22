@@ -28,6 +28,7 @@ import {
   PackagePlus,
   PlusCircle,
   MoreVertical,
+  MessageSquareQuote,
 } from "lucide-react";
 import {
   Accordion,
@@ -64,6 +65,85 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditSessionModal } from "./edit-session-modal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
+
+const FormattedHealthNotes = ({ notes }: { notes?: string }) => {
+    if (!notes) return <p className="text-sm text-muted-foreground">No health notes recorded for this session.</p>;
+    
+    const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
+
+    try {
+      const parsedNotes = JSON.parse(notes);
+      if (typeof parsedNotes !== 'object' || !parsedNotes.questionnaireId || !parsedNotes.answers) {
+        throw new Error("Invalid notes format");
+      }
+      
+      const questionnaire = questionnaires.find(q => q.id === parsedNotes.questionnaireId);
+      if (!questionnaire) {
+        return <p className="bg-secondary/50 p-3 rounded-md text-sm">Questionnaire used for this session could not be found.</p>;
+      }
+
+      return (
+        <div className="space-y-4">
+          <h5 className="font-semibold text-foreground">{questionnaire.title}</h5>
+          <ul className="space-y-3">
+            {questionnaire.questions.map(q => {
+              const answer = parsedNotes.answers[q.id];
+              return (
+                <li key={q.id} className="text-sm">
+                  <p className="font-medium text-foreground">{q.label}</p>
+                  <p className="text-muted-foreground pl-2 mt-1 bg-secondary/30 p-2 rounded-md">{Array.isArray(answer) ? answer.join(', ') : answer || 'N/A'}</p>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      );
+    } catch (e) {
+      // Fallback for old plain text notes
+      return <p className="bg-secondary/50 p-3 rounded-md text-sm">{notes}</p>;
+    }
+};
+
+const ViewSessionModal = ({ session, isOpen, onOpenChange, getTherapistName }: { session: Session | null; isOpen: boolean; onOpenChange: (open: boolean) => void; getTherapistName: (id: string) => string; }) => {
+    if (!session) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Session Details</DialogTitle>
+                    <DialogDescription>
+                        Completed on {format(new Date(session.date), 'EEE, MMM d, yyyy')} with {getTherapistName(session.therapistId)}.
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="flex-1 -mr-6 pr-6">
+                    <div className="space-y-6 py-4">
+                        <div>
+                            <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2"><Stethoscope size={18}/> Health Notes</h4>
+                            <div className="p-4 border rounded-lg">
+                                <FormattedHealthNotes notes={session.healthNotes} />
+                            </div>
+                        </div>
+                        {session.notes && (
+                           <div>
+                                <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2"><StickyNote size={18}/> Internal Notes</h4>
+                                <div className="p-4 border rounded-lg bg-secondary/50">
+                                  <p className="text-sm text-muted-foreground">{session.notes}</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
+                 <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 
 export default function PatientDetailPage() {
@@ -80,10 +160,9 @@ export default function PatientDetailPage() {
     []
   );
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
-  const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
-
 
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
+  const [sessionToView, setSessionToView] = useState<Session | null>(null);
 
   const patientSessions = useMemo(() => {
     return sessions
@@ -91,7 +170,7 @@ export default function PatientDetailPage() {
       .sort((a, b) => {
           const timeA = parse(`${a.date} ${a.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
           const timeB = parse(`${b.date} ${b.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
-          return timeA.getTime() - timeB.getTime();
+          return timeB.getTime() - timeA.getTime();
       });
   }, [sessions, patientId]);
 
@@ -152,41 +231,6 @@ export default function PatientDetailPage() {
     return therapists.find(t => t.id === therapistId)?.name || 'Unknown Therapist';
   }
 
-  const FormattedHealthNotes = ({ notes }: { notes?: string }) => {
-    if (!notes) return null;
-  
-    try {
-      const parsedNotes = JSON.parse(notes);
-      if (typeof parsedNotes !== 'object' || !parsedNotes.questionnaireId || !parsedNotes.answers) {
-        throw new Error("Invalid notes format");
-      }
-      
-      const questionnaire = questionnaires.find(q => q.id === parsedNotes.questionnaireId);
-      if (!questionnaire) {
-        return <p className="bg-secondary/50 p-2 rounded-md">Questionnaire not found.</p>;
-      }
-
-      return (
-        <div className="bg-secondary/50 p-3 rounded-md space-y-2">
-          <h5 className="font-semibold text-foreground">{questionnaire.title}</h5>
-          <ul className="space-y-2">
-            {questionnaire.questions.map(q => {
-              const answer = parsedNotes.answers[q.id];
-              return (
-                <li key={q.id} className="text-sm">
-                  <p className="font-medium text-foreground">{q.label}</p>
-                  <p className="text-muted-foreground pl-2">{Array.isArray(answer) ? answer.join(', ') : answer || 'N/A'}</p>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      );
-    } catch (e) {
-      // Fallback for old plain text notes
-      return <p className="bg-secondary/50 p-2 rounded-md">{notes}</p>;
-    }
-  };
 
   const SessionList = ({ sessions, isCompletedList = false }: { sessions: Session[], isCompletedList?: boolean }) => {
     if (sessions.length === 0) {
@@ -197,13 +241,33 @@ export default function PatientDetailPage() {
         </div>
       );
     }
+    
+    if (isCompletedList) {
+        return (
+            <div className="w-full space-y-3">
+                {sessions.map((session) => (
+                   <button 
+                    key={session.id} 
+                    className="p-3 bg-muted/30 rounded-lg w-full flex items-center justify-between text-left hover:bg-muted/60 transition-colors"
+                    onClick={() => setSessionToView(session)}
+                   >
+                       <div>
+                            <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d, yyyy')} &middot; {session.startTime}</p>
+                            <p className="text-sm text-muted-foreground">with {getTherapistName(session.therapistId)}</p>
+                        </div>
+                        <Badge variant="outline" className="capitalize">{session.status}</Badge>
+                   </button>
+                ))}
+            </div>
+        )
+    }
   
     return (
         <Accordion type="single" collapsible className="w-full space-y-3">
             {sessions.map((session) => (
                 <AccordionItem value={session.id} key={session.id} className="border-none">
                     <div className="p-3 bg-muted/30 rounded-lg w-full flex items-center justify-between">
-                       <AccordionTrigger className="flex-1 p-0 hover:no-underline">
+                       <AccordionTrigger className="flex-1 p-0 hover:no-underline w-full">
                           <div className="flex justify-between items-center w-full">
                             <div className="text-left">
                                 <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d, yyyy')} &middot; {session.startTime}</p>
@@ -221,8 +285,8 @@ export default function PatientDetailPage() {
                     <AccordionContent className="py-2 px-4 text-sm text-muted-foreground space-y-3">
                          {session.healthNotes && (
                              <div className="pt-2">
-                                <h4 className="font-semibold text-foreground flex items-center gap-2 mb-1"><Stethoscope size={16}/> Health Notes</h4>
-                                <FormattedHealthNotes notes={session.healthNotes} />
+                                <h4 className="font-semibold text-foreground flex items-center gap-2 mb-1"><Stethoscope size={16}/> Health Notes Summary</h4>
+                                <p className="bg-secondary/50 p-2 rounded-md italic">Notes have been recorded for this session.</p>
                             </div>
                          )}
                          {session.notes && (
@@ -394,6 +458,14 @@ export default function PatientDetailPage() {
             onUpdate={handleUpdateSession}
         />
       )}
+       <ViewSessionModal
+            session={sessionToView}
+            isOpen={!!sessionToView}
+            onOpenChange={(isOpen) => !isOpen && setSessionToView(null)}
+            getTherapistName={getTherapistName}
+        />
     </>
   );
 }
+
+    
