@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -80,4 +81,11 @@
     background: hsl(var(--primary));
     background-clip: content-box;
   }
+
+  /* Big Calendar Custom Styles */
+  .rbc-event {
+    background-color: transparent !important;
+  }
 }
+
+    

@@ -2,244 +2,283 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, LogOut, PlusCircle, MoreVertical, UserPlus, Footprints, Calendar as CalendarIcon, User } from "lucide-react";
+import { Check, LogOut, PlusCircle, UserPlus, User, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Patient, Session, Therapist, PackageSale } from "@/types/domain";
+import type { Patient, Session, Therapist } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { usePatients } from "@/hooks/use-patients";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, isSameDay, isSameMonth, isSameWeek, parse } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import {enUS} from 'date-fns/locale/en-US'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent
-} from "@/components/ui/dropdown-menu"
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+} from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import { EndSessionForm } from "../dashboard/end-session-form";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Calendar as BigCalendar,
+  dateFnsLocalizer,
+  Views,
+  type Event,
+} from 'react-big-calendar'
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { cn } from "@/lib/utils";
 
+const locales = { 'en-US': enUS };
+const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
+
+interface SessionEvent extends Event {
+  resource: Session;
+}
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
-  
+
+  // Left sidebar visible month + selected date for main calendar
+  const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // Tabs: today | week | month
+  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'month'>('today');
+
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const centreSessions = useMemo(() => {
-    return sessions.filter(s => s.centreId === user?.centreId);
-  }, [sessions, user]);
-  
-  const filteredSessions = (view: "day" | "week" | "month") => {
-    if (!selectedDate) return [];
-    
-    let dateFilteredSessions = centreSessions.filter(session => {
-        const sessionDate = new Date(session.date);
-        switch (view) {
-            case "day": return isSameDay(sessionDate, selectedDate);
-            case "week": return isSameWeek(sessionDate, selectedDate);
-            case "month": return isSameMonth(sessionDate, selectedDate);
-            default: return false;
-        }
-    });
-
+    let filtered = sessions.filter(s => s.centreId === user?.centreId && s.status !== 'cancelled');
     if (user?.role === 'therapist') {
-      dateFilteredSessions = dateFilteredSessions.filter(s => s.therapistId === user?.therapistId);
+      filtered = filtered.filter(s => s.therapistId === user?.therapistId);
     }
-    
-    return dateFilteredSessions.sort((a, b) => {
-        const timeA = parse(`${a.date} ${a.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
-        const timeB = parse(`${b.date} ${b.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
-        return timeA.getTime() - timeB.getTime();
+    return filtered.sort((a, b) => {
+      const timeA = parse(`${a.date} ${a.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+      const timeB = parse(`${b.date} ${b.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+      return timeA.getTime() - timeB.getTime();
     });
-  }
+  }, [sessions, user]);
 
-  const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status } : s));
-    toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
-  };
+  const events: SessionEvent[] = useMemo(() => {
+    return centreSessions.map(session => {
+      const start = parse(`${session.date} ${session.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+      const end = parse(`${session.date} ${session.endTime}`, 'yyyy-MM-dd HH:mm', new Date());
+      const patient = patients.find(p => p.id === session.patientId);
+      return {
+        title: patient?.name || 'Unknown Patient',
+        start,
+        end,
+        resource: session,
+      };
+    });
+  }, [centreSessions, patients]);
 
   const handleEndSessionSubmit = (sessionId: string, healthNotes: string | undefined) => {
     if (!healthNotes || healthNotes.trim() === '' || healthNotes.trim() === '{}') {
-       toast({ title: 'Please fill out the session form to complete the session.', variant: 'destructive' });
-       return;
+      toast({ title: 'Please fill out the session form to complete the session.', variant: 'destructive' });
+      return;
     }
     setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
     toast({ title: 'Session Completed' });
     setSessionToEnd(null);
-  }
+  };
 
-
-  const SessionList = ({ view }: { view: "day" | "week" | "month" }) => {
-    const data = filteredSessions(view).filter(s => s.status !== 'completed');
-    const getPatient = (patientId: string) => patients.find(p => p.id === patientId);
-    const getTherapistName = (therapistsId: string) => therapists.find(t => t.id === therapistsId)?.name || 'Unknown';
+  // Custom event (popover like Google Calendar)
+  const EventComponent = ({ event }: { event: SessionEvent }) => {
+    const patient = patients.find(p => p.id === event.resource.patientId);
+    const therapist = therapists.find(t => t.id === event.resource.therapistId);
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
-    
+
     const canManageSession = (session: Session) => {
-        if (user?.role === 'admin' || user?.role === 'receptionist') return true;
-        if (user?.role === 'therapist' && user.therapistId === session.therapistId) return true;
-        return false;
-    }
+      if (user?.role === 'admin' || user?.role === 'receptionist') return true;
+      if (user?.role === 'therapist' && user.therapistId === session.therapistId) return true;
+      return false;
+    };
 
-    const groupedSessions = useMemo(() => {
-      return data.reduce<Record<string, Session[]>>((acc, session) => {
-        if (!acc[session.patientId]) {
-          acc[session.patientId] = [];
-        }
-        acc[session.patientId].push(session);
-        return acc;
-      }, {});
-    }, [data]);
-
-
-    if (data.length === 0) {
-      return (
-        <div className="text-center text-muted-foreground py-8">
-            <p>No appointments for this {view}.</p>
-        </div>
-      );
-    }
+    const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
+      setSessions(sessions.map(s => s.id === sessionId ? { ...s, status } : s));
+      toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
+    };
 
     return (
-      <Accordion type="single" collapsible className="w-full space-y-4 pt-4">
-        {Object.entries(groupedSessions).map(([patientId, patientSessions]) => {
-          const patient = getPatient(patientId);
-          if (!patient) return null;
-
-          return (
-            <AccordionItem value={patientId} key={patientId} className="border-none">
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg w-full" onClick={(e) => e.stopPropagation()}>
-                <AccordionTrigger className="flex-1 p-0 hover:no-underline">
-                    <div className="flex items-center gap-3 text-left">
-                      <Avatar>
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                          {getInitials(patient.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold">{patient.name}</p>
-                        <p className="text-sm text-muted-foreground">{patientSessions.length} appointment(s) this {view}</p>
-                      </div>
-                    </div>
-                </AccordionTrigger>
+      <Popover>
+        <PopoverTrigger asChild>
+          <div className="p-1 h-full w-full cursor-pointer text-primary-foreground">
+            <p className="font-semibold text-xs truncate">{event.title}</p>
+            <p className="text-xs text-primary-foreground/80">{format(event.start as Date, 'h:mm a')}</p>
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-80">
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                    {patient && getInitials(patient.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h4 className="font-medium leading-none">{patient?.name}</h4>
+                  <p className="text-sm text-muted-foreground">{patient?.email}</p>
+                </div>
               </div>
-              <AccordionContent>
-                  <ul className="space-y-2 pt-2 pl-4 border-l ml-5">
-                      {patientSessions.map(session => (
-                          <li key={session.id} className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4">
-                              <div className="flex-1">
-                                  <p className="font-semibold">{format(new Date(session.date), 'EEE, MMM d')} &middot; {session.startTime} - {session.endTime}</p>
-                                  <p className="text-sm text-muted-foreground">with {getTherapistName(session.therapistId)}</p>
-                                  <div className="flex gap-2 mt-2 flex-wrap">
-                                    <Badge variant="outline" className="capitalize">{session.status}</Badge>
-                                  </div>
-                              </div>
-                              {canManageSession(session) && (
-                                  <div className="flex gap-2 mt-4 sm:mt-0 flex-wrap items-center">
-                                      {session.status === 'scheduled' && (
-                                          <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}><Check/> Check In</Button>
-                                      )}
-                                      {session.status === 'checked-in' && (
-                                          <Button size="sm" onClick={() => setSessionToEnd(session)}><LogOut/> End Session</Button>
-                                      )}
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                                            <MoreVertical className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                           <DropdownMenuItem onSelect={() => {
-                                              router.push(`/appointments/edit/${session.id}`);
-                                          }}>
-                                              Edit Details
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                  </div>
-                              )}
-                          </li>
-                      ))}
-                  </ul>
-              </AccordionContent>
-            </AccordionItem>
-          );
-        })}
-      </Accordion>
-    )
-  }
+            </div>
+            <div className="grid gap-2 text-sm">
+              <div className="grid grid-cols-3 items-center gap-4">
+                <span className="text-muted-foreground">When</span>
+                <span className="col-span-2 font-semibold">
+                  {format(event.start as Date, 'EEE, MMM d')} · {format(event.start as Date, 'h:mm a')} - {format(event.end as Date, 'h:mm a')}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-4">
+                <span className="text-muted-foreground">Therapist</span>
+                <span className="col-span-2">{therapist?.name}</span>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-4">
+                <span className="text-muted-foreground">Status</span>
+                <span className="col-span-2 capitalize">{event.resource.status}</span>
+              </div>
+            </div>
+            {canManageSession(event.resource) && event.resource.status !== 'completed' && (
+              <div className="flex gap-2 w-full pt-4 border-t">
+                {event.resource.status === 'scheduled' && (
+                  <Button size="sm" onClick={() => handleUpdateSessionStatus(event.resource.id, 'checked-in')}><Check /> Check In</Button>
+                )}
+                {event.resource.status === 'checked-in' && (
+                  <Button size="sm" onClick={() => setSessionToEnd(event.resource)}><LogOut /> End Session</Button>
+                )}
+                <Button variant="outline" size="sm" className="ml-auto" onClick={() => router.push(`/appointments/edit/${event.resource.id}`)}><Edit /> Edit</Button>
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
+
+  // Map tabs to BigCalendar view
+  const viewForTab = (tab: 'today' | 'week' | 'month') => {
+    if (tab === 'today') return Views.DAY;
+    if (tab === 'week') return Views.WEEK;
+    return Views.MONTH;
+  };
+
+  const onNavigate = (date: Date) => {
+    setSelectedDate(date);
+    setVisibleMonth(date);
+  };
 
   return (
     <>
       <div className="flex flex-col gap-8 h-full">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
           {user?.role !== 'therapist' && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button>
-                    <PlusCircle />
-                    New Appointment
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => router.push('/patients/new?redirectToAppointment=true')}>
-                    <UserPlus /> New Patient
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => router.push('/patients?select=true')}>
-                    <User /> Existing Patient
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  <PlusCircle />
+                  New Appointment
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => router.push('/patients/new?redirectToAppointment=true')}>
+                  <UserPlus /> New Patient
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => router.push('/patients?select=true')}>
+                  <User /> Existing Patient
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
-        
+
+        {/* Main Grid */}
         <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-8 flex-1">
-              <div className="md:col-span-1 flex justify-center">
-                  <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      className="rounded-md"
-                  />
+          <CardContent className="p-4 md:p-6 grid md:grid-cols-4 gap-6 flex-1 min-h-0">
+            {/* LEFT: Month mini calendar + controls */}
+            <div className="md:col-span-1 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="icon" onClick={() => setVisibleMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-sm font-medium">{format(visibleMonth, 'MMMM yyyy')}</div>
+                <Button variant="ghost" size="icon" onClick={() => setVisibleMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
-              <div className="md:col-span-2 flex flex-col min-h-0">
-                  <Tabs defaultValue="month" className="w-full flex flex-col flex-1 min-h-0">
-                      <TabsList>
-                          <TabsTrigger value="day">Day</TabsTrigger>
-                          <TabsTrigger value="week">Week</TabsTrigger>
-                          <TabsTrigger value="month">Month</TabsTrigger>
-                      </TabsList>
-                      <div className="flex-1 mt-4 relative">
-                        <ScrollArea className="absolute inset-0 w-full h-full pr-4">
-                            <TabsContent value="day"><SessionList view="day" /></TabsContent>
-                            <TabsContent value="week"><SessionList view="week" /></TabsContent>
-                            <TabsContent value="month"><SessionList view="month" /></TabsContent>
-                        </ScrollArea>
-                      </div>
-                  </Tabs>
-              </div>
+              <MiniCalendar
+                mode="single"
+                month={visibleMonth}
+                onMonthChange={setVisibleMonth}
+                selected={selectedDate}
+                onSelect={(d) => { if (d) { setSelectedDate(d); setActiveTab('today'); } }}
+                className="rounded-md"
+              />
+              <Button variant="outline" onClick={() => { const now = new Date(); setVisibleMonth(now); setSelectedDate(now); setActiveTab('today'); }}>Today</Button>
+            </div>
+
+            {/* RIGHT: Tabs + BigCalendar */}
+            <div className="md:col-span-3 flex flex-col min-h-0">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="flex flex-col flex-1 min-h-0">
+                <div className="flex items-center justify-between">
+                  <TabsList>
+                    <TabsTrigger value="today">Today</TabsTrigger>
+                    <TabsTrigger value="week">Week</TabsTrigger>
+                    <TabsTrigger value="month">This Month</TabsTrigger>
+                  </TabsList>
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm text-muted-foreground">{format(selectedDate, 'EEE, dd MMM yyyy')}</div>
+                    <Button variant="outline" size="sm" onClick={() => { const now = new Date(); setSelectedDate(now); setVisibleMonth(now); setActiveTab('today'); }}>Today</Button>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex-1 min-h-0">
+                  {/* Single BigCalendar instance controlled by tab */}
+                  <div className="h-[72vh] md:h-[70vh] w-full rounded-lg border">
+                    <BigCalendar
+                      localizer={localizer}
+                      events={events}
+                      startAccessor="start"
+                      endAccessor="end"
+                      date={selectedDate}
+                      onNavigate={onNavigate}
+                      view={viewForTab(activeTab)}
+                      toolbar={false}
+                      components={{ event: EventComponent }}
+                      eventPropGetter={(event) => {
+                        const status = (event as SessionEvent).resource.status;
+                        const className = cn(
+                            'rounded-md border-l-4 p-0',
+                            status === 'completed' && 'bg-green-500/80 border-green-700',
+                            status === 'checked-in' && 'bg-blue-500/80 border-blue-700',
+                            status === 'scheduled' && 'bg-primary/80 border-primary',
+                        );
+                        return { className };
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Hidden contents just to satisfy Tabs structure (we use one calendar instance) */}
+                <TabsContent value="today" />
+                <TabsContent value="week" />
+                <TabsContent value="month" />
+              </Tabs>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -256,3 +295,5 @@ export default function AppointmentsPage() {
     </>
   );
 }
+
+    
