@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useState, type FormEvent, useEffect } from 'react';
 
+// Mock password hashing for demo purposes. DO NOT use in production.
+const mockHash = (password: string) => `hashed_${password}`;
+
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
@@ -15,7 +18,8 @@ export default function ProfilePage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
   useEffect(() => {
@@ -42,7 +46,16 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!user) return;
     
-    if (password !== confirmPassword) {
+    if (user.passwordHash !== mockHash(currentPassword)) {
+        toast({
+            variant: 'destructive',
+            title: 'Incorrect Password',
+            description: 'The current password you entered is incorrect.',
+        });
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
       toast({
         variant: 'destructive',
         title: 'Password Mismatch',
@@ -51,23 +64,23 @@ export default function ProfilePage() {
       return;
     }
     
-    if (password.length < 6) {
+    if (newPassword.length < 6) {
         toast({
             variant: 'destructive',
             title: 'Password Too Short',
-            description: 'Password must be at least 6 characters.',
+            description: 'New password must be at least 6 characters.',
         });
         return;
     }
 
-    // This is a mock. In a real app, you'd send this to a secure backend.
-    updateUser(user.id, { password });
+    updateUser(user.id, { password: newPassword });
 
     toast({
       title: 'Password Changed',
       description: 'Your password has been successfully updated.',
     });
-    setPassword('');
+    setCurrentPassword('');
+    setNewPassword('');
     setConfirmPassword('');
   };
 
@@ -118,8 +131,12 @@ export default function ProfilePage() {
           <form onSubmit={handlePasswordChange}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="current-password">Current Password</Label>
+                <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="new-password">New Password</Label>
-                <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm New Password</Label>
