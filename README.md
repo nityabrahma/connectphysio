@@ -5,17 +5,6 @@ This is a NextJS starter in Firebase Studio.
 To get started, take a look at src/app/page.tsx.
 
 ## TODO
-- patient search option
-- new edit session page
-- Add check-in option at dashboard
-- route to patient-details after creating patients.
-- Add patient option at dashboard.
-- new appointment option at patient-details page=> new or existing
-- add patient filter completed and upcoming sessions on patient details page.
-- Add dropdown for walk-in for existing patient and new patient. if existing route to patient's list else new patient add form.
-- replace assign package modal with route and add options to choose therapy session as 1 day gap, 2 day gap, etc. and after selecting show a calendar with marked dates selected for schedule, then submit.
-- remove payment status from session details.
-- remove email and phone number like data from patient's list. add option to create new appointment at patient's list dropdown menu.
 - Add delete, assign package, and edit options and patient-details page.
 
 # later

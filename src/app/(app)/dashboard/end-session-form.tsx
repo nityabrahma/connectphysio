@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import type { Patient, Session } from "@/types/domain"
+import type { Patient, Session, Questionnaire } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -22,15 +22,13 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog"
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
-const formSchema = z.object({
-  healthNotes: z.string().min(1, "Health notes are required to complete the session."),
-})
-
-type EndSessionFormValues = z.infer<typeof formSchema>
+import { Slider } from "@/components/ui/slider"
+import { Input } from "@/components/ui/input"
+import { useLocalStorage } from "@/hooks/use-local-storage"
+import { LS_KEYS } from "@/lib/constants"
 
 interface EndSessionFormProps {
     isOpen: boolean;
@@ -41,38 +39,95 @@ interface EndSessionFormProps {
 }
 
 export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patient }: EndSessionFormProps) {
-    const form = useForm<EndSessionFormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            healthNotes: session.healthNotes || "",
+    const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
+    
+    // For now, let's assume the first questionnaire is the one to use.
+    // In a real app, this could be linked to the session or centre.
+    const activeQuestionnaire = questionnaires[0]; 
+    
+    const formSchema = useMemo(() => {
+        if (!activeQuestionnaire) {
+            return z.object({
+                healthNotes: z.string().min(1, "Health notes are required to complete the session."),
+            });
         }
+
+        const schemaShape = activeQuestionnaire.questions.reduce((acc, q) => {
+            let fieldSchema;
+            switch (q.type) {
+                case 'slider':
+                    fieldSchema = z.array(z.number()).length(1, { message: 'Please select a value.'});
+                    break;
+                case 'text':
+                default:
+                    fieldSchema = z.string().min(1, { message: `${q.label} is required.` });
+                    break;
+            }
+            return { ...acc, [q.id]: fieldSchema };
+        }, {} as Record<string, any>);
+        
+        return z.object(schemaShape);
+
+    }, [activeQuestionnaire]);
+
+    const form = useForm({
+        resolver: zodResolver(formSchema),
     });
 
     useEffect(() => {
         if (isOpen) {
-            form.reset({
-                healthNotes: session.healthNotes || "",
-            });
+            let defaultValues = {};
+            try {
+                if (session.healthNotes) {
+                    defaultValues = JSON.parse(session.healthNotes);
+                }
+            } catch (e) {
+                console.warn("Could not parse healthNotes from session", e);
+            }
+            
+            if (activeQuestionnaire) {
+                const initialValues = activeQuestionnaire.questions.reduce((acc, q) => {
+                    const existingValue = (defaultValues as any)[q.id];
+                    if (existingValue) {
+                        return { ...acc, [q.id]: existingValue };
+                    }
+
+                    switch (q.type) {
+                        case 'slider':
+                            return { ...acc, [q.id]: [q.min ?? 0] };
+                        case 'text':
+                        default:
+                            return { ...acc, [q.id]: '' };
+                    }
+                }, {});
+                form.reset(initialValues);
+            } else {
+                 form.reset({
+                    healthNotes: session.healthNotes || "",
+                });
+            }
         }
-    }, [session, form, isOpen]);
+    }, [session, form, isOpen, activeQuestionnaire]);
 
-    const handleFormSubmit = (values: EndSessionFormValues) => {
-        onSubmit(session.id, values.healthNotes);
+    const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
+        const notes = JSON.stringify(values);
+        onSubmit(session.id, notes);
     }
-
+    
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Complete Session</DialogTitle>
                     <DialogDescription>
-                        Update health notes for {patient?.name}'s session before completing it.
+                        Fill out the questionnaire for {patient?.name}'s session before completing it.
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="flex-1 -mr-6 pr-6">
                   <Form {...form}>
-                      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-                          <FormField
+                      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 py-4">
+                          {!activeQuestionnaire ? (
+                             <FormField
                               control={form.control}
                               name="healthNotes"
                               render={({ field }) => (
@@ -88,7 +143,38 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                                       <FormMessage />
                                   </FormItem>
                               )}
-                          />
+                            />
+                          ) : (
+                              activeQuestionnaire.questions.map(q => (
+                                <FormField
+                                    key={q.id}
+                                    control={form.control}
+                                    name={q.id}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{q.label}</FormLabel>
+                                            <FormControl>
+                                                {q.type === 'slider' ? (
+                                                     <div className="flex items-center gap-4">
+                                                        <Slider
+                                                            min={q.min}
+                                                            max={q.max}
+                                                            step={q.step}
+                                                            onValueChange={(value) => field.onChange(value)}
+                                                            defaultValue={field.value}
+                                                        />
+                                                        <span className="text-sm font-semibold w-12 text-center">{field.value?.[0]}</span>
+                                                    </div>
+                                                ) : (
+                                                    <Textarea placeholder={q.placeholder || ''} {...field} />
+                                                )}
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                              ))
+                          )}
                       </form>
                   </Form>
                 </ScrollArea>

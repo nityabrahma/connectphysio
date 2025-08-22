@@ -80,7 +80,7 @@ export type Session = {
   centreId: ID;
   packageSaleId?: ID;
   status: "scheduled" | "checked-in" | "completed" | "cancelled" | "no-show";
-  healthNotes?: string;
+  healthNotes?: string; // Stored as a JSON string of questionnaire answers
   notes?: string;
   createdAt: string;
 };
@@ -90,4 +90,27 @@ export type CheckIn = {
   sessionId: ID;
   at: string; // ISO DateTime
   notes?: string; // Optional notes at check-in
+};
+
+// Questionnaire Types
+export type QuestionType = 'text' | 'slider' | 'multiple-choice' | 'checkbox';
+
+export type Question = {
+  id: ID;
+  label: string;
+  type: QuestionType;
+  placeholder?: string;
+  options?: string[]; // for multiple-choice/checkbox
+  min?: number;      // for slider
+  max?: number;      // for slider
+  step?: number;     // for slider
+};
+
+export type Questionnaire = {
+  id: ID;
+  title: string;
+  centreId: ID;
+  questions: Question[];
+  createdAt: string;
+  updatedAt?: string;
 };

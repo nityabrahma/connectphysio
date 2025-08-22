@@ -12,4 +12,5 @@ export const LS_KEYS = {
   ALERTS: `${APP_NAMESPACE}:alerts`,
   THEME: `${APP_NAMESPACE}:theme`,
   SEEDED: `${APP_NAMESPACE}:seeded`,
+  QUESTIONNAIRES: `${APP_NAMESPACE}:questionnaires`,
 };
