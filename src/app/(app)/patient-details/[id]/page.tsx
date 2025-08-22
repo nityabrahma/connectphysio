@@ -3,7 +3,7 @@
 
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
-import type { Patient, Session, Therapist } from "@/types/domain";
+import type { Patient, Session, Therapist, Questionnaire } from "@/types/domain";
 import {
   Card,
   CardContent,
@@ -80,6 +80,8 @@ export default function PatientDetailPage() {
     []
   );
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
+  const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
+
 
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
 
@@ -146,6 +148,42 @@ export default function PatientDetailPage() {
     return therapists.find(t => t.id === therapistId)?.name || 'Unknown Therapist';
   }
 
+  const FormattedHealthNotes = ({ notes }: { notes?: string }) => {
+    if (!notes) return null;
+  
+    try {
+      const parsedNotes = JSON.parse(notes);
+      if (typeof parsedNotes !== 'object' || !parsedNotes.questionnaireId || !parsedNotes.answers) {
+        throw new Error("Invalid notes format");
+      }
+      
+      const questionnaire = questionnaires.find(q => q.id === parsedNotes.questionnaireId);
+      if (!questionnaire) {
+        return <p className="bg-secondary/50 p-2 rounded-md">Questionnaire not found.</p>;
+      }
+
+      return (
+        <div className="bg-secondary/50 p-3 rounded-md space-y-2">
+          <h5 className="font-semibold text-foreground">{questionnaire.title}</h5>
+          <ul className="space-y-2">
+            {questionnaire.questions.map(q => {
+              const answer = parsedNotes.answers[q.id];
+              return (
+                <li key={q.id} className="text-sm">
+                  <p className="font-medium text-foreground">{q.label}</p>
+                  <p className="text-muted-foreground pl-2">{Array.isArray(answer) ? answer.join(', ') : answer || 'N/A'}</p>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      );
+    } catch (e) {
+      // Fallback for old plain text notes
+      return <p className="bg-secondary/50 p-2 rounded-md">{notes}</p>;
+    }
+  };
+
   const SessionList = ({ sessions, isCompletedList = false }: { sessions: Session[], isCompletedList?: boolean }) => {
     if (sessions.length === 0) {
       return (
@@ -178,7 +216,7 @@ export default function PatientDetailPage() {
                          {session.healthNotes && (
                              <div className="pt-2">
                                 <h4 className="font-semibold text-foreground flex items-center gap-2 mb-1"><Stethoscope size={16}/> Health Notes</h4>
-                                <p className="bg-secondary/50 p-2 rounded-md">{session.healthNotes}</p>
+                                <FormattedHealthNotes notes={session.healthNotes} />
                             </div>
                          )}
                          {session.notes && (
