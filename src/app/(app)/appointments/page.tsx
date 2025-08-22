@@ -168,7 +168,7 @@ export default function AppointmentsPage() {
                               </div>
                               {canManageSession(session) && (
                                   <div className="flex gap-2 mt-4 sm:mt-0 flex-wrap items-center">
-                                      {session.status === 'scheduled' && (user?.role === 'receptionist' || user?.role === 'admin') && (
+                                      {session.status === 'scheduled' && (
                                           <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}><Check/> Check In</Button>
                                       )}
                                       {session.status === 'checked-in' && (
