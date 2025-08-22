@@ -1,0 +1,51 @@
+
+'use client';
+
+import { QuestionnaireForm, type QuestionnaireFormValues } from '../questionnaire-form';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { LS_KEYS } from '@/lib/constants';
+import type { Questionnaire } from '@/types/domain';
+import { useToast } from '@/hooks/use-toast';
+import { generateId } from '@/lib/ids';
+import { useAuth } from '@/hooks/use-auth';
+
+export default function NewQuestionnairePage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [questionnaires, setQuestionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
+
+  const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
+    const newQuestionnaire: Questionnaire = {
+      ...values,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+    };
+    setQuestionnaires([...questionnaires, newQuestionnaire]);
+    toast({ title: "Questionnaire created" });
+    router.push('/questionnaires');
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+       <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+            <h1 className="text-3xl font-bold tracking-tight">New Questionnaire</h1>
+            <p className="text-muted-foreground">Create a new form for session completion.</p>
+        </div>
+      </div>
+      <Card>
+        <CardContent className="p-6">
+          <QuestionnaireForm onSubmit={handleFormSubmit} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

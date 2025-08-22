@@ -9,19 +9,11 @@ import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/components/ui/dialog"
 import { useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/hooks/use-auth"
@@ -36,7 +28,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { PlusCircle, Trash2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { generateId } from "@/lib/ids"
@@ -56,13 +47,11 @@ const formSchema = z.object({
   questions: z.array(questionSchema),
 })
 
-type QuestionnaireFormValues = z.infer<typeof formSchema>
+export type QuestionnaireFormValues = z.infer<typeof formSchema>
 
 interface QuestionnaireFormProps {
-    isOpen: boolean;
-    onOpenChange: (isOpen: boolean) => void;
     onSubmit: (values: Omit<Questionnaire, 'id' | 'createdAt'>) => void;
-    onDelete: (id: string) => void;
+    onDelete?: (id: string) => void;
     questionnaire?: Questionnaire | null;
 }
 
@@ -73,7 +62,7 @@ const defaultQuestions: Omit<Question, 'id'>[] = [
     { label: "Follow-up Plan", type: 'text', placeholder: "e.g., Continue with exercises, Re-assess next session" }
 ];
 
-export function QuestionnaireForm({ isOpen, onOpenChange, onSubmit, onDelete, questionnaire }: QuestionnaireFormProps) {
+export function QuestionnaireForm({ onSubmit, onDelete, questionnaire }: QuestionnaireFormProps) {
     const { user: currentUser } = useAuth();
     const isEditing = !!questionnaire;
     
@@ -91,17 +80,15 @@ export function QuestionnaireForm({ isOpen, onOpenChange, onSubmit, onDelete, qu
     });
 
     useEffect(() => {
-        if (isOpen) {
-            if (questionnaire) {
-                form.reset(questionnaire);
-            } else {
-                form.reset({
-                    title: "Default Follow-up Form",
-                    questions: defaultQuestions.map(q => ({...q, id: generateId()})),
-                });
-            }
+        if (questionnaire) {
+            form.reset(questionnaire);
+        } else {
+            form.reset({
+                title: "Default Follow-up Form",
+                questions: defaultQuestions.map(q => ({...q, id: generateId()})),
+            });
         }
-    }, [questionnaire, form, isOpen]);
+    }, [questionnaire, form]);
 
     const handleFormSubmit = (values: QuestionnaireFormValues) => {
         if (!currentUser) return;
@@ -109,137 +96,126 @@ export function QuestionnaireForm({ isOpen, onOpenChange, onSubmit, onDelete, qu
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Edit Questionnaire' : 'Create New Questionnaire'}</DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                    <form id="q-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-1 min-h-0 flex flex-col">
-                        <ScrollArea className="flex-1 pr-6 -mr-6 py-4">
-                            <div className="space-y-4">
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Form Title</FormLabel>
+                            <FormControl><Input placeholder="E.g., Post-Session Follow-up" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                
+                <div className="space-y-4 pt-4 border-t">
+                    <FormLabel>Questions</FormLabel>
+                    {fields.map((field, index) => (
+                        <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
+                                <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="icon"
+                                className="absolute top-2 right-2 h-7 w-7 text-destructive"
+                                onClick={() => remove(index)}
+                            >
+                                <Trash2 size={16} />
+                            </Button>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
-                                    name="title"
+                                    name={`questions.${index}.label`}
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Form Title</FormLabel>
-                                            <FormControl><Input placeholder="E.g., Post-Session Follow-up" {...field} /></FormControl>
+                                            <FormLabel>Question Label</FormLabel>
+                                            <FormControl><Input {...field} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                                
-                                <div className="space-y-4 pt-4 border-t">
-                                    <FormLabel>Questions</FormLabel>
-                                    {fields.map((field, index) => (
-                                        <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
-                                             <Button 
-                                                type="button" 
-                                                variant="ghost" 
-                                                size="icon"
-                                                className="absolute top-2 right-2 h-7 w-7 text-destructive"
-                                                onClick={() => remove(index)}
-                                            >
-                                                <Trash2 size={16} />
-                                            </Button>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <FormField
-                                                    control={form.control}
-                                                    name={`questions.${index}.label`}
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Question Label</FormLabel>
-                                                            <FormControl><Input {...field} /></FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name={`questions.${index}.type`}
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Type</FormLabel>
-                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                                <FormControl>
-                                                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                                                </FormControl>
-                                                                <SelectContent>
-                                                                    <SelectItem value="text">Text</SelectItem>
-                                                                    <SelectItem value="slider">Slider</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </div>
-                                            {form.watch(`questions.${index}.type`) === 'slider' && (
-                                                <div className="grid grid-cols-3 gap-4">
-                                                     <FormField
-                                                        control={form.control}
-                                                        name={`questions.${index}.min`}
-                                                        render={({ field }) => (
-                                                            <FormItem><FormLabel>Min</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
-                                                        )}
-                                                    />
-                                                     <FormField
-                                                        control={form.control}
-                                                        name={`questions.${index}.max`}
-                                                        render={({ field }) => (
-                                                            <FormItem><FormLabel>Max</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
-                                                        )}
-                                                    />
-                                                     <FormField
-                                                        control={form.control}
-                                                        name={`questions.${index}.step`}
-                                                        render={({ field }) => (
-                                                            <FormItem><FormLabel>Step</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
-                                                        )}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                    <Button 
-                                        type="button" 
-                                        variant="outline"
-                                        onClick={() => append({ id: generateId(), label: '', type: 'text' })}
-                                    >
-                                        <PlusCircle /> Add Question
-                                    </Button>
+                                <FormField
+                                    control={form.control}
+                                    name={`questions.${index}.type`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Type</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="text">Text</SelectItem>
+                                                    <SelectItem value="slider">Slider</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            {form.watch(`questions.${index}.type`) === 'slider' && (
+                                <div className="grid grid-cols-3 gap-4">
+                                        <FormField
+                                        control={form.control}
+                                        name={`questions.${index}.min`}
+                                        render={({ field }) => (
+                                            <FormItem><FormLabel>Min</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                                        )}
+                                    />
+                                        <FormField
+                                        control={form.control}
+                                        name={`questions.${index}.max`}
+                                        render={({ field }) => (
+                                            <FormItem><FormLabel>Max</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                                        )}
+                                    />
+                                        <FormField
+                                        control={form.control}
+                                        name={`questions.${index}.step`}
+                                        render={({ field }) => (
+                                            <FormItem><FormLabel>Step</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                                        )}
+                                    />
                                 </div>
-                            </div>
-                        </ScrollArea>
-                        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between w-full pt-4 mt-auto">
-                            {isEditing && questionnaire && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                <Button type="button" variant="destructive">Delete Form</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete this questionnaire.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(questionnaire.id)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
                             )}
-                            <div className="flex justify-end gap-2 ml-auto">
-                                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                                <Button type="submit" form="q-form">{isEditing ? 'Save Changes' : 'Create Questionnaire'}</Button>
-                            </div>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
+                        </div>
+                    ))}
+                    <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => append({ id: generateId(), label: '', type: 'text' })}
+                    >
+                        <PlusCircle /> Add Question
+                    </Button>
+                </div>
+
+                <div className="flex justify-between items-center pt-4">
+                    {isEditing && questionnaire && onDelete && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                            <Button type="button" variant="destructive">Delete Form</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this questionnaire.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(questionnaire.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                    <div className="flex justify-end gap-2 ml-auto">
+                        <Button type="submit">{isEditing ? 'Save Changes' : 'Create Questionnaire'}</Button>
+                    </div>
+                </div>
+            </form>
+        </Form>
     )
 }

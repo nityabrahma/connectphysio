@@ -6,23 +6,16 @@ import { Button } from "@/components/ui/button";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import type { Questionnaire } from "@/types/domain";
-import { useToast } from "@/hooks/use-toast";
-import { generateId } from "@/lib/ids";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { PlusCircle, Edit } from "lucide-react";
-import { QuestionnaireForm } from "./questionnaire-form";
 import { useRouter } from "next/navigation";
 
 export default function QuestionnairesPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
-  const [questionnaires, setQuestionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
+  const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
   
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<Questionnaire | null>(null);
-
   useEffect(() => {
     if (user && user.role !== 'admin') {
         router.push('/dashboard');
@@ -32,36 +25,11 @@ export default function QuestionnairesPage() {
   const centreQuestionnaires = questionnaires.filter(q => q.centreId === user?.centreId);
 
   const handleAddClick = () => {
-    setSelectedQuestionnaire(null);
-    setIsFormOpen(true);
+    router.push('/questionnaires/new');
   };
   
   const handleEditClick = (q: Questionnaire) => {
-    setSelectedQuestionnaire(q);
-    setIsFormOpen(true);
-  }
-
-  const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
-    if (selectedQuestionnaire) {
-      const updatedQuestionnaire = { ...selectedQuestionnaire, ...values, updatedAt: new Date().toISOString() };
-      setQuestionnaires(questionnaires.map(q => q.id === selectedQuestionnaire.id ? updatedQuestionnaire : q));
-      toast({ title: "Questionnaire updated" });
-    } else {
-      const newQuestionnaire: Questionnaire = {
-        ...values,
-        id: generateId(),
-        createdAt: new Date().toISOString(),
-      };
-      setQuestionnaires([...questionnaires, newQuestionnaire]);
-      toast({ title: "Questionnaire created" });
-    }
-    setIsFormOpen(false);
-  };
-  
-  const handleDelete = (id: string) => {
-    setQuestionnaires(questionnaires.filter(q => q.id !== id));
-    toast({ title: "Questionnaire deleted", variant: "destructive" });
-    setIsFormOpen(false);
+    router.push(`/questionnaires/edit/${q.id}`);
   }
   
   if (user?.role !== 'admin') {
@@ -106,14 +74,6 @@ export default function QuestionnairesPage() {
           )}
         </CardContent>
       </Card>
-      
-      <QuestionnaireForm
-        isOpen={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        onSubmit={handleFormSubmit}
-        onDelete={handleDelete}
-        questionnaire={selectedQuestionnaire}
-      />
     </div>
   );
 }
