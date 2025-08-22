@@ -100,7 +100,12 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Patient</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                <Select 
+                                    onValueChange={field.onChange} 
+                                    defaultValue={field.value} 
+                                    value={field.value}
+                                    disabled={!!patientId}
+                                >
                                     <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a patient" />
