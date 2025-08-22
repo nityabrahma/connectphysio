@@ -29,6 +29,7 @@ import { Slider } from "@/components/ui/slider"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { LS_KEYS } from "@/lib/constants"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 
 interface EndSessionFormProps {
     isOpen: boolean;
