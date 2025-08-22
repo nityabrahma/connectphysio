@@ -80,7 +80,7 @@ export type Session = {
   patientId: ID;
   centreId: ID;
   packageSaleId?: ID;
-  status: "scheduled" | "checked-in" | "completed" | "cancelled" | "no-show";
+  status: "scheduled" | "checked-in" | "completed" | "cancelled";
   healthNotes?: string; // Stored as a JSON string of questionnaire answers
   notes?: string;
   createdAt: string;

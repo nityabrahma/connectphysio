@@ -37,7 +37,7 @@ const upcomingSchema = z.object({
   date: z.date({ required_error: "A date is required."}),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)."),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)."),
-  status: z.enum(["scheduled", "checked-in", "completed", "cancelled", "no-show"]),
+  status: z.enum(["scheduled", "checked-in", "completed", "cancelled"]),
 });
 
 const completedSchema = z.object({
@@ -176,7 +176,6 @@ export function EditSessionModal({ isOpen, onOpenChange, session, onUpdate }: Ed
                                                     <SelectItem value="checked-in">Checked In</SelectItem>
                                                     <SelectItem value="completed">Completed</SelectItem>
                                                     <SelectItem value="cancelled">Cancelled</SelectItem>
-                                                    <SelectItem value="no-show">No Show</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />

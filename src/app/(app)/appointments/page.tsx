@@ -30,6 +30,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useRouter } from "next/navigation";
+import { EndSessionForm } from "../dashboard/end-session-form";
 
 
 export default function AppointmentsPage() {
@@ -39,17 +40,10 @@ export default function AppointmentsPage() {
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
-  const [packageSales] = useLocalStorage<PackageSale[]>(LS_KEYS.PACKAGE_SALES, []);
-
-
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedSession, setSelectedSession] = useState<Session | undefined>(undefined);
+  
+  const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
-  const centreTherapists = useMemo(() => {
-    return therapists.filter(t => t.centreId === user?.centreId);
-  }, [therapists, user]);
-  
   const centreSessions = useMemo(() => {
     return sessions.filter(s => s.centreId === user?.centreId);
   }, [sessions, user]);
@@ -75,29 +69,20 @@ export default function AppointmentsPage() {
   }
 
   const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
-    if (status === 'completed') {
-      const session = sessions.find(s => s.id === sessionId);
-      if (session) {
-        // Mark session as completed
-        const updatedSessions = sessions.map(s => s.id === sessionId ? { ...s, status } : s);
-        setSessions(updatedSessions);
-        
-        // Remove from today's appointments if it was today
-        // This is handled by filtering logic in UI.
-        
-        toast({ title: `Session Completed` });
-        return;
-      }
-    }
     setSessions(sessions.map(s => s.id === sessionId ? { ...s, status } : s));
     toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
   };
 
-  const handleDelete = (sessionId: string) => {
-    setSessions(sessions.filter(s => s.id !== sessionId));
-    toast({ title: "Session cancelled", variant: "destructive" });
-    setIsFormOpen(false);
+  const handleEndSessionSubmit = (sessionId: string, healthNotes: string | undefined) => {
+    if (!healthNotes || healthNotes.trim() === '' || healthNotes.trim() === '{}') {
+       toast({ title: 'Please fill out the session form to complete the session.', variant: 'destructive' });
+       return;
+    }
+    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
+    toast({ title: 'Session Completed' });
+    setSessionToEnd(null);
   }
+
 
   const SessionList = ({ view }: { view: "day" | "week" | "month" }) => {
     const data = filteredSessions(view).filter(s => s.status !== 'completed');
@@ -110,8 +95,6 @@ export default function AppointmentsPage() {
         if (user?.role === 'therapist' && user.therapistId === session.therapistId) return true;
         return false;
     }
-    
-    const canManagePayments = user?.role === 'admin' || user?.role === 'receptionist';
 
     const groupedSessions = useMemo(() => {
       return data.reduce<Record<string, Session[]>>((acc, session) => {
@@ -172,7 +155,7 @@ export default function AppointmentsPage() {
                                           <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'checked-in')}><Check/> Check In</Button>
                                       )}
                                       {session.status === 'checked-in' && (
-                                          <Button size="sm" onClick={() => handleUpdateSessionStatus(session.id, 'completed')}><LogOut/> End Session</Button>
+                                          <Button size="sm" onClick={() => setSessionToEnd(session)}><LogOut/> End Session</Button>
                                       )}
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -203,57 +186,69 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 h-full">
-       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
-        {user?.role !== 'therapist' && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button>
-                  <PlusCircle />
-                  New Appointment
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => router.push('/patients/new?redirectToAppointment=true')}>
-                  <UserPlus /> New Patient
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => router.push('/patients?select=true')}>
-                  <User /> Existing Patient
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-        )}
+    <>
+      <div className="flex flex-col gap-8 h-full">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
+          {user?.role !== 'therapist' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    <PlusCircle />
+                    New Appointment
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => router.push('/patients/new?redirectToAppointment=true')}>
+                    <UserPlus /> New Patient
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => router.push('/patients?select=true')}>
+                    <User /> Existing Patient
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+          )}
+        </div>
+        
+        <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-8 flex-1">
+              <div className="md:col-span-1 flex justify-center">
+                  <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      className="rounded-md"
+                  />
+              </div>
+              <div className="md:col-span-2 flex flex-col min-h-0">
+                  <Tabs defaultValue="month" className="w-full flex flex-col flex-1 min-h-0">
+                      <TabsList>
+                          <TabsTrigger value="day">Day</TabsTrigger>
+                          <TabsTrigger value="week">Week</TabsTrigger>
+                          <TabsTrigger value="month">Month</TabsTrigger>
+                      </TabsList>
+                      <div className="flex-1 mt-4 relative">
+                        <ScrollArea className="absolute inset-0 w-full h-full pr-4">
+                            <TabsContent value="day"><SessionList view="day" /></TabsContent>
+                            <TabsContent value="week"><SessionList view="week" /></TabsContent>
+                            <TabsContent value="month"><SessionList view="month" /></TabsContent>
+                        </ScrollArea>
+                      </div>
+                  </Tabs>
+              </div>
+          </CardContent>
+        </Card>
       </div>
-      
-      <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-8 flex-1">
-            <div className="md:col-span-1 flex justify-center">
-                 <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    className="rounded-md"
-                />
-            </div>
-            <div className="md:col-span-2 flex flex-col min-h-0">
-                 <Tabs defaultValue="month" className="w-full flex flex-col flex-1 min-h-0">
-                    <TabsList>
-                        <TabsTrigger value="day">Day</TabsTrigger>
-                        <TabsTrigger value="week">Week</TabsTrigger>
-                        <TabsTrigger value="month">Month</TabsTrigger>
-                    </TabsList>
-                    <div className="flex-1 mt-4 relative">
-                      <ScrollArea className="absolute inset-0 w-full h-full pr-4">
-                          <TabsContent value="day"><SessionList view="day" /></TabsContent>
-                          <TabsContent value="week"><SessionList view="week" /></TabsContent>
-                          <TabsContent value="month"><SessionList view="month" /></TabsContent>
-                      </ScrollArea>
-                    </div>
-                </Tabs>
-            </div>
-        </CardContent>
-      </Card>
-    </div>
+
+      {sessionToEnd && (
+        <EndSessionForm
+          session={sessionToEnd}
+          patient={patients.find(p => p.id === sessionToEnd.patientId)}
+          isOpen={!!sessionToEnd}
+          onOpenChange={(isOpen) => !isOpen && setSessionToEnd(null)}
+          onSubmit={handleEndSessionSubmit}
+        />
+      )}
+    </>
   );
 }
