@@ -115,7 +115,7 @@ export function QuestionnaireForm({ isOpen, onOpenChange, onSubmit, onDelete, qu
                     <DialogTitle>{isEditing ? 'Edit Questionnaire' : 'Create New Questionnaire'}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form id="q-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 flex-1 min-h-0 flex flex-col">
+                    <form id="q-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-1 min-h-0 flex flex-col">
                         <ScrollArea className="flex-1 pr-6 -mr-6 py-4">
                             <div className="space-y-4">
                                 <FormField
@@ -232,8 +232,9 @@ export function QuestionnaireForm({ isOpen, onOpenChange, onSubmit, onDelete, qu
                                 </AlertDialogContent>
                             </AlertDialog>
                             )}
-                            <div className="flex justify-end ml-auto">
-                            <Button type="submit" form="q-form">{isEditing ? 'Save Changes' : 'Create Questionnaire'}</Button>
+                            <div className="flex justify-end gap-2 ml-auto">
+                                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                                <Button type="submit" form="q-form">{isEditing ? 'Save Changes' : 'Create Questionnaire'}</Button>
                             </div>
                         </DialogFooter>
                     </form>
