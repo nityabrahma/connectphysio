@@ -410,20 +410,16 @@ export default function DashboardPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => router.push('/appointments/new')}>
-                  <Calendar />
-                  Scheduled Appointment
-                </DropdownMenuItem>
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <Footprints />
                     Walk-in
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    <DropdownMenuItem onSelect={() => router.push('/patients')}>
+                    <DropdownMenuItem onSelect={() => router.push('/patients?select=true')}>
                       <User /> Existing Patient
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => router.push('/patients/new')}>
+                    <DropdownMenuItem onSelect={() => router.push('/patients/new?redirectToAppointment=true')}>
                       <UserPlus /> New Patient
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>

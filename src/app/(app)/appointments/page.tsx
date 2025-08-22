@@ -93,10 +93,6 @@ export default function AppointmentsPage() {
     toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
   };
 
-  const handleAddClick = () => {
-    router.push('/appointments/new');
-  }
-
   const handleDelete = (sessionId: string) => {
     setSessions(sessions.filter(s => s.id !== sessionId));
     toast({ title: "Session cancelled", variant: "destructive" });
@@ -219,10 +215,6 @@ export default function AppointmentsPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={handleAddClick}>
-                  <CalendarIcon />
-                  Scheduled Appointment
-                </DropdownMenuItem>
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <Footprints />
@@ -273,5 +265,3 @@ export default function AppointmentsPage() {
     </div>
   );
 }
-
-    
