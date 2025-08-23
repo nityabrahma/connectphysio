@@ -2,6 +2,7 @@
 "use client";
 
 import { AuthGate } from "@/components/auth-gate";
+import { FeedbackForm } from "@/components/feedback-form";
 import { Topbar } from "@/components/layout/topbar";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -25,6 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </motion.div>
         </main>
       </div>
+      <FeedbackForm />
     </AuthGate>
   );
 }

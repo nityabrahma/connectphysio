@@ -1,3 +1,4 @@
+import { FeedbackForm } from "@/components/feedback-form";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import { LandingHeader } from "@/components/layout/landing-header";
 
@@ -7,6 +8,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
       <LandingHeader />
       <main className="flex-1">{children}</main>
       <LandingFooter />
+      <FeedbackForm />
     </div>
   );
 }
