@@ -13,8 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, parse, startOfWeek, getDay } from "date-fns";
-import {enUS} from 'date-fns/locale/en-US'
+import { format, parse } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,21 +24,9 @@ import { useRouter } from "next/navigation";
 import { EndSessionForm } from "../dashboard/end-session-form";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Calendar as BigCalendar,
-  dateFnsLocalizer,
-  Views,
-  type Event,
-} from 'react-big-calendar'
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import type { CalendarEvent } from "@/components/big-calendar";
+import { Calendar } from "@/components/big-calendar";
 import { cn } from "@/lib/utils";
-
-const locales = { 'en-US': enUS };
-const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
-
-interface SessionEvent extends Event {
-  resource: Session;
-}
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
@@ -55,7 +42,7 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   // Tabs: today | week | month
-  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'month'>('today');
+  const [activeTab, setActiveTab] = useState<'day' | 'week' | 'month'>('day');
 
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
 
@@ -71,12 +58,13 @@ export default function AppointmentsPage() {
     });
   }, [sessions, user]);
 
-  const events: SessionEvent[] = useMemo(() => {
+  const events: CalendarEvent<Session>[] = useMemo(() => {
     return centreSessions.map(session => {
       const start = parse(`${session.date} ${session.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
       const end = parse(`${session.date} ${session.endTime}`, 'yyyy-MM-dd HH:mm', new Date());
       const patient = patients.find(p => p.id === session.patientId);
       return {
+        id: session.id,
         title: patient?.name || 'Unknown Patient',
         start,
         end,
@@ -95,8 +83,12 @@ export default function AppointmentsPage() {
     setSessionToEnd(null);
   };
 
-  // Custom event (popover like Google Calendar)
-  const EventComponent = ({ event }: { event: SessionEvent }) => {
+  const onNavigate = (date: Date) => {
+    setSelectedDate(date);
+    setVisibleMonth(date);
+  };
+  
+  const EventComponent = ({ event }: { event: CalendarEvent<Session> }) => {
     const patient = patients.find(p => p.id === event.resource.patientId);
     const therapist = therapists.find(t => t.id === event.resource.therapistId);
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -115,9 +107,14 @@ export default function AppointmentsPage() {
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <div className="p-1 h-full w-full cursor-pointer text-primary-foreground">
+          <div className={cn(
+            "p-1 h-full w-full cursor-pointer text-primary-foreground rounded-md border-l-4",
+            event.resource.status === 'completed' && 'bg-green-500/80 border-green-700',
+            event.resource.status === 'checked-in' && 'bg-blue-500/80 border-blue-700',
+            event.resource.status === 'scheduled' && 'bg-primary/80 border-primary'
+          )}>
             <p className="font-semibold text-xs truncate">{event.title}</p>
-            <p className="text-xs text-primary-foreground/80">{format(event.start as Date, 'h:mm a')}</p>
+            <p className="text-xs text-primary-foreground/80">{format(event.start, 'h:mm a')}</p>
           </div>
         </PopoverTrigger>
         <PopoverContent className="w-80">
@@ -139,7 +136,7 @@ export default function AppointmentsPage() {
               <div className="grid grid-cols-3 items-center gap-4">
                 <span className="text-muted-foreground">When</span>
                 <span className="col-span-2 font-semibold">
-                  {format(event.start as Date, 'EEE, MMM d')} · {format(event.start as Date, 'h:mm a')} - {format(event.end as Date, 'h:mm a')}
+                  {format(event.start, 'EEE, MMM d')} · {format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}
                 </span>
               </div>
               <div className="grid grid-cols-3 items-center gap-4">
@@ -168,17 +165,6 @@ export default function AppointmentsPage() {
     );
   };
 
-  // Map tabs to BigCalendar view
-  const viewForTab = (tab: 'today' | 'week' | 'month') => {
-    if (tab === 'today') return Views.DAY;
-    if (tab === 'week') return Views.WEEK;
-    return Views.MONTH;
-  };
-
-  const onNavigate = (date: Date) => {
-    setSelectedDate(date);
-    setVisibleMonth(date);
-  };
 
   return (
     <>
@@ -225,59 +211,22 @@ export default function AppointmentsPage() {
                 month={visibleMonth}
                 onMonthChange={setVisibleMonth}
                 selected={selectedDate}
-                onSelect={(d) => { if (d) { setSelectedDate(d); setActiveTab('today'); } }}
+                onSelect={(d) => { if (d) { setSelectedDate(d); setActiveTab('day'); } }}
                 className="rounded-md"
               />
-              <Button variant="outline" onClick={() => { const now = new Date(); setVisibleMonth(now); setSelectedDate(now); setActiveTab('today'); }}>Today</Button>
+              <Button variant="outline" onClick={() => { const now = new Date(); setVisibleMonth(now); setSelectedDate(now); setActiveTab('day'); }}>Today</Button>
             </div>
 
             {/* RIGHT: Tabs + BigCalendar */}
             <div className="md:col-span-3 flex flex-col min-h-0">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="flex flex-col flex-1 min-h-0">
-                <div className="flex items-center justify-between">
-                  <TabsList>
-                    <TabsTrigger value="today">Today</TabsTrigger>
-                    <TabsTrigger value="week">Week</TabsTrigger>
-                    <TabsTrigger value="month">This Month</TabsTrigger>
-                  </TabsList>
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm text-muted-foreground">{format(selectedDate, 'EEE, dd MMM yyyy')}</div>
-                    <Button variant="outline" size="sm" onClick={() => { const now = new Date(); setSelectedDate(now); setVisibleMonth(now); setActiveTab('today'); }}>Today</Button>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex-1 min-h-0">
-                  {/* Single BigCalendar instance controlled by tab */}
-                  <div className="h-[72vh] md:h-[70vh] w-full rounded-lg border">
-                    <BigCalendar
-                      localizer={localizer}
-                      events={events}
-                      startAccessor="start"
-                      endAccessor="end"
-                      date={selectedDate}
-                      onNavigate={onNavigate}
-                      view={viewForTab(activeTab)}
-                      toolbar={false}
-                      components={{ event: EventComponent }}
-                      eventPropGetter={(event) => {
-                        const status = (event as SessionEvent).resource.status;
-                        const className = cn(
-                            'rounded-md border-l-4 p-0',
-                            status === 'completed' && 'bg-green-500/80 border-green-700',
-                            status === 'checked-in' && 'bg-blue-500/80 border-blue-700',
-                            status === 'scheduled' && 'bg-primary/80 border-primary',
-                        );
-                        return { className };
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Hidden contents just to satisfy Tabs structure (we use one calendar instance) */}
-                <TabsContent value="today" />
-                <TabsContent value="week" />
-                <TabsContent value="month" />
-              </Tabs>
+               <Calendar
+                  events={events}
+                  view={activeTab}
+                  onViewChange={setActiveTab}
+                  currentDate={selectedDate}
+                  onDateChange={onNavigate}
+                  eventComponent={EventComponent}
+                />
             </div>
           </CardContent>
         </Card>
@@ -295,5 +244,3 @@ export default function AppointmentsPage() {
     </>
   );
 }
-
-    
