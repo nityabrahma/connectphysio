@@ -16,7 +16,7 @@ import type {
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { generateId } from '@/lib/ids';
-import { addDays, format, isWeekend, isSaturday, isSunday } from 'date-fns';
+import { addDays, format, isWeekend, isSaturday, isSunday, differenceInDays } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -79,51 +79,6 @@ export default function AssignPackagePage() {
 
   useEffect(() => {
     if (selectedPackage && startDate) {
-      const calculateDates = (count: number): Date[] => {
-        const dates: Date[] = [];
-        let currentDate = new Date(startDate);
-
-        while (dates.length < count) {
-          let shouldAdd = false;
-
-          switch (frequency) {
-            case "daily":
-              shouldAdd = true;
-              currentDate = addDays(currentDate, 1);
-              break;
-            case "daily_business":
-              if (!isSaturday(currentDate) && !isSunday(currentDate)) {
-                shouldAdd = true;
-              }
-              currentDate = addDays(currentDate, 1);
-              break;
-            case "every_2_days":
-              shouldAdd = true;
-              if (dates.length > 0) {
-                currentDate = addDays(dates[dates.length - 1], 2);
-              }
-              break;
-            case "every_3_days":
-              shouldAdd = true;
-              if (dates.length > 0) {
-                currentDate = addDays(dates[dates.length - 1], 3);
-              }
-              break;
-            case "weekly":
-              shouldAdd = true;
-              if (dates.length > 0) {
-                currentDate = addDays(dates[dates.length - 1], 7);
-              }
-              break;
-          }
-
-          if (shouldAdd) {
-            dates.push(new Date(currentDate.getTime() - (frequency === 'daily' || frequency === 'daily_business' ? 86400000 : 0)));
-          }
-        }
-        return dates;
-      };
-
       let initialDates: Date[] = [];
       let currentDate = new Date(startDate);
       let attempts = 0; // Prevent infinite loop
@@ -152,6 +107,11 @@ export default function AssignPackagePage() {
               nextDate = addDays(nextDate, 1);
             }
           }
+        }
+        
+        const dayDifference = differenceInDays(nextDate, startDate);
+        if (dayDifference >= selectedPackage.durationDays) {
+            break; 
         }
 
         initialDates.push(nextDate);
@@ -290,6 +250,20 @@ export default function AssignPackagePage() {
     return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
   });
 
+  const handleDateSelect = (dates: Date[] | undefined) => {
+    if (selectedPackage && dates && dates.length > selectedPackage.sessions) {
+      toast({
+        variant: 'destructive',
+        title: 'Session limit reached',
+        description: `You can only select up to ${selectedPackage.sessions} sessions for this package.`,
+      });
+      // Keep the selection at the limit
+      setSelectedDates(dates.slice(0, selectedPackage.sessions));
+    } else {
+      setSelectedDates(dates);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 sticky top-0 py-4 z-10">
@@ -368,7 +342,7 @@ export default function AssignPackagePage() {
                   <h3 className="font-semibold text-lg">Schedule Sessions</h3>
                   <p className="text-muted-foreground text-sm">
                     Select your scheduling preferences. {selectedPackage.sessions} sessions will be automatically selected on the calendar below.
-                    You can still manually adjust the dates. {selectedDates?.length || 0} selected.
+                    You can still manually adjust the dates. {selectedDates?.length || 0} of {selectedPackage.sessions} selected.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -432,7 +406,7 @@ export default function AssignPackagePage() {
                     <Calendar
                       mode="multiple"
                       selected={selectedDates}
-                      onSelect={setSelectedDates}
+                      onSelect={handleDateSelect}
                       disabled={{ before: new Date() }}
                       className="rounded-md"
                       numberOfMonths={2}
