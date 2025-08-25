@@ -3,6 +3,13 @@ export type ID = string;
 
 export type Role = "admin" | "receptionist" | "therapist";
 
+export type Centre = {
+    id: ID;
+    name: string;
+    openingTime: string; // "09:00"
+    closingTime: string; // "18:00"
+}
+
 export type User = {
   id: ID;
   name: string;

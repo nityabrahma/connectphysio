@@ -12,11 +12,12 @@ import type {
   PackageSale,
   Session,
   Therapist,
+  Centre,
 } from '@/types/domain';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { generateId } from '@/lib/ids';
-import { addDays, format, isWeekend, isSaturday, isSunday, differenceInDays } from 'date-fns';
+import { addDays, format, isWeekend, differenceInDays, parse } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -63,6 +64,7 @@ export default function AssignPackagePage() {
     []
   );
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
+  const [centres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
 
   const [selectedPackageId, setSelectedPackageId] = useState<string>('');
   const [notes, setNotes] = useState('');
@@ -74,6 +76,7 @@ export default function AssignPackagePage() {
 
   const patient = getPatient(patientId);
   const availablePackages = packages.filter((p) => p.centreId === user?.centreId);
+  const currentCentre = centres.find(c => c.id === user?.centreId);
 
   const selectedPackage = availablePackages.find((p) => p.id === selectedPackageId);
 
@@ -227,6 +230,24 @@ export default function AssignPackagePage() {
     router.push(`/patient-details/${patient.id}`);
   };
 
+  const timeSlots = useMemo(() => {
+    if (!currentCentre) return [];
+    
+    const { openingTime, closingTime } = currentCentre;
+    if (!openingTime || !closingTime) return [];
+
+    const slots = [];
+    const start = parse(openingTime, 'HH:mm', new Date());
+    const end = parse(closingTime, 'HH:mm', new Date());
+
+    let currentTime = start;
+    while (currentTime < end) {
+      slots.push(format(currentTime, 'HH:mm'));
+      currentTime.setMinutes(currentTime.getMinutes() + 30);
+    }
+    return slots;
+  }, [currentCentre]);
+
   if (!patient) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -243,12 +264,6 @@ export default function AssignPackagePage() {
       </div>
     );
   }
-
-  const timeSlots = Array.from({ length: 18 }, (_, i) => {
-    const hour = Math.floor(i / 2) + 8; // 8 AM to 5 PM
-    const minute = (i % 2) * 30;
-    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-  });
 
   const handleDateSelect = (dates: Date[] | undefined) => {
     if (selectedPackage && dates && dates.length > selectedPackage.sessions) {

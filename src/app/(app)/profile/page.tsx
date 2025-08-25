@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -6,7 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useState, type FormEvent, useEffect } from 'react';
+import { useState, type FormEvent, useEffect, useMemo } from 'react';
+import type { Centre } from '@/types/domain';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { LS_KEYS } from '@/lib/constants';
 
 // Mock password hashing for demo purposes. DO NOT use in production.
 const mockHash = (password: string) => `hashed_${password}`;
@@ -15,6 +19,8 @@ export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   
+  const [centres, setCentres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -22,13 +28,24 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
+  const [openingTime, setOpeningTime] = useState('');
+  const [closingTime, setClosingTime] = useState('');
+
+  const currentCentre = useMemo(() => {
+    return centres.find(c => c.id === user?.centreId)
+  }, [centres, user]);
+  
   useEffect(() => {
     if (user) {
       setName(user.name);
       setEmail(user.email);
       setPhone(user.phone || '');
     }
-  }, [user]);
+    if (currentCentre) {
+        setOpeningTime(currentCentre.openingTime);
+        setClosingTime(currentCentre.closingTime);
+    }
+  }, [user, currentCentre]);
   
   const handleProfileUpdate = (e: FormEvent) => {
     e.preventDefault();
@@ -41,6 +58,17 @@ export default function ProfilePage() {
       description: 'Your profile information has been successfully updated.',
     });
   };
+  
+  const handleClinicSettingsUpdate = (e: FormEvent) => {
+    e.preventDefault();
+    if (!currentCentre) return;
+    
+    setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, openingTime, closingTime } : c));
+     toast({
+      title: 'Clinic Settings Updated',
+      description: 'Your clinic operating hours have been updated.',
+    });
+  }
 
   const handlePasswordChange = (e: FormEvent) => {
     e.preventDefault();
@@ -148,6 +176,30 @@ export default function ProfilePage() {
             </CardContent>
           </form>
         </Card>
+        
+        {user.role === 'admin' && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Clinic Settings</CardTitle>
+              <CardDescription>Manage the operating hours for your clinic.</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleClinicSettingsUpdate}>
+              <CardContent className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="opening-time">Opening Time</Label>
+                  <Input id="opening-time" type="time" value={openingTime} onChange={(e) => setOpeningTime(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="closing-time">Closing Time</Label>
+                  <Input id="closing-time" type="time" value={closingTime} onChange={(e) => setClosingTime(e.target.value)} required />
+                </div>
+                <div className="pt-2 md:col-span-2 flex justify-end">
+                  <Button type="submit">Save Clinic Settings</Button>
+                </div>
+              </CardContent>
+            </form>
+          </Card>
+        )}
       </div>
     </div>
   );

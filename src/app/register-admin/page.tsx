@@ -27,13 +27,15 @@ export default function RegisterAdminPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [centreName, setCentreName] = useState('');
+  const [openingTime, setOpeningTime] = useState('09:00');
+  const [closingTime, setClosingTime] = useState('18:00');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-        const newUser = await registerAdmin({ name, email, password, centreName });
+        const newUser = await registerAdmin({ name, email, password, centreName, openingTime, closingTime });
         if (newUser) {
             toast({
                 title: 'Admin Account Created',
@@ -74,6 +76,30 @@ export default function RegisterAdminPage() {
               disabled={isLoading}
             />
           </div>
+           <div className="grid grid-cols-2 gap-4">
+             <div className="space-y-2">
+                <Label htmlFor="openingTime">Opening Time</Label>
+                <Input
+                id="openingTime"
+                type="time"
+                required
+                value={openingTime}
+                onChange={(e) => setOpeningTime(e.target.value)}
+                disabled={isLoading}
+                />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="closingTime">Closing Time</Label>
+                <Input
+                id="closingTime"
+                type="time"
+                required
+                value={closingTime}
+                onChange={(e) => setClosingTime(e.target.value)}
+                disabled={isLoading}
+                />
+            </div>
+           </div>
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input

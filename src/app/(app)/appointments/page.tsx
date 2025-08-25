@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,11 +8,9 @@ import {
   PlusCircle,
   UserPlus,
   User,
-  ChevronLeft,
-  ChevronRight,
   Edit,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { Patient, Session, Therapist } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
@@ -20,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, parse } from "date-fns";
 import {
   DropdownMenu,
@@ -39,11 +37,13 @@ import {
 import type { CalendarEvent } from "@/components/big-calendar";
 import { Calendar } from "@/components/big-calendar";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const isMobile = useIsMobile();
 
   const [sessions, setSessions] = useLocalStorage<Session[]>(
     LS_KEYS.SESSIONS,
@@ -58,6 +58,11 @@ export default function AppointmentsPage() {
 
   // Tabs: today | week | month
   const [activeTab, setActiveTab] = useState<"day" | "week" | "month">("day");
+
+  useEffect(() => {
+    setActiveTab(isMobile ? 'day' : 'week');
+  }, [isMobile]);
+
 
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
 
@@ -135,7 +140,7 @@ export default function AppointmentsPage() {
     setVisibleMonth(date);
   };
 
-  const EventComponent = ({ event }: { event: CalendarEvent<Session> }) => {
+  const EventComponent = ({ event, total, index }: { event: CalendarEvent<Session>, total: number, index: number }) => {
     const patient = patients.find((p) => p.id === event.resource.patientId);
     const therapist = therapists.find(
       (t) => t.id === event.resource.therapistId
@@ -168,13 +173,17 @@ export default function AppointmentsPage() {
         title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}`,
       });
     };
+    
+    // For day and week views
+    const width = total > 1 ? `${100 / total}%` : '100%';
+    const left = total > 1 ? `${index * (100 / total)}%` : '0';
 
     return (
       <Popover>
         <PopoverTrigger asChild>
           <div
             className={cn(
-              "p-1 h-full w-full cursor-pointer text-primary-foreground rounded-md border-l-4",
+              "p-1 h-full w-full cursor-pointer text-primary-foreground rounded-md border-l-4 absolute",
               event.resource.status === "completed" &&
                 "bg-green-500/80 border-green-700",
               event.resource.status === "checked-in" &&
@@ -182,6 +191,7 @@ export default function AppointmentsPage() {
               event.resource.status === "scheduled" &&
                 "bg-primary/80 border-primary"
             )}
+             style={{ width, left }}
           >
             <p className="font-semibold text-xs truncate">{event.title}</p>
             <p className="text-xs text-primary-foreground/80">
@@ -189,7 +199,7 @@ export default function AppointmentsPage() {
             </p>
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-80">
+        <PopoverContent className="w-80 z-20">
           <div className="grid gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
@@ -299,84 +309,10 @@ export default function AppointmentsPage() {
             </DropdownMenu>
           )}
         </div>
-
-        {/* Main Grid */}
-        <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <CardContent className="p-4 md:p-6 grid md:grid-cols-4 gap-6 flex-1 min-h-0">
-            {/* LEFT: Month mini calendar + controls */}
-            <div className="md:col-span-1 flex flex-col gap-3 size-full justify-center items-center">
-              {/* <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    setVisibleMonth(
-                      (prev) =>
-                        new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-                    )
-                  }
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="text-sm font-medium">
-                  {format(visibleMonth, "MMMM yyyy")}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    setVisibleMonth(
-                      (prev) =>
-                        new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-                    )
-                  }
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div> */}
-              <MiniCalendar
-                mode="single"
-                month={visibleMonth}
-                onMonthChange={setVisibleMonth}
-                selected={selectedDate}
-                onSelect={(d) => {
-                  if (d) {
-                    setSelectedDate(d);
-                    setActiveTab("day");
-                  }
-                }}
-                className="rounded-md"
-              />
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const now = new Date();
-                  setVisibleMonth(now);
-                  setSelectedDate(now);
-                  setActiveTab("day");
-                }}
-              >
-                Today
-              </Button>
-            </div>
-
-            {/* RIGHT: Tabs + BigCalendar */}
-            <div className="md:col-span-3 flex flex-col min-h-0">
-              <Calendar
-                events={events}
-                view={activeTab}
-                onViewChange={setActiveTab}
-                currentDate={selectedDate}
-                onDateChange={onNavigate}
-                eventComponent={EventComponent}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-center items-center size-full gap-6">
-          <Card className="">
-            <CardContent className="flex flex-col gap-3 justify-center items-center size-full">
+        
+         <div className="flex flex-col lg:flex-row flex-1 gap-6 min-h-0">
+          <Card className="w-full lg:max-w-xs">
+            <CardContent className="p-2 md:p-4 flex flex-col gap-3 justify-start items-center h-full">
               <MiniCalendar
                 mode="single"
                 month={visibleMonth}
@@ -404,8 +340,9 @@ export default function AppointmentsPage() {
               </Button>
             </CardContent>
           </Card>
-          <Card className="h-full flex-1 flex flex-col overflow-hidden">
-            <CardContent className="col-span-3 flex flex-col h-full">
+          
+          <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <CardContent className="p-0 md:p-0 flex-1 flex flex-col min-h-0">
               <Calendar
                 events={events}
                 view={activeTab}

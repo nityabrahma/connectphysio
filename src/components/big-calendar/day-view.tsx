@@ -1,3 +1,4 @@
+
 "use client";
 
 import { eachHourOfInterval, format, isSameDay } from "date-fns";
@@ -8,7 +9,7 @@ import type { Session } from "@/types/domain";
 interface DayViewProps {
   date: Date;
   events: CalendarEvent<Session>[];
-  eventComponent: React.ComponentType<{ event: CalendarEvent<Session> }>;
+  eventComponent: React.ComponentType<{ event: CalendarEvent<Session>; total: number; index: number; }>;
 }
 
 export function DayView({
@@ -26,6 +27,18 @@ export function DayView({
     () => events.filter((e) => isSameDay(e.start, date)),
     [events, date]
   );
+  
+  const eventsByHour = useMemo(() => {
+    const grouped: Record<number, CalendarEvent<Session>[]> = {};
+    dayEvents.forEach(event => {
+      const startHour = event.start.getHours();
+      if (!grouped[startHour]) {
+        grouped[startHour] = [];
+      }
+      grouped[startHour].push(event);
+    });
+    return grouped;
+  }, [dayEvents]);
 
   const getEventPosition = (event: CalendarEvent) => {
     const startHour = event.start.getHours();
@@ -39,35 +52,44 @@ export function DayView({
         (24 * 60)) *
       100;
 
-    return { top: `${top}%`, height: `${height}%` };
+    return { top: `${top}%`, height: `${Math.max(height, 5)}%` }; // min height
   };
 
   return (
-    <div className="flex flex-col size-full">
-      <header className="flex border-b">
-        <div className="w-full border-r"></div>
-        <div className="flex size-full text-center font-semibold py-2">
+    <div className="flex flex-col h-full overflow-y-auto">
+      <header className="flex border-b sticky top-0 bg-card z-10">
+        <div className="w-16 border-r"></div>
+        <div className="flex-1 text-center font-semibold py-2">
           {format(date, "EEE, MMM d")}
         </div>
       </header>
-      <div className="flex size-full flex-col justify-center items-center relative">
-        {hours.map((hour, index) => (
-          <div key={index} className="flex h-full border-b size-full">
-            <div className="w-16 border-r text-xs text-muted-foreground p-1 text-right">
+      <div className="flex flex-1">
+        <div className="w-16">
+           {hours.map((hour, index) => (
+            <div key={index} className="h-16 border-b border-r text-xs text-muted-foreground p-1 text-right">
               {format(hour, "h a")}
             </div>
-            <div className="flex-1"></div>
-          </div>
-        ))}
-        {dayEvents.map((event) => (
-          <div
-            key={event.id}
-            className="absolute w-full px-2"
-            style={getEventPosition(event)}
-          >
-            <EventComponent event={event} />
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="flex-1 relative">
+           {hours.map((_, hourIndex) => (
+              <div key={hourIndex} className="h-16 border-b"></div>
+            ))}
+            {Object.values(eventsByHour).flat().map((event) => {
+                const hourEvents = eventsByHour[event.start.getHours()] || [];
+                const total = hourEvents.length;
+                const index = hourEvents.findIndex(e => e.id === event.id);
+                return (
+                    <div
+                        key={event.id}
+                        className="absolute w-full px-1 z-10"
+                        style={getEventPosition(event)}
+                    >
+                        <EventComponent event={event} total={total} index={index}/>
+                    </div>
+                )
+            })}
+        </div>
       </div>
     </div>
   );
