@@ -1,4 +1,4 @@
-export const APP_NAMESPACE = 'theraApp:v1';
+export const APP_NAMESPACE = 'ConnectPhysio:v1';
 
 export const LS_KEYS = {
   USERS: `${APP_NAMESPACE}:users`,

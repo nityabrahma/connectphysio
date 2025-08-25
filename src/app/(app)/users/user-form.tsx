@@ -112,7 +112,7 @@ export function UserForm({ isOpen, onOpenChange, onSubmit, user }: UserFormProps
                         {isEditing ? 'Update the details of the existing user.' : 'Enter the details for the new user.'}
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-1 -mr-6 pr-6">
+                <ScrollArea className="flex-1 -mr-6 pr-6 overflow-y-auto">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
                             <FormField
