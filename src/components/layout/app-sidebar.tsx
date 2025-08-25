@@ -60,7 +60,7 @@ export default function AppSidebar() {
                 href="/dashboard"
                 className="flex items-center gap-3 font-semibold text-foreground"
             >
-                <Icons.logo className="h-10 w-10" />
+                <Icons.logo className="h-9 w-9" />
                 <span className="text-lg group-data-[collapsible=icon]:hidden">{user?.centreName || "ConnectPhysio"}</span>
             </Link>
         </SidebarHeader>
@@ -91,3 +91,5 @@ export default function AppSidebar() {
     </Sidebar>
   );
 }
+
+    

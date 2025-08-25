@@ -24,7 +24,7 @@ const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3.5rem"
+const SIDEBAR_WIDTH_ICON = "3.75rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContext = {
@@ -338,7 +338,7 @@ const SidebarHeader = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex h-16 items-center border-b px-4 shrink-0", className)}
+      className={cn("flex h-16 items-center border-b px-4 shrink-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0", className)}
       {...props}
     />
   )
@@ -742,3 +742,5 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
+    
