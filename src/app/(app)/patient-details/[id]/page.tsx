@@ -505,9 +505,12 @@ const SessionList = ({ sessions, isCompletedList = false, setSessionToEdit, setS
     return (
         <div className="w-full space-y-3">
             {sessions.map((session) => (
-               <button 
+               <div 
                 key={session.id} 
-                className="p-3 bg-muted/30 rounded-lg w-full flex items-center justify-between text-left hover:bg-muted/60 transition-colors"
+                className={cn(
+                  "p-3 bg-muted/30 rounded-lg w-full flex items-center justify-between text-left",
+                  isCompletedList ? "cursor-pointer hover:bg-muted/60 transition-colors" : ""
+                )}
                 onClick={() => {
                     if (isCompletedList && setSessionToView) setSessionToView(session)
                 }}
@@ -522,7 +525,7 @@ const SessionList = ({ sessions, isCompletedList = false, setSessionToEdit, setS
                         <Edit className="h-4 w-4" />
                      </Button>
                    )}
-               </button>
+               </div>
             ))}
         </div>
     )
