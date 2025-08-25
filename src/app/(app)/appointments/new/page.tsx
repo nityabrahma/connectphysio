@@ -28,19 +28,24 @@ export default function NewAppointmentPage() {
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
 
   const patientId = searchParams.get('patientId');
+  const treatmentPlanId = searchParams.get('treatmentPlanId');
 
   const centreTherapists = useMemo(() => {
     return therapists.filter(t => t.centreId === user?.centreId);
   }, [therapists, user]);
 
   const handleFormSubmit = (values: SessionFormValues) => {
-    if (!user) return;
+    if (!user || !treatmentPlanId) {
+        if(!treatmentPlanId) toast({ variant: 'destructive', title: "No treatment plan specified."});
+        return;
+    };
     
     const newSession: Session = {
         id: generateId(),
         ...values,
         date: format(values.date, "yyyy-MM-dd"),
         centreId: user.centreId,
+        treatmentPlanId,
         createdAt: new Date().toISOString(),
     };
     

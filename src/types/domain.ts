@@ -1,5 +1,4 @@
 
-
 export type ID = string;
 
 export type Role = "admin" | "receptionist" | "therapist";
@@ -34,9 +33,7 @@ export type Patient = {
   age?: number;
   sex?: 'male' | 'female' | 'other';
   address?: string;
-  history?: string; // Current problem
-  pastMedicalHistory?: string; // Other issues
-  examination?: string; // Observations
+  pastMedicalHistory?: string; // Other issues like diabetes, BP, etc. - stays with patient
   createdAt: string;
   updatedAt?: string;
   packageSaleId?: ID; // active package sale
@@ -133,6 +130,9 @@ export type Treatment = {
 export type TreatmentPlan = {
     id: ID;
     patientId: ID;
+    name: string; // e.g., "Post-Surgery Knee Rehab"
+    history?: string; // Current problem for this specific plan
+    examination?: string; // Observations for this specific plan
     createdAt: string; // ISO DateTime
     isActive: boolean;
     treatments: Treatment[];
@@ -158,5 +158,3 @@ export type MedicalCondition = {
     condition: string;
     notes: string;
 }
-
-    

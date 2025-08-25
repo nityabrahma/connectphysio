@@ -4,39 +4,30 @@
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import type { Patient, Session, Therapist, Questionnaire, TreatmentPlan, Treatment } from "@/types/domain";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format, isFuture, parse, parseISO } from "date-fns";
+import { format, isFuture, parseISO } from "date-fns";
 import {
   Mail,
   Phone,
-  User,
-  Calendar as CalendarIcon,
-  Stethoscope,
-  StickyNote,
   ArrowLeft,
   Edit,
   Trash2,
   PackagePlus,
   PlusCircle,
   MoreVertical,
-  MessageSquareQuote,
   FilePlus,
+  Calendar as CalendarIcon,
+  Stethoscope,
+  StickyNote,
 } from "lucide-react";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useEffect, useMemo, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useParams, useRouter } from "next/navigation";
@@ -52,9 +43,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -153,13 +141,50 @@ const ViewSessionModal = ({ session, isOpen, onOpenChange, getTherapistName }: {
     )
 }
 
+const NewTreatmentPlanModal = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean; onOpenChange: (open: boolean) => void; onSubmit: (name: string) => void; }) => {
+    const [name, setName] = useState('');
+    
+    const handleSubmit = () => {
+        if (name.trim()) {
+            onSubmit(name.trim());
+            setName('');
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Start New Treatment Plan</DialogTitle>
+                    <DialogDescription>
+                        Give this new treatment plan a descriptive name.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="plan-name">Treatment Plan Name</Label>
+                    <Input 
+                        id="plan-name" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g., Post-Surgery Knee Rehab"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSubmit} disabled={!name.trim()}>Create Plan</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { getPatient, updatePatient, deletePatient } = usePatients();
+  const { getPatient, deletePatient } = usePatients();
   const patientId = params.id as string;
   const patient = getPatient(patientId);
 
@@ -169,6 +194,7 @@ export default function PatientDetailPage() {
   
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
+  const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
   
   const patientTreatmentPlans = useMemo(() => {
     return treatmentPlans
@@ -179,17 +205,17 @@ export default function PatientDetailPage() {
   const [activeTreatmentPlanId, setActiveTreatmentPlanId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (patientTreatmentPlans.length > 0) {
+    if (patientTreatmentPlans.length > 0 && !activeTreatmentPlanId) {
       const activePlan = patientTreatmentPlans.find(p => p.isActive) || patientTreatmentPlans[0];
       setActiveTreatmentPlanId(activePlan.id);
     }
-  }, [patientTreatmentPlans]);
+  }, [patientTreatmentPlans, activeTreatmentPlanId]);
 
   const activeTreatmentPlan = useMemo(() => {
     return patientTreatmentPlans.find(p => p.id === activeTreatmentPlanId) || null;
   }, [patientTreatmentPlans, activeTreatmentPlanId]);
   
-  const handleNewTreatmentPlan = () => {
+  const handleNewTreatmentPlan = (name: string) => {
     if (!patient) return;
     
     // Deactivate all other plans for this patient
@@ -200,8 +226,11 @@ export default function PatientDetailPage() {
     const newPlan: TreatmentPlan = {
         id: generateId(),
         patientId: patient.id,
+        name: name,
         createdAt: new Date().toISOString(),
         isActive: true,
+        history: "Initial consultation.",
+        examination: "Initial examination.",
         treatments: [{
             date: new Date().toISOString(),
             description: "Initial Treatment",
@@ -211,6 +240,7 @@ export default function PatientDetailPage() {
 
     setTreatmentPlans([...updatedPlans, newPlan]);
     setActiveTreatmentPlanId(newPlan.id);
+    setIsNewPlanModalOpen(false);
     toast({ title: "New treatment plan started."});
   }
 
@@ -225,10 +255,11 @@ export default function PatientDetailPage() {
 
 
   const patientSessions = useMemo(() => {
+    if (!activeTreatmentPlanId) return [];
     return sessions
-      .filter((s) => s.patientId === patientId)
+      .filter((s) => s.patientId === patientId && s.treatmentPlanId === activeTreatmentPlanId)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sessions, patientId]);
+  }, [sessions, patientId, activeTreatmentPlanId]);
 
   const upcomingSessions = useMemo(() => {
     return patientSessions.filter(
@@ -243,7 +274,11 @@ export default function PatientDetailPage() {
   }, [patientSessions]);
   
   const handleNewAppointmentClick = () => {
-    router.push(`/appointments/new?patientId=${patientId}`);
+    if (!activeTreatmentPlanId) {
+      toast({ variant: "destructive", title: "No active treatment plan", description: "Please create a treatment plan before scheduling an appointment."});
+      return;
+    }
+    router.push(`/appointments/new?patientId=${patientId}&treatmentPlanId=${activeTreatmentPlanId}`);
   };
   
   const handleDeletePatient = () => {
@@ -283,13 +318,6 @@ export default function PatientDetailPage() {
     );
   }
 
-  const getInitials = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
-
   const getTherapistName = (therapistId: string) => {
     return therapists.find(t => t.id === therapistId)?.name || 'Unknown Therapist';
   }
@@ -304,129 +332,117 @@ export default function PatientDetailPage() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Patient Details</h1>
-                 <p className="text-muted-foreground">{patient.name}</p>
+                <h1 className="text-3xl font-bold tracking-tight">{patient.name}</h1>
+                 <p className="text-muted-foreground">Patient Details</p>
               </div>
           </div>
           <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild><Button><PlusCircle/> New</Button></DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={handleNewAppointmentClick}><CalendarIcon/>New Appointment</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={handleNewTreatmentPlan}><FilePlus/>New Treatment Plan</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            {patientTreatmentPlans.length > 0 && activeTreatmentPlanId && (
+                 <Select value={activeTreatmentPlanId} onValueChange={setActiveTreatmentPlanId}>
+                    <SelectTrigger className="w-[280px]">
+                        <SelectValue placeholder="Select a treatment plan..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {patientTreatmentPlans.map(plan => (
+                             <SelectItem key={plan.id} value={plan.id}>
+                                {plan.name} ({format(new Date(plan.createdAt), "MMM d, yyyy")})
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button><PlusCircle/> New</Button></DropdownMenuTrigger>
+              <DropdownMenuContent>
+                  <DropdownMenuItem onSelect={handleNewAppointmentClick}><CalendarIcon/>New Appointment</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setIsNewPlanModalOpen(true)}><FilePlus/>New Treatment Plan</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-              <AlertDialog>
-                  <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                          </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Patient Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onSelect={() => router.push(`/patients/edit/${patient.id}`)}>
-                              <Edit className="mr-2 h-4 w-4" /> Edit Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => router.push(`/assign-package/${patient.id}`)}>
-                              <PackagePlus className="mr-2 h-4 w-4" /> Assign Package
-                          </DropdownMenuItem>
-                          {patientTreatmentPlans.length > 1 && (
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>Switch Treatment Plan</DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                    {patientTreatmentPlans.map(plan => (
-                                        <DropdownMenuItem key={plan.id} onSelect={() => setActiveTreatmentPlanId(plan.id)}>
-                                            Plan from {format(new Date(plan.createdAt), "MMM d, yyyy")} {plan.id === activeTreatmentPlanId ? "(Active)" : ""}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                          )}
-                          <DropdownMenuSeparator />
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                  <Trash2 className="mr-2 h-4 w-4" /> Delete Patient
-                              </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                      </DropdownMenuContent>
-                  </DropdownMenu>
-                  <AlertDialogContent>
-                      <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete the patient record for {patient.name} and all associated data.
-                          </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeletePatient} className="bg-destructive hover:bg-destructive/90">
-                              Delete
-                          </AlertDialogAction>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
+            <AlertDialog>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Patient Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => router.push(`/patients/edit/${patient.id}`)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => router.push(`/assign-package/${patient.id}`)}>
+                            <PackagePlus className="mr-2 h-4 w-4" /> Assign Package
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Patient
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the patient record for {patient.name} and all associated data.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeletePatient} className="bg-destructive hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
         
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
-          {/* Left Column: Treatment Plan */}
+          {/* Left Column: Patient Details */}
           <div className="lg:col-span-1 flex flex-col min-h-0">
              <Card className="flex flex-col min-h-full">
                 <CardHeader>
-                    <CardTitle>Treatment Plan</CardTitle>
-                    <CardDescription>
-                       Active plan started on: {activeTreatmentPlan ? format(new Date(activeTreatmentPlan.createdAt), "MMM d, yyyy") : "N/A"}
-                    </CardDescription>
+                    <CardTitle>Patient Details</CardTitle>
                 </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto pt-4">
-                  {activeTreatmentPlan ? (
-                    <div className="space-y-4">
-                      {activeTreatmentPlan.treatments.map((treatment, index) => (
-                        <Card key={index} className={cn("bg-muted/50", index > 0 && "opacity-60")}>
-                           <CardHeader className="p-4">
-                              <CardTitle className="text-base">Treatment on {format(new Date(treatment.date), "MMM d, yyyy")}</CardTitle>
-                           </CardHeader>
-                           <CardContent className="p-4 pt-0">
-                               <p className="text-sm">{treatment.description}</p>
-                               {treatment.charges > 0 && <p className="text-sm font-semibold mt-2">Charges: ₹{treatment.charges}</p>}
-                           </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : <p className="text-muted-foreground text-center">No treatment plan found.</p>}
+                <CardContent className="flex-1 overflow-y-auto pt-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1"><Label className="text-muted-foreground">Age</Label><p>{patient.age || 'N/A'}</p></div>
+                      <div className="space-y-1"><Label className="text-muted-foreground">Sex</Label><p className="capitalize">{patient.sex || 'N/A'}</p></div>
+                      <div className="space-y-1"><Label className="text-muted-foreground">Contact</Label><p>{patient.phone}</p></div>
+                      <div className="space-y-1"><Label className="text-muted-foreground">Address</Label><p>{patient.address || 'N/A'}</p></div>
+                  </div>
+                   <div className="space-y-1 text-sm">
+                    <Label className="text-muted-foreground">Past Medical History</Label>
+                    <p className="p-2 bg-muted/50 rounded-md mt-1">{patient.pastMedicalHistory || 'No past medical history provided.'}</p>
+                   </div>
                 </CardContent>
              </Card>
           </div>
 
-          {/* Right Column: Patient Data & Session History */}
+          {/* Right Column: Treatment Data & Session History */}
           <div className="lg:col-span-2 flex flex-col min-h-0 space-y-6">
             <Card>
               <CardHeader>
-                  <CardTitle>Patient Data</CardTitle>
+                  <CardTitle>Clinical Notes</CardTitle>
+                  <CardDescription>Notes specific to the selected treatment plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span></CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="demographics">
+                <Tabs defaultValue="history">
                   <TabsList>
-                    <TabsTrigger value="demographics">Demographics</TabsTrigger>
-                    <TabsTrigger value="history">Health History</TabsTrigger>
+                    <TabsTrigger value="history">Current Problem</TabsTrigger>
+                    <TabsTrigger value="examination">Examination</TabsTrigger>
                     <TabsTrigger value="diagnosis">Diagnosis</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="demographics" className="pt-4">
-                     <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="space-y-1"><Label className="text-muted-foreground">Age</Label><p>{patient.age || 'N/A'}</p></div>
-                        <div className="space-y-1"><Label className="text-muted-foreground">Sex</Label><p className="capitalize">{patient.sex || 'N/A'}</p></div>
-                        <div className="space-y-1"><Label className="text-muted-foreground">Contact</Label><p>{patient.phone}</p></div>
-                        <div className="space-y-1"><Label className="text-muted-foreground">Address</Label><p>{patient.address || 'N/A'}</p></div>
-                     </div>
+                  <TabsContent value="history" className="pt-4 text-sm">
+                    <p className="p-2 bg-muted/50 rounded-md mt-1">{activeTreatmentPlan?.history || 'No history provided for this plan.'}</p>
                   </TabsContent>
-                  <TabsContent value="history" className="pt-4 space-y-4 text-sm">
-                    <div><Label className="text-muted-foreground">History (Current Problem)</Label><p className="p-2 bg-muted/50 rounded-md mt-1">{patient.history || 'No history provided.'}</p></div>
-                    <div><Label className="text-muted-foreground">Past Medical History</Label><p className="p-2 bg-muted/50 rounded-md mt-1">{patient.pastMedicalHistory || 'No past medical history provided.'}</p></div>
-                    <div><Label className="text-muted-foreground">Examination</Label><p className="p-2 bg-muted/50 rounded-md mt-1">{patient.examination || 'No examination notes.'}</p></div>
+                  <TabsContent value="examination" className="pt-4 space-y-4 text-sm">
+                    <p className="p-2 bg-muted/50 rounded-md mt-1">{activeTreatmentPlan?.examination || 'No examination notes for this plan.'}</p>
                   </TabsContent>
                    <TabsContent value="diagnosis" className="pt-4 text-sm">
                      <p>Diagnosis details will be shown here.</p>
@@ -435,21 +451,10 @@ export default function PatientDetailPage() {
               </CardContent>
             </Card>
 
-            {todaysCheckedInSession && (
-                <Card className="border-primary">
-                    <CardHeader>
-                        <CardTitle>Today's Session</CardTitle>
-                        <CardDescription>Update treatment for the current checked-in session.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {/* Add form here to add a new treatment to the active plan */}
-                    </CardContent>
-                </Card>
-            )}
-
             <Card className="flex flex-col flex-1 min-h-0">
               <CardHeader>
                 <CardTitle>Session History</CardTitle>
+                 <CardDescription>Sessions for treatment plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span></CardDescription>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col min-h-0 pt-4">
                 <Tabs defaultValue="upcoming" className="w-full flex flex-col flex-1 min-h-0">
@@ -486,6 +491,11 @@ export default function PatientDetailPage() {
             isOpen={!!sessionToView}
             onOpenChange={(isOpen) => !isOpen && setSessionToView(null)}
             getTherapistName={getTherapistName}
+        />
+        <NewTreatmentPlanModal 
+            isOpen={isNewPlanModalOpen}
+            onOpenChange={setIsNewPlanModalOpen}
+            onSubmit={handleNewTreatmentPlan}
         />
     </>
   );
@@ -530,7 +540,3 @@ const SessionList = ({ sessions, isCompletedList = false, setSessionToEdit, setS
         </div>
     )
   };
-
-    
-
-    

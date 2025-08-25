@@ -27,9 +27,7 @@ const formSchema = z.object({
     age: z.coerce.number().int().positive().optional().or(z.literal('')),
     sex: z.enum(['male', 'female', 'other']).optional(),
     address: z.string().optional(),
-    history: z.string().optional(),
     pastMedicalHistory: z.string().optional(),
-    examination: z.string().optional(),
     notes: z.string().optional(),
 })
 
@@ -51,9 +49,7 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
             age: '',
             sex: undefined,
             address: "",
-            history: "",
             pastMedicalHistory: "",
-            examination: "",
             notes: "",
         },
     });
@@ -171,38 +167,12 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
                 />
                  <FormField
                     control={form.control}
-                    name="history"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>History (Current Problem)</FormLabel>
-                            <FormControl>
-                                <Textarea placeholder="Patient's current issues..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
                     name="pastMedicalHistory"
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Past Medical History</FormLabel>
                             <FormControl>
                                 <Textarea placeholder="E.g., Diabetes, BP..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="examination"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Examination</FormLabel>
-                            <FormControl>
-                                <Textarea placeholder="Observations..." {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -228,5 +198,3 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
         </Form>
     )
 }
-
-    
