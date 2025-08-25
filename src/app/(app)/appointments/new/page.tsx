@@ -4,10 +4,10 @@
 import { SessionForm, type SessionFormValues } from '../session-form';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import type { Patient, Session, Therapist } from '@/types/domain';
+import type { Patient, Session, Therapist, TreatmentPlan } from '@/types/domain';
 import { LS_KEYS } from '@/lib/constants';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -26,26 +26,37 @@ export default function NewAppointmentPage() {
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
+  const [treatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
 
   const patientId = searchParams.get('patientId');
-  const treatmentPlanId = searchParams.get('treatmentPlanId');
 
   const centreTherapists = useMemo(() => {
     return therapists.filter(t => t.centreId === user?.centreId);
   }, [therapists, user]);
 
+  const patientTreatmentPlans = useMemo(() => {
+    if (!patientId) return [];
+    return treatmentPlans
+        .filter(tp => tp.patientId === patientId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [treatmentPlans, patientId]);
+
   const handleFormSubmit = (values: SessionFormValues) => {
-    if (!user || !treatmentPlanId) {
-        if(!treatmentPlanId) toast({ variant: 'destructive', title: "No treatment plan specified."});
+    if (!user || !values.treatmentPlanId) {
+        if(!values.treatmentPlanId) toast({ variant: 'destructive', title: "No treatment plan specified."});
         return;
     };
     
     const newSession: Session = {
         id: generateId(),
-        ...values,
+        patientId: values.patientId,
+        therapistId: values.therapistId,
+        treatmentPlanId: values.treatmentPlanId,
         date: format(values.date, "yyyy-MM-dd"),
+        startTime: values.startTime,
+        endTime: values.endTime,
+        status: 'scheduled',
         centreId: user.centreId,
-        treatmentPlanId,
         createdAt: new Date().toISOString(),
     };
     
@@ -72,6 +83,7 @@ export default function NewAppointmentPage() {
             patients={patients}
             therapists={centreTherapists}
             patientId={patientId}
+            treatmentPlans={patientTreatmentPlans}
           />
         </CardContent>
       </Card>

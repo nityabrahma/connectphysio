@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import type { Patient, Session, Therapist } from "@/types/domain"
+import type { Patient, Session, Therapist, TreatmentPlan } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -14,11 +14,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Info } from "lucide-react"
+import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
@@ -35,11 +35,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useAuth } from "@/hooks/use-auth"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useRouter } from "next/navigation"
 
 const formSchema = z.object({
   patientId: z.string().min(1, "Patient is required."),
   therapistId: z.string().min(1, "Therapist is required."),
+  treatmentPlanId: z.string().min(1, "Treatment plan is required."),
   date: z.date({ required_error: "A date is required."}),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)."),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)."),
@@ -57,17 +58,27 @@ interface SessionFormProps {
     patients: Patient[];
     therapists: Therapist[];
     patientId?: string | null;
+    treatmentPlans?: TreatmentPlan[];
 }
 
-export function SessionForm({ onSubmit, onDelete, session, patients, therapists, patientId }: SessionFormProps) {
+export function SessionForm({ onSubmit, onDelete, session, patients, therapists, patientId, treatmentPlans }: SessionFormProps) {
     const { user } = useAuth();
+    const router = useRouter();
     const isEditing = !!session;
+
+    const defaultTreatmentPlanId = useMemo(() => {
+        if (session?.treatmentPlanId) return session.treatmentPlanId;
+        if (!treatmentPlans || treatmentPlans.length === 0) return "";
+        const activePlan = treatmentPlans.find(tp => tp.isActive);
+        return activePlan ? activePlan.id : treatmentPlans[0].id;
+    }, [treatmentPlans, session]);
 
     const form = useForm<SessionFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             patientId: patientId || session?.patientId || "",
             therapistId: session?.therapistId || "",
+            treatmentPlanId: defaultTreatmentPlanId,
             date: session ? new Date(session.date) : new Date(),
             startTime: session?.startTime || format(new Date(), 'HH:mm'),
             endTime: session?.endTime || format(new Date(Date.now() + 60 * 60 * 1000), 'HH:mm'),
@@ -80,8 +91,29 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
     useEffect(() => {
         if (patientId) {
             form.setValue('patientId', patientId);
+            const patientPlans = treatmentPlans?.filter(tp => tp.patientId === patientId) || [];
+            if (patientPlans.length > 0) {
+                 const activePlan = patientPlans.find(tp => tp.isActive) || patientPlans[0];
+                 form.setValue('treatmentPlanId', activePlan.id);
+            }
         }
-    }, [patientId, form]);
+    }, [patientId, form, treatmentPlans]);
+
+    useEffect(() => {
+        if (!isEditing && therapists.length === 1) {
+            form.setValue('therapistId', therapists[0].id);
+        }
+    }, [therapists, isEditing, form]);
+
+    useEffect(() => {
+        const subscription = form.watch((value, { name }) => {
+            if (name === 'patientId' && value.patientId) {
+                router.replace(`/appointments/new?patientId=${value.patientId}`, { scroll: false });
+            }
+        });
+        return () => subscription.unsubscribe();
+    }, [form, router]);
+    
 
     const handleFormSubmit = (values: SessionFormValues) => {
         onSubmit(values);
@@ -89,6 +121,8 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
 
 
     const canEditHealthNotes = user?.role === 'admin' || user?.role === 'therapist';
+
+    const selectedPatientId = form.watch('patientId');
 
     return (
         <Form {...form}>
@@ -104,7 +138,7 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                                     onValueChange={field.onChange} 
                                     defaultValue={field.value} 
                                     value={field.value}
-                                    disabled={!!patientId}
+                                    disabled={!!patientId || isEditing}
                                 >
                                     <FormControl>
                                     <SelectTrigger>
@@ -125,7 +159,7 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Therapist</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                     <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a therapist" />
@@ -140,10 +174,27 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                         )}
                     />
                     
-                     {!isEditing && (
-                      <p className="text-sm text-destructive md:col-span-2 -mb-2">
-                        Note: The date and time are automatically set to the current date and time.
-                      </p>
+                    {selectedPatientId && treatmentPlans && (
+                         <FormField
+                            control={form.control}
+                            name="treatmentPlanId"
+                            render={({ field }) => (
+                                <FormItem className="md:col-span-2">
+                                    <FormLabel>Treatment Plan</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                        <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a treatment plan" />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {treatmentPlans.map(tp => <SelectItem key={tp.id} value={tp.id}>{tp.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     )}
 
                      <FormField

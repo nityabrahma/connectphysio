@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -34,12 +36,13 @@ const formSchema = z.object({
   address: z.string().optional(),
   pastMedicalHistory: z.string().optional(),
   notes: z.string().optional(),
+  initialTreatmentPlanName: z.string().optional(),
 });
 
 export type PatientFormValues = z.infer<typeof formSchema>;
 
 interface PatientFormProps {
-  onSubmit: (values: PatientFormValues & { centreId: string }) => void;
+  onSubmit: (values: PatientFormValues & { centreId: string, initialTreatmentPlanName: string }) => void;
   patient?: Patient;
 }
 
@@ -56,6 +59,7 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
       address: "",
       pastMedicalHistory: "",
       notes: "",
+      initialTreatmentPlanName: ""
     },
   });
 
@@ -72,7 +76,7 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
 
   const handleFormSubmit = (values: PatientFormValues) => {
     if (!currentUser) return;
-    onSubmit({ ...values, centreId: currentUser.centreId });
+    onSubmit({ ...values, centreId: currentUser.centreId, initialTreatmentPlanName: values.initialTreatmentPlanName || "" });
   };
 
   return (
@@ -204,6 +208,29 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
             </FormItem>
           )}
         />
+        
+        {!isEditing && (
+            <>
+            <Separator />
+             <FormField
+                control={form.control}
+                name="initialTreatmentPlanName"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Initial Treatment Plan Name (Optional)</FormLabel>
+                    <FormControl>
+                    <Input placeholder="e.g., Post-Surgery Knee Rehab" {...field} />
+                    </FormControl>
+                     <p className="text-sm text-muted-foreground">
+                        Create an initial treatment plan for this patient. You can add more details later.
+                    </p>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            </>
+        )}
+        
         <div className="flex justify-end">
           <Button type="submit">
             {isEditing ? "Save Changes" : "Create Patient"}
