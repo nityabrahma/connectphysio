@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     "scheduling software",
     "therapy app",
   ],
+  icons: "/icon-bg.png",
 };
 
 export default function RootLayout({

@@ -1,14 +1,12 @@
+"use client";
 
-'use client';
+import { CalendarHeader } from "./calendar-header";
+import { MonthView } from "./month-view";
+import { WeekView } from "./week-view";
+import { DayView } from "./day-view";
+import type { Session } from "@/types/domain";
 
-import { useState } from 'react';
-import { CalendarHeader } from './calendar-header';
-import { MonthView } from './month-view';
-import { WeekView } from './week-view';
-import { DayView } from './day-view';
-import type { Session } from '@/types/domain';
-
-export type CalendarView = 'month' | 'week' | 'day';
+export type CalendarView = "month" | "week" | "day";
 
 export interface CalendarEvent<T = any> {
   id: string;
@@ -35,15 +33,32 @@ export function Calendar({
   onDateChange,
   eventComponent,
 }: CalendarProps) {
-
   const renderView = () => {
     switch (view) {
-      case 'month':
-        return <MonthView date={currentDate} events={events} eventComponent={eventComponent} />;
-      case 'week':
-        return <WeekView date={currentDate} events={events} eventComponent={eventComponent} />;
-      case 'day':
-        return <DayView date={currentDate} events={events} eventComponent={eventComponent} />;
+      case "month":
+        return (
+          <MonthView
+            date={currentDate}
+            events={events}
+            eventComponent={eventComponent}
+          />
+        );
+      case "week":
+        return (
+          <WeekView
+            date={currentDate}
+            events={events}
+            eventComponent={eventComponent}
+          />
+        );
+      case "day":
+        return (
+          <DayView
+            date={currentDate}
+            events={events}
+            eventComponent={eventComponent}
+          />
+        );
       default:
         return null;
     }
@@ -57,9 +72,7 @@ export function Calendar({
         view={view}
         onViewChange={onViewChange}
       />
-      <div className="flex-1 overflow-auto">
-        {renderView()}
-      </div>
+      <div className="flex-1 overflow-auto">{renderView()}</div>
     </div>
   );
 }

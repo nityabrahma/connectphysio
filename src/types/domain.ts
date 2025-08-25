@@ -31,7 +31,7 @@ export type Patient = {
   email: string;
   centreId: ID;
   age?: number;
-  sex?: 'male' | 'female' | 'other';
+  gender?: 'male' | 'female' | 'other';
   address?: string;
   pastMedicalHistory?: string; // Other issues like diabetes, BP, etc. - stays with patient
   createdAt: string;
