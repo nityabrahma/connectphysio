@@ -1,4 +1,5 @@
 
+
 export type ID = string;
 
 export type Role = "admin" | "receptionist" | "therapist";
@@ -31,7 +32,11 @@ export type Patient = {
   email: string;
   centreId: ID;
   age?: number;
-  medicalInfo?: string;
+  sex?: 'male' | 'female' | 'other';
+  address?: string;
+  history?: string; // Current problem
+  pastMedicalHistory?: string; // Other issues
+  examination?: string; // Observations
   createdAt: string;
   updatedAt?: string;
   packageSaleId?: ID; // active package sale
@@ -80,6 +85,7 @@ export type Session = {
   patientId: ID;
   centreId: ID;
   packageSaleId?: ID;
+  treatmentPlanId?: ID;
   status: "scheduled" | "checked-in" | "completed" | "cancelled";
   healthNotes?: string; // Stored as a JSON string of questionnaire answers
   notes?: string;
@@ -114,3 +120,43 @@ export type Questionnaire = {
   createdAt: string;
   updatedAt?: string;
 };
+
+
+// New Domain Types
+
+export type Treatment = {
+    date: string; // ISO DateTime
+    description: string;
+    charges: number;
+}
+
+export type TreatmentPlan = {
+    id: ID;
+    patientId: ID;
+    createdAt: string; // ISO DateTime
+    isActive: boolean;
+    treatments: Treatment[];
+}
+
+export type Diagnosis = {
+    id: ID;
+    patientId: ID;
+    description: string;
+    date: string; // ISO DateTime
+}
+
+export type Experiment = {
+    id: ID;
+    patientId: ID;
+    description: string;
+    date: string; // ISO DateTime
+}
+
+export type MedicalCondition = {
+    id: ID;
+    patientId: ID;
+    condition: string;
+    notes: string;
+}
+
+    

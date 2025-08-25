@@ -18,13 +18,18 @@ import { Input } from "@/components/ui/input"
 import { useEffect } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/hooks/use-auth"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
     email: z.string().email("Invalid email address."),
     phone: z.string().min(10, "Phone number must be at least 10 digits."),
     age: z.coerce.number().int().positive().optional().or(z.literal('')),
-    medicalInfo: z.string().optional(),
+    sex: z.enum(['male', 'female', 'other']).optional(),
+    address: z.string().optional(),
+    history: z.string().optional(),
+    pastMedicalHistory: z.string().optional(),
+    examination: z.string().optional(),
     notes: z.string().optional(),
 })
 
@@ -44,7 +49,11 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
             email: "",
             phone: "",
             age: '',
-            medicalInfo: "",
+            sex: undefined,
+            address: "",
+            history: "",
+            pastMedicalHistory: "",
+            examination: "",
             notes: "",
         },
     });
@@ -52,12 +61,8 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
     useEffect(() => {
         if (patient) {
             form.reset({
-                name: patient.name || "",
-                email: patient.email || "",
-                phone: patient.phone || "",
+                ...patient,
                 age: patient.age || '',
-                medicalInfo: patient.medicalInfo || "",
-                notes: patient.notes || "",
             });
         }
     }, [patient, form]);
@@ -87,19 +92,43 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
                             </FormItem>
                         )}
                     />
-                     <FormField
-                        control={form.control}
-                        name="age"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Age</FormLabel>
-                                <FormControl>
-                                    <Input type="number" placeholder="35" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                         <FormField
+                            control={form.control}
+                            name="age"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Age</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="35" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="sex"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Sex</FormLabel>
+                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select..." />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="male">Male</SelectItem>
+                                            <SelectItem value="female">Female</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                     <FormField
                         control={form.control}
                         name="email"
@@ -127,14 +156,53 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
                         )}
                     />
                 </div>
-                <FormField
+                 <FormField
                     control={form.control}
-                    name="medicalInfo"
+                    name="address"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Medical Info (Optional)</FormLabel>
+                            <FormLabel>Address</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Any relevant medical history..." {...field} />
+                                <Textarea placeholder="123 Main St, Anytown..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="history"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>History (Current Problem)</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="Patient's current issues..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="pastMedicalHistory"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Past Medical History</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="E.g., Diabetes, BP..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="examination"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Examination</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="Observations..." {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -145,9 +213,9 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
                     name="notes"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Notes (Optional)</FormLabel>
+                            <FormLabel>Internal Notes (Optional)</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Initial consultation notes..." {...field} />
+                                <Textarea placeholder="Internal notes about the patient..." {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -160,3 +228,5 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
         </Form>
     )
 }
+
+    

@@ -1,3 +1,4 @@
+
 export const APP_NAMESPACE = 'ConnectPhysio:v1';
 
 export const LS_KEYS = {
@@ -13,4 +14,10 @@ export const LS_KEYS = {
   THEME: `${APP_NAMESPACE}:theme`,
   SEEDED: `${APP_NAMESPACE}:seeded`,
   QUESTIONNAIRES: `${APP_NAMESPACE}:questionnaires`,
+  TREATMENT_PLANS: `${APP_NAMESPACE}:treatmentPlans`,
+  DIAGNOSES: `${APP_NAMESPACE}:diagnoses`,
+  EXPERIMENTS: `${APP_NAMESPACE}:experiments`,
+  MEDICAL_CONDITIONS: `${APP_NAMESPACE}:medicalConditions`,
 };
+
+    
