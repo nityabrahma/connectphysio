@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format, isFuture, parseISO } from "date-fns";
+import { format, isFuture, parseISO, isSameDay } from "date-fns";
 import {
   Mail,
   Phone,
@@ -34,6 +34,7 @@ import {
   Calendar as CalendarIcon,
   Stethoscope,
   StickyNote,
+  History,
 } from "lucide-react";
 import {
   Select,
@@ -321,6 +322,121 @@ const EditClinicalNotesModal = ({
   );
 };
 
+const SessionHistoryModal = ({
+    isOpen,
+    onOpenChange,
+    sessions,
+    setSessionToEdit,
+    setSessionToView,
+    getTherapistName,
+    planName
+} : {
+    isOpen: boolean,
+    onOpenChange: (open: boolean) => void,
+    sessions: Session[],
+    setSessionToEdit: (s: Session) => void,
+    setSessionToView: (s: Session) => void,
+    getTherapistName: (id: string) => string,
+    planName: string
+}) => {
+
+    const upcomingSessions = useMemo(() => {
+        return sessions.filter(
+        (s) =>
+            (s.status === "scheduled" || s.status === "checked-in") &&
+            (isFuture(parseISO(s.date)) ||
+            format(new Date(s.date), "yyyy-MM-dd") ===
+                format(new Date(), "yyyy-MM-dd"))
+        );
+    }, [sessions]);
+
+    const completedSessions = useMemo(() => {
+        return sessions.filter((s) => s.status === "completed");
+    }, [sessions]);
+
+    return (
+         <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Session History</DialogTitle>
+                    <DialogDescription>
+                        All sessions for treatment plan: <span className="font-semibold">{planName}</span>
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 flex flex-col min-h-0 pt-4">
+                     <Tabs
+                        defaultValue="upcoming"
+                        className="w-full flex flex-col flex-1 min-h-0"
+                    >
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                            <TabsTrigger value="completed">Completed</TabsTrigger>
+                        </TabsList>
+                        <div className="flex-1 mt-4 relative">
+                            <ScrollArea className="absolute inset-0 w-full h-full pr-4">
+                            <TabsContent value="upcoming">
+                                <SessionList
+                                sessions={upcomingSessions}
+                                setSessionToEdit={setSessionToEdit}
+                                getTherapistName={getTherapistName}
+                                />
+                            </TabsContent>
+                            <TabsContent value="completed">
+                                <SessionList
+                                sessions={completedSessions}
+                                isCompletedList
+                                setSessionToView={setSessionToView}
+                                getTherapistName={getTherapistName}
+                                />
+                            </TabsContent>
+                            </ScrollArea>
+                        </div>
+                    </Tabs>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+const AddTreatmentForm = ({ plan, onAdd }: { plan: TreatmentPlan, onAdd: (planId: string, treatment: Treatment) => void }) => {
+    const [description, setDescription] = useState("");
+    const [charges, setCharges] = useState(0);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!description.trim()) return;
+        const newTreatment: Treatment = {
+            date: new Date().toISOString(),
+            description,
+            charges,
+        };
+        onAdd(plan.id, newTreatment);
+        setDescription("");
+        setCharges(0);
+    }
+    
+    return (
+        <form onSubmit={handleSubmit} className="p-4 bg-muted/50 rounded-lg space-y-3">
+            <h4 className="font-semibold">Add New Treatment Entry</h4>
+            <div className="space-y-2">
+                <Label htmlFor="treatment-desc">Description</Label>
+                <Textarea id="treatment-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="e.g. Ultrasound Therapy" required/>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="treatment-charges">Charges (₹)</Label>
+                <Input id="treatment-charges" type="number" value={charges} onChange={e => setCharges(Number(e.target.value))} required/>
+            </div>
+            <div className="flex justify-end">
+                <Button type="submit">Add Treatment</Button>
+            </div>
+        </form>
+    )
+}
+
+
 export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -344,6 +460,7 @@ export default function PatientDetailPage() {
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
   const [isEditNotesModalOpen, setIsEditNotesModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   const patientTreatmentPlans = useMemo(() => {
     return treatmentPlans
@@ -372,6 +489,11 @@ export default function PatientDetailPage() {
       patientTreatmentPlans.find((p) => p.id === activeTreatmentPlanId) || null
     );
   }, [patientTreatmentPlans, activeTreatmentPlanId]);
+  
+  const sortedTreatments = useMemo(() => {
+    if (!activeTreatmentPlan) return [];
+    return [...activeTreatmentPlan.treatments].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [activeTreatmentPlan]);
 
   const handleNewTreatmentPlan = (name: string) => {
     if (!patient) return;
@@ -417,15 +539,15 @@ export default function PatientDetailPage() {
     toast({ title: "Clinical notes updated." });
   };
 
-  const handleUpdateTreatment = (planId: string, newTreatment: Treatment) => {
+  const handleAddTreatment = (planId: string, newTreatment: Treatment) => {
     setTreatmentPlans(
       treatmentPlans.map((plan) =>
         plan.id === planId
-          ? { ...plan, treatments: [...plan.treatments, newTreatment] }
+          ? { ...plan, treatments: [...(plan.treatments || []), newTreatment] }
           : plan
       )
     );
-    toast({ title: "Treatment Updated" });
+    toast({ title: "Treatment Added" });
   };
 
   const patientSessions = useMemo(() => {
@@ -438,20 +560,6 @@ export default function PatientDetailPage() {
       )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [sessions, patientId, activeTreatmentPlanId]);
-
-  const upcomingSessions = useMemo(() => {
-    return patientSessions.filter(
-      (s) =>
-        (s.status === "scheduled" || s.status === "checked-in") &&
-        (isFuture(parseISO(s.date)) ||
-          format(new Date(s.date), "yyyy-MM-dd") ===
-            format(new Date(), "yyyy-MM-dd"))
-    );
-  }, [patientSessions]);
-
-  const completedSessions = useMemo(() => {
-    return patientSessions.filter((s) => s.status === "completed");
-  }, [patientSessions]);
 
   const handleNewAppointmentClick = () => {
     if (!activeTreatmentPlanId) {
@@ -486,9 +594,7 @@ export default function PatientDetailPage() {
   const todaysCheckedInSession = useMemo(() => {
     return patientSessions.find(
       (s) =>
-        s.status === "checked-in" &&
-        format(new Date(s.date), "yyyy-MM-dd") ===
-          format(new Date(), "yyyy-MM-dd")
+        s.status === "checked-in" && isSameDay(new Date(s.date), new Date())
     );
   }, [patientSessions]);
 
@@ -583,6 +689,9 @@ export default function PatientDetailPage() {
                   >
                     <Edit className="mr-2 h-4 w-4" /> Edit Details
                   </DropdownMenuItem>
+                   <DropdownMenuItem onSelect={() => setIsHistoryModalOpen(true)}>
+                        <History className="mr-2 h-4 w-4" /> View Session History
+                    </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() =>
                       router.push(`/assign-package/${patient.id}`)
@@ -626,55 +735,99 @@ export default function PatientDetailPage() {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
-          {/* Left Column: Patient Details */}
+          {/* Left Column: Treatment */}
           <div className="lg:col-span-1 flex flex-col min-h-0">
-            <Card className="flex flex-col min-h-full">
+             <Card className="flex flex-col min-h-full">
               <CardHeader>
-                <CardTitle>Patient Details</CardTitle>
+                <CardTitle>Treatment</CardTitle>
+                <CardDescription>
+                  Plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span>
+                </CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto pt-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground">Age</Label>
-                    <p>{patient.age || "N/A"}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground">Gender</Label>
-                    <p className="capitalize">{patient.gender || "N/A"}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground">Contact</Label>
-                    <p>{patient.phone}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground">Address</Label>
-                    <p>{patient.address || "N/A"}</p>
-                  </div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <Label className="text-muted-foreground">
-                    Past Medical History
-                  </Label>
-                  <p className="p-2 bg-muted/50 rounded-md mt-1">
-                    {patient.pastMedicalHistory ||
-                      "No past medical history provided."}
-                  </p>
-                </div>
+              <CardContent className="flex-1 flex flex-col min-h-0 pt-4 space-y-4">
+                 <ScrollArea className="flex-1 -mr-4 pr-4">
+                    <div className="space-y-4">
+                        {sortedTreatments.length > 0 ? sortedTreatments.map((treatment, index) => (
+                             <Card key={treatment.date} className={cn(index > 0 && "opacity-60")}>
+                                <CardHeader className="p-4">
+                                    <CardTitle className="text-base">
+                                        {format(new Date(treatment.date), "EEE, MMM d, yyyy")}
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-4 pt-0 text-sm">
+                                    <p>{treatment.description}</p>
+                                    <p className="font-semibold mt-2">Charges: ₹{treatment.charges}</p>
+                                </CardContent>
+                            </Card>
+                        )) : (
+                            <p className="text-sm text-muted-foreground text-center py-8">No treatments recorded for this plan.</p>
+                        )}
+                    </div>
+                </ScrollArea>
+                {activeTreatmentPlan && (
+                    <div className="mt-auto pt-4 border-t">
+                        <AddTreatmentForm plan={activeTreatmentPlan} onAdd={handleAddTreatment} />
+                    </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Right Column: Treatment Data & Session History */}
+          {/* Right Column: Patient Details & Clinical Notes */}
           <div className="lg:col-span-2 flex flex-col min-h-0 space-y-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Patient Information</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="space-y-1">
+                        <Label className="text-muted-foreground">Age</Label>
+                        <p>{patient.age || "N/A"}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-muted-foreground">Gender</Label>
+                        <p className="capitalize">{patient.gender || "N/A"}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-muted-foreground">Contact</Label>
+                        <p>{patient.phone}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-muted-foreground">Address</Label>
+                        <p>{patient.address || "N/A"}</p>
+                    </div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                    <Label className="text-muted-foreground">
+                        Past Medical History
+                    </Label>
+                    <p className="p-2 bg-muted/50 rounded-md mt-1">
+                        {patient.pastMedicalHistory ||
+                        "No past medical history provided."}
+                    </p>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            {todaysCheckedInSession && activeTreatmentPlan && (
+                 <Card className="border-primary">
+                    <CardHeader>
+                        <CardTitle>Today's Session</CardTitle>
+                        <CardDescription>Update treatment based on today's checked-in session.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <AddTreatmentForm plan={activeTreatmentPlan} onAdd={handleAddTreatment} />
+                    </CardContent>
+                </Card>
+            )}
+
             <Card>
               <CardHeader className="flex flex-row justify-between items-start">
                 <div>
                   <CardTitle>Clinical Notes</CardTitle>
                   <CardDescription>
-                    Notes specific to the selected treatment plan:{" "}
-                    <span className="font-semibold">
-                      {activeTreatmentPlan?.name}
-                    </span>
+                    Notes specific to the selected treatment plan.
                   </CardDescription>
                 </div>
                 <Button
@@ -714,48 +867,6 @@ export default function PatientDetailPage() {
                 </Tabs>
               </CardContent>
             </Card>
-
-            <Card className="flex flex-col flex-1 min-h-0">
-              <CardHeader>
-                <CardTitle>Session History</CardTitle>
-                <CardDescription>
-                  Sessions for treatment plan:{" "}
-                  <span className="font-semibold">
-                    {activeTreatmentPlan?.name}
-                  </span>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col min-h-0 pt-4">
-                <Tabs
-                  defaultValue="upcoming"
-                  className="w-full flex flex-col flex-1 min-h-0"
-                >
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                    <TabsTrigger value="completed">Completed</TabsTrigger>
-                  </TabsList>
-                  <div className="flex-1 mt-4 relative">
-                    <ScrollArea className="absolute inset-0 w-full h-full pr-4">
-                      <TabsContent value="upcoming">
-                        <SessionList
-                          sessions={upcomingSessions}
-                          setSessionToEdit={setSessionToEdit}
-                          getTherapistName={getTherapistName}
-                        />
-                      </TabsContent>
-                      <TabsContent value="completed">
-                        <SessionList
-                          sessions={completedSessions}
-                          isCompletedList
-                          setSessionToView={setSessionToView}
-                          getTherapistName={getTherapistName}
-                        />
-                      </TabsContent>
-                    </ScrollArea>
-                  </div>
-                </Tabs>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
@@ -784,6 +895,17 @@ export default function PatientDetailPage() {
         onOpenChange={setIsEditNotesModalOpen}
         onUpdate={handleUpdateClinicalNotes}
       />
+      {activeTreatmentPlan && (
+        <SessionHistoryModal 
+            isOpen={isHistoryModalOpen}
+            onOpenChange={setIsHistoryModalOpen}
+            sessions={patientSessions}
+            setSessionToEdit={setSessionToEdit}
+            setSessionToView={setSessionToView}
+            getTherapistName={getTherapistName}
+            planName={activeTreatmentPlan.name}
+        />
+      )}
     </>
   );
 }
