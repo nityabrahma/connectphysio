@@ -15,21 +15,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGate>
         <SidebarProvider>
-          <div className="flex size-full h-screen bg-secondary/50 overflow-hidden">
-            <AppSidebar />
-            <div className="flex-1 flex flex-col overflow-hidden size-full">
-              <Topbar />
-              <main className="flex-1 overflow-y-auto">
-                <motion.div
-                  key={pathname}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="p-4 sm:p-6 lg:p-8 size-full"
-                >
-                  {children}
-                </motion.div>
-              </main>
+          <div className="flex flex-col size-full h-screen bg-secondary/50 overflow-hidden">
+            <Topbar />
+            <div className="flex flex-1 overflow-hidden">
+                <AppSidebar />
+                <main className="flex-1 overflow-y-auto">
+                    <motion.div
+                    key={pathname}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="p-4 sm:p-6 lg:p-8 size-full"
+                    >
+                    {children}
+                    </motion.div>
+                </main>
             </div>
           </div>
         </SidebarProvider>

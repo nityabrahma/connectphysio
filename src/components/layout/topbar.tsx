@@ -67,12 +67,12 @@ export function Topbar() {
   const pathname = usePathname();
 
   return (
-    <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
+    <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 shrink-0 z-30">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         <Link
           href="/dashboard"
-          className="hidden md:flex items-center gap-3 font-semibold"
+          className="flex items-center gap-3 font-semibold"
         >
           <Icons.logo className="h-10 w-10" />
           <span className="text-lg whitespace-nowrap">{user?.centreName || "ConnectPhysio"}</span>

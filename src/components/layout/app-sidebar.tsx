@@ -2,7 +2,6 @@
 "use client";
 
 import { useAuth } from "@/hooks/use-auth";
-import { cn } from "@/lib/utils";
 import {
   Calendar,
   Home,
@@ -15,8 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icons } from "../icons";
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "../ui/sidebar";
+import { Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "../ui/sidebar";
 
 const navItems = [
   {
