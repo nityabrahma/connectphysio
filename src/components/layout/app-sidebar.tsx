@@ -14,9 +14,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "../ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "../ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Icons } from "../icons";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet";
 
 const navItems = [
   {
@@ -49,24 +50,72 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ];
 
+const MobileSidebar = () => {
+    const { user } = useAuth();
+    const { openMobile, setOpenMobile } = useSidebar();
+    const pathname = usePathname();
+
+    return (
+        <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+            <SheetContent
+                side="left"
+                className="w-[18rem] bg-card p-0 text-card-foreground [&>button]:hidden"
+            >
+                 <SheetHeader className="sr-only">
+                    <SheetTitle>App Navigation</SheetTitle>
+                    <SheetDescription>Main navigation menu for the ConnectPhysio application.</SheetDescription>
+                </SheetHeader>
+                <SidebarHeader>
+                    <Link
+                        href="/dashboard"
+                        className="flex items-center gap-3 font-semibold"
+                        onClick={() => setOpenMobile(false)}
+                    >
+                        <Icons.logo className="h-10 w-10" />
+                        <span className="text-lg">{user?.centreName || "ConnectPhysio"}</span>
+                    </Link>
+                </SidebarHeader>
+                <SidebarContent>
+                    <SidebarMenu>
+                    {navItems.map((item) =>
+                        user && item.roles.includes(user.role) ? (
+                        <SidebarMenuItem key={item.href}>
+                            <SidebarMenuButton
+                                asChild
+                                isActive={
+                                    item.href === "/dashboard"
+                                    ? pathname === item.href
+                                    : pathname.startsWith(item.href)
+                                }
+                                onClick={() => setOpenMobile(false)}
+                            >
+                                <Link href={item.href}>
+                                    <item.icon />
+                                    <span>{item.label}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        ) : null
+                    )}
+                    </SidebarMenu>
+                </SidebarContent>
+            </SheetContent>
+      </Sheet>
+    )
+}
+
+
 export default function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
+  if (isMobile) {
+    return <MobileSidebar />;
+  }
+
   return (
     <Sidebar collapsible="icon">
-       {isMobile && (
-        <SidebarHeader>
-           <Link
-              href="/dashboard"
-              className="flex items-center gap-3 font-semibold"
-            >
-              <Icons.logo className="h-10 w-10" />
-              <span className="text-lg">{user?.centreName || "ConnectPhysio"}</span>
-            </Link>
-        </SidebarHeader>
-      )}
       <SidebarContent>
         <SidebarMenu>
           {navItems.map((item) =>
