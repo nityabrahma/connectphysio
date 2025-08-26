@@ -14,7 +14,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "../ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "../ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Icons } from "../icons";
 
 const navItems = [
   {
@@ -50,9 +52,21 @@ const navItems = [
 export default function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   return (
     <Sidebar collapsible="icon">
+       {isMobile && (
+        <SidebarHeader>
+           <Link
+              href="/dashboard"
+              className="flex items-center gap-3 font-semibold"
+            >
+              <Icons.logo className="h-10 w-10" />
+              <span className="text-lg">{user?.centreName || "ConnectPhysio"}</span>
+            </Link>
+        </SidebarHeader>
+      )}
       <SidebarContent>
         <SidebarMenu>
           {navItems.map((item) =>
