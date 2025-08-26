@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -248,6 +249,78 @@ const NewTreatmentPlanModal = ({
   );
 };
 
+const EditClinicalNotesModal = ({
+  plan,
+  isOpen,
+  onOpenChange,
+  onUpdate,
+}: {
+  plan: TreatmentPlan | null;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdate: (
+    planId: string,
+    updates: { history: string; examination: string }
+  ) => void;
+}) => {
+  const [history, setHistory] = useState("");
+  const [examination, setExamination] = useState("");
+
+  useEffect(() => {
+    if (plan) {
+      setHistory(plan.history || "");
+      setExamination(plan.examination || "");
+    }
+  }, [plan]);
+
+  const handleSubmit = () => {
+    if (plan) {
+      onUpdate(plan.id, { history, examination });
+    }
+  };
+
+  if (!plan) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Edit Clinical Notes</DialogTitle>
+          <DialogDescription>
+            Update notes for treatment plan: {plan.name}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="history">Current Problem / History</Label>
+            <Textarea
+              id="history"
+              value={history}
+              onChange={(e) => setHistory(e.target.value)}
+              rows={5}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="examination">Examination</Label>
+            <Textarea
+              id="examination"
+              value={examination}
+              onChange={(e) => setExamination(e.target.value)}
+              rows={5}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit}>Save Changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -270,6 +343,7 @@ export default function PatientDetailPage() {
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
+  const [isEditNotesModalOpen, setIsEditNotesModalOpen] = useState(false);
 
   const patientTreatmentPlans = useMemo(() => {
     return treatmentPlans
@@ -328,6 +402,19 @@ export default function PatientDetailPage() {
     setActiveTreatmentPlanId(newPlan.id);
     setIsNewPlanModalOpen(false);
     toast({ title: "New treatment plan started." });
+  };
+
+  const handleUpdateClinicalNotes = (
+    planId: string,
+    updates: { history: string; examination: string }
+  ) => {
+    setTreatmentPlans(
+      treatmentPlans.map((plan) =>
+        plan.id === planId ? { ...plan, ...updates } : plan
+      )
+    );
+    setIsEditNotesModalOpen(false);
+    toast({ title: "Clinical notes updated." });
   };
 
   const handleUpdateTreatment = (planId: string, newTreatment: Treatment) => {
@@ -580,14 +667,24 @@ export default function PatientDetailPage() {
           {/* Right Column: Treatment Data & Session History */}
           <div className="lg:col-span-2 flex flex-col min-h-0 space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Clinical Notes</CardTitle>
-                <CardDescription>
-                  Notes specific to the selected treatment plan:{" "}
-                  <span className="font-semibold">
-                    {activeTreatmentPlan?.name}
-                  </span>
-                </CardDescription>
+              <CardHeader className="flex flex-row justify-between items-start">
+                <div>
+                  <CardTitle>Clinical Notes</CardTitle>
+                  <CardDescription>
+                    Notes specific to the selected treatment plan:{" "}
+                    <span className="font-semibold">
+                      {activeTreatmentPlan?.name}
+                    </span>
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditNotesModalOpen(true)}
+                  disabled={!activeTreatmentPlan}
+                >
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </Button>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="history">
@@ -597,7 +694,7 @@ export default function PatientDetailPage() {
                     <TabsTrigger value="diagnosis">Diagnosis</TabsTrigger>
                   </TabsList>
                   <TabsContent value="history" className="pt-4 text-sm">
-                    <p className="p-2 bg-muted/50 rounded-md mt-1">
+                    <p className="p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
                       {activeTreatmentPlan?.history ||
                         "No history provided for this plan."}
                     </p>
@@ -606,7 +703,7 @@ export default function PatientDetailPage() {
                     value="examination"
                     className="pt-4 space-y-4 text-sm"
                   >
-                    <p className="p-2 bg-muted/50 rounded-md mt-1">
+                    <p className="p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
                       {activeTreatmentPlan?.examination ||
                         "No examination notes for this plan."}
                     </p>
@@ -680,6 +777,12 @@ export default function PatientDetailPage() {
         isOpen={isNewPlanModalOpen}
         onOpenChange={setIsNewPlanModalOpen}
         onSubmit={handleNewTreatmentPlan}
+      />
+      <EditClinicalNotesModal
+        plan={activeTreatmentPlan}
+        isOpen={isEditNotesModalOpen}
+        onOpenChange={setIsEditNotesModalOpen}
+        onUpdate={handleUpdateClinicalNotes}
       />
     </>
   );
