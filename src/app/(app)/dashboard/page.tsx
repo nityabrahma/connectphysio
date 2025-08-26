@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { EndSessionForm } from "./end-session-form";
+import Link from "next/link";
 
 const TodaysAppointmentsList = () => {
   const { user } = useAuth();
@@ -31,6 +32,7 @@ const TodaysAppointmentsList = () => {
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<any[]>(LS_KEYS.THERAPISTS, []);
+  const router = useRouter();
 
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
 
@@ -110,7 +112,7 @@ const TodaysAppointmentsList = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <p className="font-semibold">{patient.name}</p>
+                  <Link href={`/patient-details/${patient.id}`} className="font-semibold hover:underline">{patient.name}</Link>
                    <p className="text-sm text-muted-foreground">
                     {session.startTime} - {session.endTime} with {getTherapistName(session.therapistId)}
                   </p>
@@ -438,3 +440,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
