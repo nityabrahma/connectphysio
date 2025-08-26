@@ -68,15 +68,15 @@ export function Topbar() {
 
   return (
     <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 shrink-0 z-30">
-      <div className="flex items-center gap-4">
-        <SidebarTrigger />
+      <div className="flex items-center gap-4 w-full">
         <Link
           href="/dashboard"
-          className="flex items-center gap-3 font-semibold"
+          className="flex items-center gap-3 min-w-fit font-semibold"
         >
           <Icons.logo className="h-10 w-10" />
           <span className="text-lg whitespace-nowrap">{user?.centreName || "ConnectPhysio"}</span>
         </Link>
+        <SidebarTrigger />
       </div>
 
       <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
