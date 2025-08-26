@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import type { Patient, Session, Therapist, TreatmentPlan } from "@/types/domain"
+import type { Patient, Session, Therapist, TreatmentPlan, Centre } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+import { format, parse } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
 import {
@@ -36,6 +36,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
+import { useLocalStorage } from "@/hooks/use-local-storage"
+import { LS_KEYS } from "@/lib/constants"
 
 const formSchema = z.object({
   patientId: z.string().min(1, "Patient is required."),
@@ -65,6 +67,27 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
     const { user } = useAuth();
     const router = useRouter();
     const isEditing = !!session;
+    
+    const [centres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
+    const currentCentre = useMemo(() => centres.find(c => c.id === user?.centreId), [centres, user]);
+
+    const timeSlots = useMemo(() => {
+        if (!currentCentre) return [];
+        
+        const { openingTime, closingTime } = currentCentre;
+        if (!openingTime || !closingTime) return [];
+
+        const slots = [];
+        const start = parse(openingTime, 'HH:mm', new Date());
+        const end = parse(closingTime, 'HH:mm', new Date());
+
+        let currentTime = start;
+        while (currentTime < end) {
+        slots.push(format(currentTime, 'HH:mm'));
+        currentTime.setMinutes(currentTime.getMinutes() + 30);
+        }
+        return slots;
+    }, [currentCentre]);
 
     const defaultTreatmentPlanId = useMemo(() => {
         if (session?.treatmentPlanId) return session.treatmentPlanId;
@@ -104,6 +127,14 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
             form.setValue('therapistId', therapists[0].id);
         }
     }, [therapists, isEditing, form]);
+    
+    useEffect(() => {
+        const startTimeWatcher = form.watch('startTime');
+        const parsedTime = parse(startTimeWatcher, 'HH:mm', new Date());
+        parsedTime.setHours(parsedTime.getHours() + 1);
+        const newEndTime = format(parsedTime, 'HH:mm');
+        form.setValue('endTime', newEndTime);
+    }, [form.watch('startTime'), form.setValue, form]);
 
     useEffect(() => {
         const subscription = form.watch((value, { name }) => {
@@ -240,11 +271,16 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                             control={form.control}
                             name="startTime"
                             render={({ field }) => (
-                                <FormItem>
+                                <FormItem className="w-full">
                                     <FormLabel>Start Time</FormLabel>
-                                    <FormControl>
-                                        <Input type="time" {...field} />
-                                    </FormControl>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue/></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {timeSlots.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -253,11 +289,16 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                             control={form.control}
                             name="endTime"
                             render={({ field }) => (
-                                <FormItem>
+                                <FormItem className="w-full">
                                     <FormLabel>End Time</FormLabel>
-                                    <FormControl>
-                                        <Input type="time" {...field} />
-                                    </FormControl>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue/></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                             {timeSlots.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
