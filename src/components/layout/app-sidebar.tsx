@@ -55,15 +55,6 @@ export default function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-        <SidebarHeader>
-             <Link
-                href="/dashboard"
-                className="flex items-center gap-3 font-semibold text-foreground"
-            >
-                <Icons.logo className="h-9 w-9" />
-                <span className="text-lg group-data-[collapsible=icon]:hidden">{user?.centreName || "ConnectPhysio"}</span>
-            </Link>
-        </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
           {navItems.map((item) =>
