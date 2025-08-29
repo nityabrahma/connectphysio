@@ -101,7 +101,7 @@ export default function AppointmentsPage() {
         "yyyy-MM-dd HH:mm",
         new Date()
       );
-      return timeA.getTime() - b.getTime();
+      return timeA.getTime() - timeB.getTime();
     });
   }, [sessions, user]);
 
@@ -421,5 +421,7 @@ export default function AppointmentsPage() {
     </>
   );
 }
+
+    
 
     
