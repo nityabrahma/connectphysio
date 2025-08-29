@@ -79,7 +79,7 @@ export default function PackagesPage() {
                 <TableHead>Package Name</TableHead>
                 <TableHead>Sessions</TableHead>
                 <TableHead>Duration</TableHead>
-                <TableHead>Price</TableHead>
+                <TableHead>Discount</TableHead>
                 {isAdmin && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
@@ -89,7 +89,7 @@ export default function PackagesPage() {
                   <TableCell className="font-medium">{pkg.name}</TableCell>
                   <TableCell>{pkg.sessions}</TableCell>
                   <TableCell>{pkg.durationDays} days</TableCell>
-                  <TableCell>₹{pkg.price}</TableCell>
+                  <TableCell>{pkg.discountPercentage}%</TableCell>
                   {isAdmin && (
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={() => handleEditClick(pkg)}>

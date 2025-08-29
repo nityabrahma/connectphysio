@@ -335,7 +335,7 @@ export default function AssignPackagePage() {
                 <SelectContent>
                   {availablePackages.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.name} - {p.sessions} sessions, {p.durationDays} days for ₹{p.price}
+                      {p.name} - {p.sessions} sessions, {p.durationDays} days for {p.discountPercentage}% discount
                     </SelectItem>
                   ))}
                 </SelectContent>

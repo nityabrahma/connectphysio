@@ -42,7 +42,7 @@ const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   sessions: z.coerce.number().int().positive("Must be a positive number."),
   durationDays: z.coerce.number().int().positive("Must be a positive number."),
-  price: z.coerce.number().positive("Must be a positive number."),
+  discountPercentage: z.coerce.number().min(0, "Discount must be positive.").max(100, "Discount cannot exceed 100."),
 })
 
 type PackageFormValues = z.infer<typeof formSchema>
@@ -72,7 +72,7 @@ export function PackageForm({ isOpen, onOpenChange, onSubmit, onDelete, pkg }: P
                     name: "",
                     sessions: 0,
                     durationDays: 0,
-                    price: 0,
+                    discountPercentage: 0,
                 });
             }
         }
@@ -130,11 +130,11 @@ export function PackageForm({ isOpen, onOpenChange, onSubmit, onDelete, pkg }: P
                           />
                           <FormField
                               control={form.control}
-                              name="price"
+                              name="discountPercentage"
                               render={({ field }) => (
                                   <FormItem>
-                                      <FormLabel>Price (₹)</FormLabel>
-                                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                                      <FormLabel>Discount (%)</FormLabel>
+                                      <FormControl><Input type="number" step="1" {...field} /></FormControl>
                                       <FormMessage />
                                   </FormItem>
                               )}

@@ -63,7 +63,7 @@ export type PackageDef = {
   name: string; // "7-Day Therapy Package"
   centreId: ID;
   durationDays: number; // 7 | 10 | 14
-  price: number; // 499, 699, 899
+  discountPercentage: number;
   sessions: number;
   frequency?: "daily" | "alternate" | "custom";
 };
