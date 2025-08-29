@@ -20,7 +20,6 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogFooter,
 } from "@/components/ui/dialog"
 import { useEffect } from "react"
 import { Input } from "@/components/ui/input"
@@ -84,78 +83,80 @@ export function TreatmentForm({ isOpen, onOpenChange, onSubmit, onDelete, treatm
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Edit Treatment' : 'Create New Treatment'}</DialogTitle>
-                    <DialogDescription>
-                        {isEditing ? 'Update the details of this treatment.' : 'Fill in the details for the new treatment.'}
-                    </DialogDescription>
-                </DialogHeader>
-                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-1 flex flex-col min-h-0">
-                        <ScrollArea className="flex-1 -mr-6 pr-6">
-                            <div className="space-y-4 py-4">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Treatment Name</FormLabel>
-                                            <FormControl><Input placeholder="E.g., Ultrasound Therapy" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
+            <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-0">
+                <ScrollArea className="h-full">
+                    <div className="p-6">
+                        <DialogHeader>
+                            <DialogTitle>{isEditing ? 'Edit Treatment' : 'Create New Treatment'}</DialogTitle>
+                            <DialogDescription>
+                                {isEditing ? 'Update the details of this treatment.' : 'Fill in the details for the new treatment.'}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+                                <div className="space-y-4 py-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Treatment Name</FormLabel>
+                                                <FormControl><Input placeholder="E.g., Ultrasound Therapy" {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="description"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Description (Optional)</FormLabel>
+                                                <FormControl><Textarea placeholder="Describe the treatment..." {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="price"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Price (₹)</FormLabel>
+                                                <FormControl><Input type="number" step="1" {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                <div className="flex-col-reverse sm:flex-row sm:justify-between w-full pt-4 flex">
+                                    {isEditing && treatment && (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                        <Button type="button" variant="destructive">Delete Treatment</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete this treatment definition.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(treatment.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                     )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="description"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Description (Optional)</FormLabel>
-                                            <FormControl><Textarea placeholder="Describe the treatment..." {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="price"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Price (₹)</FormLabel>
-                                            <FormControl><Input type="number" step="1" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                        </ScrollArea>
-                        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between w-full pt-4 mt-auto">
-                            {isEditing && treatment && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                <Button type="button" variant="destructive">Delete Treatment</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete this treatment definition.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(treatment.id)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                            )}
-                            <div className="flex justify-end ml-auto">
-                            <Button type="submit">{isEditing ? 'Save Changes' : 'Create Treatment'}</Button>
-                            </div>
-                        </DialogFooter>
-                    </form>
-                 </Form>
+                                    <div className="flex justify-end ml-auto">
+                                    <Button type="submit">{isEditing ? 'Save Changes' : 'Create Treatment'}</Button>
+                                    </div>
+                                </div>
+                            </form>
+                        </Form>
+                    </div>
+                </ScrollArea>
             </DialogContent>
         </Dialog>
     )
