@@ -102,7 +102,9 @@ const TodaysAppointmentsList = () => {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
         <Calendar className="h-12 w-12 mb-4" />
-        <p className="font-semibold">No appointments scheduled for today.</p>
+        <p className="font-semibold">
+          There's no appointment for today, {format(new Date(), "MMMM d")}.
+        </p>
         <p className="text-sm">Enjoy the quiet day!</p>
       </div>
     );
