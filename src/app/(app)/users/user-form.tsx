@@ -112,88 +112,90 @@ export function UserForm({ isOpen, onOpenChange, onSubmit, user }: UserFormProps
                         {isEditing ? 'Update the details of the existing user.' : 'Enter the details for the new user.'}
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-1 -mr-6 pr-6 overflow-y-auto">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Full Name</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="John Doe" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Email</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="user@example.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="phone"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Phone (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="555-123-4567" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="role"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Role</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-1 flex flex-col min-h-0">
+                        <ScrollArea className="flex-1 -mr-6 pr-6 overflow-y-auto">
+                            <div className="space-y-4 py-4">
+                                <FormField
+                                    control={form.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Full Name</FormLabel>
                                             <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select a role" />
-                                            </SelectTrigger>
+                                                <Input placeholder="John Doe" {...field} />
                                             </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="receptionist">Receptionist</SelectItem>
-                                                <SelectItem value="therapist">Therapist</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{isEditing ? "New Password (Optional)" : "Password"}</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder={isEditing ? "Leave blank to keep current" : "••••••••"} {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </form>
-                    </Form>
-                </ScrollArea>
-                 <DialogFooter className="mt-auto pt-4">
-                    <Button type="button" onClick={form.handleSubmit(handleFormSubmit)}>{isEditing ? 'Save Changes' : 'Create User'}</Button>
-                </DialogFooter>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Email</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="user@example.com" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="phone"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Phone (Optional)</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="555-123-4567" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="role"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Role</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a role" />
+                                                </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="receptionist">Receptionist</SelectItem>
+                                                    <SelectItem value="therapist">Therapist</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="password"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{isEditing ? "New Password (Optional)" : "Password"}</FormLabel>
+                                            <FormControl>
+                                                <Input type="password" placeholder={isEditing ? "Leave blank to keep current" : "••••••••"} {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        </ScrollArea>
+                        <DialogFooter className="mt-auto pt-4">
+                            <Button type="submit">{isEditing ? 'Save Changes' : 'Create User'}</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     )

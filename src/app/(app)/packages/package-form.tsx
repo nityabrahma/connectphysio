@@ -92,80 +92,82 @@ export function PackageForm({ isOpen, onOpenChange, onSubmit, onDelete, pkg }: P
                         {isEditing ? 'Update the details of this package.' : 'Fill in the details for the new package.'}
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-1 -mr-6 pr-6">
-                  <Form {...form}>
-                      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-                          <FormField
-                              control={form.control}
-                              name="name"
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Package Name</FormLabel>
-                                      <FormControl><Input placeholder="E.g., 10-Session Pack" {...field} /></FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                          <FormField
-                              control={form.control}
-                              name="sessions"
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Number of Sessions</FormLabel>
-                                      <FormControl><Input type="number" {...field} /></FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                          <FormField
-                              control={form.control}
-                              name="durationDays"
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Duration (in days)</FormLabel>
-                                      <FormControl><Input type="number" {...field} /></FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                          <FormField
-                              control={form.control}
-                              name="discountPercentage"
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Discount (%)</FormLabel>
-                                      <FormControl><Input type="number" step="1" {...field} /></FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                      </form>
-                  </Form>
-                </ScrollArea>
-                <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between w-full pt-4 mt-auto">
-                    {isEditing && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                         <Button type="button" variant="destructive">Delete Package</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete this package definition.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(pkg.id)}>Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                    <div className="flex justify-end ml-auto">
-                      <Button type="button" onClick={form.handleSubmit(handleFormSubmit)}>{isEditing ? 'Save Changes' : 'Create Package'}</Button>
-                    </div>
-                 </DialogFooter>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-1 flex flex-col min-h-0">
+                        <ScrollArea className="flex-1 -mr-6 pr-6">
+                            <div className="space-y-4 py-4">
+                                <FormField
+                                    control={form.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Package Name</FormLabel>
+                                            <FormControl><Input placeholder="E.g., 10-Session Pack" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="sessions"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Number of Sessions</FormLabel>
+                                            <FormControl><Input type="number" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="durationDays"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Duration (in days)</FormLabel>
+                                            <FormControl><Input type="number" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="discountPercentage"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Discount (%)</FormLabel>
+                                            <FormControl><Input type="number" step="1" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        </ScrollArea>
+                        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between w-full pt-4 mt-auto">
+                            {isEditing && pkg && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                <Button type="button" variant="destructive">Delete Package</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete this package definition.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(pkg.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            )}
+                            <div className="flex justify-end ml-auto">
+                                <Button type="submit">{isEditing ? 'Save Changes' : 'Create Package'}</Button>
+                            </div>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     )

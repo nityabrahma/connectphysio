@@ -105,46 +105,18 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                         The treatment will be added to the plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span>
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-1 -mr-6 pr-6">
-                  <Form {...form}>
-                      <form onSubmit={form.handleSubmit(handleFormSubmit)} id="end-session-form" className="space-y-4 py-4">
-                          <FormField
-                              control={form.control}
-                              name="consultation"
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Consultation Notes</FormLabel>
-                                      <FormControl>
-                                          <Textarea placeholder="Details about the consultation..." {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                           <FormField
-                              control={form.control}
-                              name="therapy"
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Therapy Notes</FormLabel>
-                                      <FormControl>
-                                          <Textarea placeholder="Details about the therapy provided..." {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                          <div className="pt-4 mt-4 border-t">
-                             <h3 className="text-lg font-semibold mb-2">Treatment Information</h3>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <FormField
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-1 flex flex-col min-h-0">
+                        <ScrollArea className="flex-1 -mr-6 pr-6">
+                            <div className="space-y-4 py-4">
+                                <FormField
                                     control={form.control}
-                                    name="treatmentDescription"
+                                    name="consultation"
                                     render={({ field }) => (
-                                        <FormItem className="md:col-span-2">
-                                            <FormLabel>Treatment Description</FormLabel>
+                                        <FormItem>
+                                            <FormLabel>Consultation Notes</FormLabel>
                                             <FormControl>
-                                                <Textarea placeholder="e.g., Ultrasound Therapy, IFT" {...field} />
+                                                <Textarea placeholder="Details about the consultation..." {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -152,54 +124,84 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                                 />
                                 <FormField
                                     control={form.control}
-                                    name="treatmentCharges"
+                                    name="therapy"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Charges (₹)</FormLabel>
+                                            <FormLabel>Therapy Notes</FormLabel>
                                             <FormControl>
-                                                <Input type="number" {...field} />
+                                                <Textarea placeholder="Details about the therapy provided..." {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                             </div>
-                          </div>
-                           <FormField
-                              control={form.control}
-                              name="experiments"
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Experiments (Optional)</FormLabel>
-                                      <FormControl>
-                                          <Textarea placeholder="Details about any experiments conducted..." {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                           <FormField
-                              control={form.control}
-                              name="medicalConditions"
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Medical Conditions (Optional)</FormLabel>
-                                      <FormControl>
-                                          <Textarea placeholder="Note any relevant medical conditions..." {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                      </form>
-                  </Form>
-                </ScrollArea>
-                <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end w-full pt-4 mt-auto">
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button type="submit" form="end-session-form" disabled={!activeTreatmentPlan}>
-                        {activeTreatmentPlan ? 'Confirm & Complete' : 'No Active Plan'}
-                    </Button>
-                 </DialogFooter>
+                                <div className="pt-4 mt-4 border-t">
+                                    <h3 className="text-lg font-semibold mb-2">Treatment Information</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="treatmentDescription"
+                                            render={({ field }) => (
+                                                <FormItem className="md:col-span-2">
+                                                    <FormLabel>Treatment Description</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea placeholder="e.g., Ultrasound Therapy, IFT" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="treatmentCharges"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Charges (₹)</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                                <FormField
+                                    control={form.control}
+                                    name="experiments"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Experiments (Optional)</FormLabel>
+                                            <FormControl>
+                                                <Textarea placeholder="Details about any experiments conducted..." {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="medicalConditions"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Medical Conditions (Optional)</FormLabel>
+                                            <FormControl>
+                                                <Textarea placeholder="Note any relevant medical conditions..." {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        </ScrollArea>
+                        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end w-full pt-4 mt-auto">
+                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                            <Button type="submit" disabled={!activeTreatmentPlan}>
+                                {activeTreatmentPlan ? 'Confirm & Complete' : 'No Active Plan'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     )
