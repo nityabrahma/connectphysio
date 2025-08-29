@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format, isFuture, parseISO, isSameDay } from "date-fns";
+import { format, isFuture, parseISO, isSameDay, parse } from "date-fns";
 import {
   Mail,
   Phone,
@@ -37,6 +37,9 @@ import {
   History,
   Info,
   HeartPulse,
+  Clock,
+  Check,
+  LogOut,
 } from "lucide-react";
 import {
   Select,
@@ -83,11 +86,11 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { generateId } from "@/lib/ids";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { FormattedHealthNotes } from "@/components/formatted-health-notes";
 import { ConsultationNotesForm } from "./consultation-notes-form";
+import { EndSessionForm } from "../../dashboard/end-session-form";
 
 
 const ViewSessionModal = ({
@@ -299,6 +302,7 @@ export default function PatientDetailPage() {
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
 
   const consultationForm = useMemo(() => {
     return questionnaires.find(q => q.centreId === user?.centreId);
@@ -377,18 +381,23 @@ export default function PatientDetailPage() {
       )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [sessions, patientId, activeTreatmentPlanId]);
+
+  const todaysSession = useMemo(() => {
+    return patientSessions.find(s => isSameDay(new Date(s.date), new Date()));
+  }, [patientSessions]);
   
   const latestSessionForPlan = useMemo(() => {
+    if (todaysSession && (todaysSession.status === 'checked-in' || todaysSession.status === 'completed')) {
+        return todaysSession;
+    }
+
     const completedSessions = patientSessions.filter(s => s.status === 'completed');
     if (completedSessions.length > 0) {
       return completedSessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
     }
-    const checkedInSessions = patientSessions.filter(s => s.status === 'checked-in');
-    if(checkedInSessions.length > 0) {
-        return checkedInSessions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-    }
+    
     return null;
-  }, [patientSessions]);
+  }, [patientSessions, todaysSession]);
 
   const handleNewAppointmentClick = () => {
     if (!activeTreatmentPlanId) {
@@ -426,6 +435,35 @@ export default function PatientDetailPage() {
     );
     toast({ title: "Consultation notes saved." });
   };
+  
+  const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
+    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status } : s));
+    toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
+  };
+  
+  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    
+    const patientTreatmentPlans = treatmentPlans.filter(tp => tp.patientId === session.patientId);
+    const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
+
+    if (activePlan) {
+        const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
+        const updatedPlans = treatmentPlans.map(tp => 
+            tp.id === activePlan.id 
+                ? { ...tp, treatments: [...tp.treatments, newTreatment] } 
+                : tp
+        );
+        setTreatmentPlans(updatedPlans);
+    } else {
+        toast({ title: "No active treatment plan found to add treatment to.", variant: 'destructive' });
+    }
+
+    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
+    toast({ title: 'Session Completed' });
+    setSessionToEnd(null);
+  }
 
   if (!patient) {
     return (
@@ -449,6 +487,12 @@ export default function PatientDetailPage() {
       therapists.find((t) => t.id === therapistId)?.name || "Unknown Therapist"
     );
   };
+  
+  const canManageSession = (session: Session) => {
+    if (user?.role === 'admin' || user?.role === 'receptionist') return true;
+    if (user?.role === 'therapist' && user.therapistId === session.therapistId) return true;
+    return false;
+  }
 
   return (
     <>
@@ -639,8 +683,38 @@ export default function PatientDetailPage() {
             </Card>
           </div>
 
-          {/* Right Column: Consultation Notes */}
-          <div className="lg:col-span-2 flex flex-col">
+          {/* Right Column: Today's Session & Consultation Notes */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            {todaysSession && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock size={20} /> Today's Session
+                  </CardTitle>
+                  <CardDescription>
+                    {format(parse(todaysSession.startTime, "HH:mm", new Date()), "h:mm a")} - {format(parse(todaysSession.endTime, "HH:mm", new Date()), "h:mm a")} with {getTherapistName(todaysSession.therapistId)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between">
+                   <Badge variant="outline" className="capitalize">
+                      {todaysSession.status}
+                    </Badge>
+                   <div className="flex gap-2 items-center">
+                    {canManageSession(todaysSession) && todaysSession.status === 'scheduled' && (
+                      <Button size="sm" onClick={() => handleUpdateSessionStatus(todaysSession.id, 'checked-in')}>
+                        <Check className="mr-2 h-4 w-4" /> Check In
+                      </Button>
+                    )}
+                    {canManageSession(todaysSession) && todaysSession.status === 'checked-in' && (
+                      <Button size="sm" variant="secondary" onClick={() => setSessionToEnd(todaysSession)}>
+                        <LogOut className="mr-2 h-4 w-4" /> End Session
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {consultationForm ? (
                 <ConsultationNotesForm 
                     questionnaire={consultationForm}
@@ -691,6 +765,15 @@ export default function PatientDetailPage() {
             setSessionToView={setSessionToView}
             getTherapistName={getTherapistName}
             planName={activeTreatmentPlan.name}
+        />
+      )}
+       {sessionToEnd && patient && (
+        <EndSessionForm
+          session={sessionToEnd}
+          patient={patient}
+          isOpen={!!sessionToEnd}
+          onOpenChange={(isOpen) => !isOpen && setSessionToEnd(null)}
+          onSubmit={handleEndSessionSubmit}
         />
       )}
     </>
