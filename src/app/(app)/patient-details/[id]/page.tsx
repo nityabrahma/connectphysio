@@ -35,6 +35,8 @@ import {
   Stethoscope,
   StickyNote,
   History,
+  Info,
+  HeartPulse
 } from "lucide-react";
 import {
   Select,
@@ -87,62 +89,67 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const FormattedHealthNotes = ({ notes }: { notes?: string }) => {
-  if (!notes)
+  if (!notes) {
     return (
       <p className="text-sm text-muted-foreground">
         No health notes recorded for this session.
       </p>
     );
-
-  const [questionnaires] = useLocalStorage<Questionnaire[]>(
-    LS_KEYS.QUESTIONNAIRES,
-    []
-  );
+  }
 
   try {
-    const parsedNotes = JSON.parse(notes);
-    if (
-      typeof parsedNotes !== "object" ||
-      !parsedNotes.questionnaireId ||
-      !parsedNotes.answers
-    ) {
-      throw new Error("Invalid notes format");
-    }
+    const parsed = JSON.parse(notes);
 
-    const questionnaire = questionnaires.find(
-      (q) => q.id === parsedNotes.questionnaireId
-    );
-    if (!questionnaire) {
+    // New format check
+    if (parsed.consultation || parsed.therapy || parsed.treatment) {
       return (
-        <p className="bg-secondary/50 p-3 rounded-md text-sm">
-          Questionnaire used for this session could not be found.
-        </p>
+        <div className="space-y-4 text-sm">
+          {parsed.consultation && (
+            <div>
+              <h5 className="font-semibold">Consultation</h5>
+              <p className="text-muted-foreground whitespace-pre-wrap">{parsed.consultation}</p>
+            </div>
+          )}
+          {parsed.therapy && (
+            <div>
+              <h5 className="font-semibold">Therapy</h5>
+              <p className="text-muted-foreground whitespace-pre-wrap">{parsed.therapy}</p>
+            </div>
+          )}
+          {parsed.treatment && (
+            <div>
+              <h5 className="font-semibold">Treatment</h5>
+              <p className="text-muted-foreground">{parsed.treatment.description} (Charges: ₹{parsed.treatment.charges})</p>
+            </div>
+          )}
+          {parsed.experiments && (
+            <div>
+              <h5 className="font-semibold">Experiments</h5>
+              <p className="text-muted-foreground whitespace-pre-wrap">{parsed.experiments}</p>
+            </div>
+          )}
+          {parsed.medicalConditions && (
+            <div>
+              <h5 className="font-semibold">Medical Conditions</h5>
+              <p className="text-muted-foreground whitespace-pre-wrap">{parsed.medicalConditions}</p>
+            </div>
+          )}
+        </div>
       );
     }
+    
+    // Fallback for old questionnaire format
+     if (parsed.questionnaireId && parsed.answers) {
+      return <p className="bg-secondary/50 p-3 rounded-md text-sm">Legacy questionnaire data is not displayable.</p>;
+    }
 
-    return (
-      <div className="space-y-4">
-        <h5 className="font-semibold text-foreground">{questionnaire.title}</h5>
-        <ul className="space-y-3">
-          {questionnaire.questions.map((q) => {
-            const answer = parsedNotes.answers[q.id];
-            return (
-              <li key={q.id} className="text-sm">
-                <p className="font-medium text-foreground">{q.label}</p>
-                <p className="text-muted-foreground pl-2 mt-1 bg-secondary/30 p-2 rounded-md">
-                  {Array.isArray(answer) ? answer.join(", ") : answer || "N/A"}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    );
+    throw new Error("Unknown notes format");
   } catch (e) {
-    // Fallback for old plain text notes
-    return <p className="bg-secondary/50 p-3 rounded-md text-sm">{notes}</p>;
+    // Fallback for plain text notes
+    return <p className="bg-secondary/50 p-3 rounded-md text-sm whitespace-pre-wrap">{notes}</p>;
   }
 };
+
 
 const ViewSessionModal = ({
   session,
@@ -735,8 +742,90 @@ export default function PatientDetailPage() {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
-          {/* Left Column: Treatment */}
-          <div className="lg:col-span-1 flex flex-col min-h-0">
+          {/* Left Column: Patient Details & Clinical Notes */}
+          <div className="lg:col-span-1 flex flex-col min-h-0 space-y-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Info size={20}/>Patient Information</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-1">
+                            <Label className="text-muted-foreground">Age</Label>
+                            <p>{patient.age || "N/A"}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-muted-foreground">Gender</Label>
+                            <p className="capitalize">{patient.gender || "N/A"}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-muted-foreground">Contact</Label>
+                            <p>{patient.phone}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-muted-foreground">Email</Label>
+                            <p>{patient.email}</p>
+                        </div>
+                        <div className="space-y-1 col-span-2">
+                            <Label className="text-muted-foreground">Address</Label>
+                            <p>{patient.address || "N/A"}</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><HeartPulse size={20}/>Medical History</CardTitle>
+                <CardDescription>General medical history for the patient.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
+                    {patient.pastMedicalHistory || "No past medical history provided."}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row justify-between items-start">
+                <div>
+                  <CardTitle>Clinical Notes</CardTitle>
+                  <CardDescription>
+                    Notes specific to the selected treatment plan.
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditNotesModalOpen(true)}
+                  disabled={!activeTreatmentPlan}
+                >
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="history">
+                  <TabsList>
+                    <TabsTrigger value="history">Current Problem</TabsTrigger>
+                    <TabsTrigger value="examination">Examination</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="history" className="pt-4 text-sm">
+                    <p className="p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
+                      {activeTreatmentPlan?.history || "No history provided for this plan."}
+                    </p>
+                  </TabsContent>
+                  <TabsContent value="examination" className="pt-4 space-y-4 text-sm">
+                    <p className="p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
+                      {activeTreatmentPlan?.examination || "No examination notes for this plan."}
+                    </p>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column: Treatment */}
+          <div className="lg:col-span-2 flex flex-col min-h-0">
              <Card className="flex flex-col min-h-full">
               <CardHeader>
                 <CardTitle>Treatment</CardTitle>
@@ -764,110 +853,23 @@ export default function PatientDetailPage() {
                         )}
                     </div>
                 </ScrollArea>
-                {activeTreatmentPlan && (
-                    <div className="mt-auto pt-4 border-t">
-                        <AddTreatmentForm plan={activeTreatmentPlan} onAdd={handleAddTreatment} />
+                 {todaysCheckedInSession && activeTreatmentPlan && (
+                     <div className="mt-auto pt-4 border-t">
+                        <Card className="border-primary bg-primary/5">
+                            <CardHeader>
+                                <CardTitle className="text-lg">Today's Session Checked-in</CardTitle>
+                                <CardDescription>Add a new treatment entry based on today's session.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <AddTreatmentForm plan={activeTreatmentPlan} onAdd={handleAddTreatment} />
+                            </CardContent>
+                        </Card>
                     </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Right Column: Patient Details & Clinical Notes */}
-          <div className="lg:col-span-2 flex flex-col min-h-0 space-y-6">
-             <Card>
-                <CardHeader>
-                    <CardTitle>Patient Information</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div className="space-y-1">
-                        <Label className="text-muted-foreground">Age</Label>
-                        <p>{patient.age || "N/A"}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <Label className="text-muted-foreground">Gender</Label>
-                        <p className="capitalize">{patient.gender || "N/A"}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <Label className="text-muted-foreground">Contact</Label>
-                        <p>{patient.phone}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <Label className="text-muted-foreground">Address</Label>
-                        <p>{patient.address || "N/A"}</p>
-                    </div>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                    <Label className="text-muted-foreground">
-                        Past Medical History
-                    </Label>
-                    <p className="p-2 bg-muted/50 rounded-md mt-1">
-                        {patient.pastMedicalHistory ||
-                        "No past medical history provided."}
-                    </p>
-                    </div>
-                </CardContent>
-            </Card>
-            
-            {todaysCheckedInSession && activeTreatmentPlan && (
-                 <Card className="border-primary">
-                    <CardHeader>
-                        <CardTitle>Today's Session</CardTitle>
-                        <CardDescription>Update treatment based on today's checked-in session.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <AddTreatmentForm plan={activeTreatmentPlan} onAdd={handleAddTreatment} />
-                    </CardContent>
-                </Card>
-            )}
-
-            <Card>
-              <CardHeader className="flex flex-row justify-between items-start">
-                <div>
-                  <CardTitle>Clinical Notes</CardTitle>
-                  <CardDescription>
-                    Notes specific to the selected treatment plan.
-                  </CardDescription>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditNotesModalOpen(true)}
-                  disabled={!activeTreatmentPlan}
-                >
-                  <Edit className="mr-2 h-4 w-4" /> Edit
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="history">
-                  <TabsList>
-                    <TabsTrigger value="history">Current Problem</TabsTrigger>
-                    <TabsTrigger value="examination">Examination</TabsTrigger>
-                    <TabsTrigger value="diagnosis">Diagnosis</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="history" className="pt-4 text-sm">
-                    <p className="p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
-                      {activeTreatmentPlan?.history ||
-                        "No history provided for this plan."}
-                    </p>
-                  </TabsContent>
-                  <TabsContent
-                    value="examination"
-                    className="pt-4 space-y-4 text-sm"
-                  >
-                    <p className="p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
-                      {activeTreatmentPlan?.examination ||
-                        "No examination notes for this plan."}
-                    </p>
-                  </TabsContent>
-                  <TabsContent value="diagnosis" className="pt-4 text-sm">
-                    <p>Diagnosis details will be shown here.</p>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
       {sessionToEdit && (
