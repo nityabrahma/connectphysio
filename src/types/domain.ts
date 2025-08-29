@@ -8,6 +8,8 @@ export type Centre = {
     name: string;
     openingTime: string; // "09:00"
     closingTime: string; // "18:00"
+    gstNumber?: string;
+    invoiceCounter?: number;
 }
 
 export type User = {
@@ -90,10 +92,11 @@ export type Session = {
   centreId: ID;
   packageSaleId?: ID;
   treatmentPlanId?: ID;
-  status: "scheduled" | "checked-in" | "completed" | "cancelled";
+  status: "scheduled" | "checked-in" | "completed" | "cancelled" | "paid";
   healthNotes?: string; // Stored as a JSON string of questionnaire answers
   notes?: string;
   createdAt: string;
+  invoiceNumber?: number;
 };
 
 export type CheckIn = {

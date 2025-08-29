@@ -7,9 +7,9 @@ import type {
   Patient,
   Session,
   Therapist,
-  Questionnaire,
   TreatmentPlan,
   Treatment,
+  Centre,
 } from "@/types/domain";
 import {
   Card,
@@ -36,7 +36,8 @@ import {
   StickyNote,
   History,
   Info,
-  HeartPulse
+  HeartPulse,
+  Printer,
 } from "lucide-react";
 import {
   Select,
@@ -87,68 +88,8 @@ import { generateId } from "@/lib/ids";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-const FormattedHealthNotes = ({ notes }: { notes?: string }) => {
-  if (!notes) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No health notes recorded for this session.
-      </p>
-    );
-  }
-
-  try {
-    const parsed = JSON.parse(notes);
-
-    // New format check
-    if (parsed.consultation || parsed.therapy || parsed.treatment) {
-      return (
-        <div className="space-y-4 text-sm">
-          {parsed.consultation && (
-            <div>
-              <h5 className="font-semibold">Consultation</h5>
-              <p className="text-muted-foreground whitespace-pre-wrap">{parsed.consultation}</p>
-            </div>
-          )}
-          {parsed.therapy && (
-            <div>
-              <h5 className="font-semibold">Therapy</h5>
-              <p className="text-muted-foreground whitespace-pre-wrap">{parsed.therapy}</p>
-            </div>
-          )}
-          {parsed.treatment && (
-            <div>
-              <h5 className="font-semibold">Treatment</h5>
-              <p className="text-muted-foreground">{parsed.treatment.description} (Charges: ₹{parsed.treatment.charges})</p>
-            </div>
-          )}
-          {parsed.experiments && (
-            <div>
-              <h5 className="font-semibold">Experiments</h5>
-              <p className="text-muted-foreground whitespace-pre-wrap">{parsed.experiments}</p>
-            </div>
-          )}
-          {parsed.medicalConditions && (
-            <div>
-              <h5 className="font-semibold">Medical Conditions</h5>
-              <p className="text-muted-foreground whitespace-pre-wrap">{parsed.medicalConditions}</p>
-            </div>
-          )}
-        </div>
-      );
-    }
-    
-    // Fallback for old questionnaire format
-     if (parsed.questionnaireId && parsed.answers) {
-      return <p className="bg-secondary/50 p-3 rounded-md text-sm">Legacy questionnaire data is not displayable.</p>;
-    }
-
-    throw new Error("Unknown notes format");
-  } catch (e) {
-    // Fallback for plain text notes
-    return <p className="bg-secondary/50 p-3 rounded-md text-sm whitespace-pre-wrap">{notes}</p>;
-  }
-};
+import { FormattedHealthNotes } from "@/components/formatted-health-notes";
+import { InvoiceModal } from "@/components/invoice-modal";
 
 
 const ViewSessionModal = ({
@@ -336,7 +277,8 @@ const SessionHistoryModal = ({
     setSessionToEdit,
     setSessionToView,
     getTherapistName,
-    planName
+    planName,
+    onPrintInvoice,
 } : {
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
@@ -344,7 +286,8 @@ const SessionHistoryModal = ({
     setSessionToEdit: (s: Session) => void,
     setSessionToView: (s: Session) => void,
     getTherapistName: (id: string) => string,
-    planName: string
+    planName: string,
+    onPrintInvoice: (session: Session) => void,
 }) => {
 
     const upcomingSessions = useMemo(() => {
@@ -358,7 +301,7 @@ const SessionHistoryModal = ({
     }, [sessions]);
 
     const completedSessions = useMemo(() => {
-        return sessions.filter((s) => s.status === "completed");
+        return sessions.filter((s) => s.status === "completed" || s.status === "paid");
     }, [sessions]);
 
     return (
@@ -386,6 +329,7 @@ const SessionHistoryModal = ({
                                 sessions={upcomingSessions}
                                 setSessionToEdit={setSessionToEdit}
                                 getTherapistName={getTherapistName}
+                                onPrintInvoice={onPrintInvoice}
                                 />
                             </TabsContent>
                             <TabsContent value="completed">
@@ -394,6 +338,7 @@ const SessionHistoryModal = ({
                                 isCompletedList
                                 setSessionToView={setSessionToView}
                                 getTherapistName={getTherapistName}
+                                onPrintInvoice={onPrintInvoice}
                                 />
                             </TabsContent>
                             </ScrollArea>
@@ -422,6 +367,7 @@ export default function PatientDetailPage() {
     []
   );
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
+  const [centres, setCentres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
   const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(
     LS_KEYS.TREATMENT_PLANS,
     []
@@ -429,6 +375,7 @@ export default function PatientDetailPage() {
 
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
+  const [sessionToInvoice, setSessionToInvoice] = useState<Session | null>(null);
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
   const [isEditNotesModalOpen, setIsEditNotesModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -510,15 +457,16 @@ export default function PatientDetailPage() {
     toast({ title: "Clinical notes updated." });
   };
 
-  const handleAddTreatment = (planId: string, newTreatment: Treatment) => {
-    setTreatmentPlans(
-      treatmentPlans.map((plan) =>
-        plan.id === planId
-          ? { ...plan, treatments: [...(plan.treatments || []), newTreatment] }
-          : plan
-      )
-    );
-    toast({ title: "Treatment Added" });
+  const handlePrintInvoice = (session: Session) => {
+    const currentCentre = centres.find(c => c.id === user?.centreId);
+    if (!currentCentre) return;
+
+    const invoiceCounter = (currentCentre.invoiceCounter || 0) + 1;
+    setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, invoiceCounter } : c));
+    
+    setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
+    setSessionToInvoice(session);
+    toast({ title: "Session marked as paid" });
   };
 
   const patientSessions = useMemo(() => {
@@ -836,6 +784,13 @@ export default function PatientDetailPage() {
         onOpenChange={(isOpen) => !isOpen && setSessionToView(null)}
         getTherapistName={getTherapistName}
       />
+      {sessionToInvoice && (
+        <InvoiceModal
+            isOpen={!!sessionToInvoice}
+            onOpenChange={() => setSessionToInvoice(null)}
+            session={sessionToInvoice}
+        />
+      )}
       <NewTreatmentPlanModal
         isOpen={isNewPlanModalOpen}
         onOpenChange={setIsNewPlanModalOpen}
@@ -856,6 +811,7 @@ export default function PatientDetailPage() {
             setSessionToView={setSessionToView}
             getTherapistName={getTherapistName}
             planName={activeTreatmentPlan.name}
+            onPrintInvoice={handlePrintInvoice}
         />
       )}
     </>
@@ -868,12 +824,14 @@ const SessionList = ({
   setSessionToEdit,
   setSessionToView,
   getTherapistName,
+  onPrintInvoice,
 }: {
   sessions: Session[];
   isCompletedList?: boolean;
   setSessionToEdit?: (s: Session) => void;
   setSessionToView?: (s: Session) => void;
   getTherapistName: (id: string) => string;
+  onPrintInvoice: (session: Session) => void;
 }) => {
   if (sessions.length === 0) {
     return (
@@ -924,6 +882,11 @@ const SessionList = ({
               >
                 <Edit className="h-4 w-4" />
               </Button>
+            )}
+            {isCompletedList && session.status === "completed" && (
+                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onPrintInvoice(session); }}>
+                    <Printer className="h-4 w-4" />
+                </Button>
             )}
         </div>
       ))}

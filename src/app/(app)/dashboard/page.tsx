@@ -2,8 +2,8 @@
 "use client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut } from "lucide-react";
-import type { Patient, Session, Treatment, TreatmentPlan } from "@/types/domain";
+import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut, Printer } from "lucide-react";
+import type { Patient, Session, Treatment, TreatmentPlan, Centre } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -25,22 +25,25 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { EndSessionForm } from "./end-session-form";
 import Link from "next/link";
+import { InvoiceModal } from "@/components/invoice-modal";
 
 const TodaysAppointmentsList = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
   const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
+  const [centres, setCentres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<any[]>(LS_KEYS.THERAPISTS, []);
   const router = useRouter();
 
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
+  const [sessionToInvoice, setSessionToInvoice] = useState<Session | null>(null);
 
   const todaysSessions = useMemo(() => {
     let filtered = sessions.filter(
       (s) =>
-        isSameDay(new Date(s.date), new Date()) && s.centreId === user?.centreId && s.status !== 'completed'
+        isSameDay(new Date(s.date), new Date()) && s.centreId === user?.centreId
     );
     if (user?.role === "therapist") {
       filtered = filtered.filter((s) => s.therapistId === user.therapistId);
@@ -81,6 +84,18 @@ const TodaysAppointmentsList = () => {
     toast({ title: 'Session Completed' });
     setSessionToEnd(null);
   }
+
+  const handlePrintInvoice = (session: Session) => {
+    const currentCentre = centres.find(c => c.id === user?.centreId);
+    if (!currentCentre) return;
+
+    const invoiceCounter = (currentCentre.invoiceCounter || 0) + 1;
+    setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, invoiceCounter } : c));
+    
+    setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
+    setSessionToInvoice(session);
+    toast({ title: "Session marked as paid" });
+  };
 
   const getPatient = (patientId: string) =>
     patients.find((p) => p.id === patientId);
@@ -150,6 +165,11 @@ const TodaysAppointmentsList = () => {
                     <LogOut className="mr-2 h-4 w-4" /> End Session
                   </Button>
                 )}
+                 {canManageSession(session) && session.status === 'completed' && (
+                    <Button size="sm" variant="outline" onClick={() => handlePrintInvoice(session)}>
+                        <Printer className="mr-2 h-4 w-4" /> Print Invoice
+                    </Button>
+                )}
               </div>
             </li>
           );
@@ -162,6 +182,13 @@ const TodaysAppointmentsList = () => {
           isOpen={!!sessionToEnd}
           onOpenChange={(isOpen) => !isOpen && setSessionToEnd(null)}
           onSubmit={handleEndSessionSubmit}
+        />
+      )}
+       {sessionToInvoice && (
+        <InvoiceModal
+          isOpen={!!sessionToInvoice}
+          onOpenChange={() => setSessionToInvoice(null)}
+          session={sessionToInvoice}
         />
       )}
     </>
@@ -356,9 +383,9 @@ const TherapistDashboard = () => {
         <CardContent>
           <div className="text-2xl font-bold">{todaysSessions.length}</div>
           <p className="text-xs text-muted-foreground">
-            {todaysSessions.filter((s) => s.status === "completed").length}{" "}
+            {todaysSessions.filter((s) => s.status === "completed" || s.status === "paid").length}{" "}
             completed,{" "}
-            {todaysSessions.filter((s) => s.status !== "completed").length}{" "}
+            {todaysSessions.filter((s) => s.status !== "completed" && s.status !== "paid").length}{" "}
             upcoming
           </p>
         </CardContent>
@@ -456,5 +483,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

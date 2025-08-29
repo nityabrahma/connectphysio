@@ -30,6 +30,7 @@ export default function ProfilePage() {
   
   const [openingTime, setOpeningTime] = useState('');
   const [closingTime, setClosingTime] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
 
   const currentCentre = useMemo(() => {
     return centres.find(c => c.id === user?.centreId)
@@ -44,6 +45,7 @@ export default function ProfilePage() {
     if (currentCentre) {
         setOpeningTime(currentCentre.openingTime);
         setClosingTime(currentCentre.closingTime);
+        setGstNumber(currentCentre.gstNumber || '');
     }
   }, [user, currentCentre]);
   
@@ -63,7 +65,7 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!currentCentre) return;
     
-    setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, openingTime, closingTime } : c));
+    setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, openingTime, closingTime, gstNumber } : c));
      toast({
       title: 'Clinic Settings Updated',
       description: 'Your clinic operating hours have been updated.',
@@ -185,6 +187,10 @@ export default function ProfilePage() {
             </CardHeader>
             <form onSubmit={handleClinicSettingsUpdate}>
               <CardContent className="grid md:grid-cols-2 gap-6">
+                 <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="gst-number">GST Number</Label>
+                  <Input id="gst-number" type="text" value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} placeholder="e.g., 22AAAAA0000A1Z5" />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="opening-time">Opening Time</Label>
                   <Input id="opening-time" type="time" value={openingTime} onChange={(e) => setOpeningTime(e.target.value)} required />
