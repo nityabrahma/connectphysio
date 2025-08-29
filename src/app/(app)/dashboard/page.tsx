@@ -401,7 +401,8 @@ export default function DashboardPage() {
   const renderDashboardContent = () => {
     switch (user?.role) {
       case "admin":
-        return <AdminDashboard />;
+        // return <AdminDashboard />;
+        return null;
       case "receptionist":
         return <ReceptionistDashboard />;
       case "therapist":
