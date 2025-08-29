@@ -45,19 +45,34 @@ export default function SettingsPage() {
             </Card>
 
             {user?.role === 'admin' && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Consultation Questions</CardTitle>
-                        <CardDescription>
-                            Create and manage forms for session completion.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button onClick={() => router.push('/settings/consultation-questions')}>
-                            Manage Forms
-                        </Button>
-                    </CardContent>
-                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Consultation Questions</CardTitle>
+                            <CardDescription>
+                                Create and manage forms for session follow-ups.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button onClick={() => router.push('/settings/consultation-questions')}>
+                                Manage Consultation Forms
+                            </Button>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Treatment Questions</CardTitle>
+                            <CardDescription>
+                                Create and manage forms for specific treatments.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button onClick={() => router.push('/settings/treatment-questions')}>
+                                Manage Treatment Forms
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
             )}
 
             <Card>
