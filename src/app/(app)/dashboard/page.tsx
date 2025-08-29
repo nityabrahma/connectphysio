@@ -7,7 +7,7 @@ import type { Patient, Session, Treatment, TreatmentPlan, Centre } from "@/types
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { isSameDay, format, parse } from "date-fns";
 import { usePatients } from "@/hooks/use-patients";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,7 +25,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { EndSessionForm } from "./end-session-form";
 import Link from "next/link";
-import { InvoiceModal } from "@/components/invoice-modal";
+import { useReactToPrint } from "react-to-print";
+import { PrintableInvoice } from "@/components/printable-invoice";
 
 const TodaysAppointmentsList = () => {
   const { user } = useAuth();
@@ -38,7 +39,20 @@ const TodaysAppointmentsList = () => {
   const router = useRouter();
 
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
-  const [sessionToInvoice, setSessionToInvoice] = useState<Session | null>(null);
+  
+  const printRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+
+  const handlePrint = useReactToPrint({
+    content: () => {
+      const activeSessionId = Object.keys(printRefs.current).find(id => printRefs.current[id]);
+      return activeSessionId ? printRefs.current[activeSessionId] : null;
+    },
+    onAfterPrint: () => {
+      // Clear all refs after printing
+      Object.keys(printRefs.current).forEach(id => printRefs.current[id] = null);
+    }
+  });
+
 
   const todaysSessions = useMemo(() => {
     let filtered = sessions.filter(
@@ -64,7 +78,6 @@ const TodaysAppointmentsList = () => {
     const session = sessions.find(s => s.id === sessionId);
     if (!session) return;
     
-    // Find active treatment plan for the patient
     const patientTreatmentPlans = treatmentPlans.filter(tp => tp.patientId === session.patientId);
     const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
 
@@ -93,9 +106,14 @@ const TodaysAppointmentsList = () => {
     setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, invoiceCounter } : c));
     
     setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
-    setSessionToInvoice(session);
+    
+    // Set the specific ref for printing
+    printRefs.current = { [session.id]: printRefs.current[session.id] };
+    handlePrint();
+    
     toast({ title: "Session marked as paid" });
   };
+
 
   const getPatient = (patientId: string) =>
     patients.find((p) => p.id === patientId);
@@ -136,6 +154,12 @@ const TodaysAppointmentsList = () => {
               key={session.id}
               className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4"
             >
+              <div style={{ display: 'none' }}>
+                <PrintableInvoice
+                  ref={el => (printRefs.current[session.id] = el)}
+                  session={session}
+                />
+              </div>
               <div className="flex items-center gap-4 flex-1">
                  <Avatar>
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
@@ -182,13 +206,6 @@ const TodaysAppointmentsList = () => {
           isOpen={!!sessionToEnd}
           onOpenChange={(isOpen) => !isOpen && setSessionToEnd(null)}
           onSubmit={handleEndSessionSubmit}
-        />
-      )}
-       {sessionToInvoice && (
-        <InvoiceModal
-          isOpen={!!sessionToInvoice}
-          onOpenChange={() => setSessionToInvoice(null)}
-          session={sessionToInvoice}
         />
       )}
     </>

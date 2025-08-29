@@ -12,7 +12,7 @@ import {
   Printer,
   DollarSign
 } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import type { Patient, Session, Therapist, Treatment, TreatmentPlan, Centre } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
@@ -40,7 +40,9 @@ import type { CalendarEvent } from "@/components/big-calendar";
 import { Calendar } from "@/components/big-calendar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { InvoiceModal } from "@/components/invoice-modal";
+import { useReactToPrint } from "react-to-print";
+import { PrintableInvoice } from "@/components/printable-invoice";
+
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
@@ -57,20 +59,26 @@ export default function AppointmentsPage() {
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
   const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
 
-  // Left sidebar visible month + selected date for main calendar
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-
-  // Tabs: today | week | month
   const [activeTab, setActiveTab] = useState<"day" | "week" | "month">("day");
-
+  
   useEffect(() => {
     setActiveTab(isMobile ? 'day' : 'week');
   }, [isMobile]);
 
-
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
-  const [sessionToInvoice, setSessionToInvoice] = useState<Session | null>(null);
+
+  const printRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const handlePrint = useReactToPrint({
+    content: () => {
+      const activeSessionId = Object.keys(printRefs.current).find(id => printRefs.current[id]);
+      return activeSessionId ? printRefs.current[activeSessionId] : null;
+    },
+     onAfterPrint: () => {
+      Object.keys(printRefs.current).forEach(id => printRefs.current[id] = null);
+    }
+  });
 
 
   const centreSessions = useMemo(() => {
@@ -122,7 +130,6 @@ export default function AppointmentsPage() {
     const session = sessions.find(s => s.id === sessionId);
     if (!session) return;
     
-    // Find active treatment plan for the patient
     const patientTreatmentPlans = treatmentPlans.filter(tp => tp.patientId === session.patientId);
     const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
 
@@ -151,7 +158,10 @@ export default function AppointmentsPage() {
     setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, invoiceCounter } : c));
     
     setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
-    setSessionToInvoice(session);
+    
+    printRefs.current = { [session.id]: printRefs.current[session.id] };
+    handlePrint();
+
     toast({ title: "Session marked as paid" });
   };
 
@@ -194,12 +204,17 @@ export default function AppointmentsPage() {
       });
     };
     
-    // For day and week views
     const width = total > 1 ? `${100 / total}%` : '100%';
     const left = total > 1 ? `${index * (100 / total)}%` : '0';
 
     return (
       <Popover>
+        <div style={{ display: 'none' }}>
+            <PrintableInvoice
+                ref={el => (printRefs.current[event.resource.id] = el)}
+                session={event.resource}
+            />
+        </div>
         <PopoverTrigger asChild>
           <div
             className={cn(
@@ -397,13 +412,6 @@ export default function AppointmentsPage() {
           isOpen={!!sessionToEnd}
           onOpenChange={(isOpen) => !isOpen && setSessionToEnd(null)}
           onSubmit={handleEndSessionSubmit}
-        />
-      )}
-      {sessionToInvoice && (
-        <InvoiceModal
-          isOpen={!!sessionToInvoice}
-          onOpenChange={() => setSessionToInvoice(null)}
-          session={sessionToInvoice}
         />
       )}
     </>

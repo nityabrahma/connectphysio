@@ -46,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useParams, useRouter } from "next/navigation";
 import { usePatients } from "@/hooks/use-patients";
@@ -89,7 +89,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { FormattedHealthNotes } from "@/components/formatted-health-notes";
-import { InvoiceModal } from "@/components/invoice-modal";
+import { useReactToPrint } from "react-to-print";
+import { PrintableInvoice } from "@/components/printable-invoice";
 
 
 const ViewSessionModal = ({
@@ -375,10 +376,21 @@ export default function PatientDetailPage() {
 
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
-  const [sessionToInvoice, setSessionToInvoice] = useState<Session | null>(null);
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
   const [isEditNotesModalOpen, setIsEditNotesModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+  const printRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const handlePrint = useReactToPrint({
+    content: () => {
+      const activeSessionId = Object.keys(printRefs.current).find(id => printRefs.current[id]);
+      return activeSessionId ? printRefs.current[activeSessionId] : null;
+    },
+    onAfterPrint: () => {
+      Object.keys(printRefs.current).forEach(id => printRefs.current[id] = null);
+    }
+  });
+
 
   const patientTreatmentPlans = useMemo(() => {
     return treatmentPlans
@@ -416,7 +428,6 @@ export default function PatientDetailPage() {
   const handleNewTreatmentPlan = (name: string) => {
     if (!patient) return;
 
-    // Deactivate all other plans for this patient
     const updatedPlans = treatmentPlans.map((p) =>
       p.patientId === patientId ? { ...p, isActive: false } : p
     );
@@ -465,7 +476,10 @@ export default function PatientDetailPage() {
     setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, invoiceCounter } : c));
     
     setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
-    setSessionToInvoice(session);
+    
+    printRefs.current = { [session.id]: printRefs.current[session.id] };
+    handlePrint();
+
     toast({ title: "Session marked as paid" });
   };
 
@@ -784,13 +798,16 @@ export default function PatientDetailPage() {
         onOpenChange={(isOpen) => !isOpen && setSessionToView(null)}
         getTherapistName={getTherapistName}
       />
-      {sessionToInvoice && (
-        <InvoiceModal
-            isOpen={!!sessionToInvoice}
-            onOpenChange={() => setSessionToInvoice(null)}
-            session={sessionToInvoice}
-        />
-      )}
+      
+      {patientSessions.map(session => (
+        <div key={session.id} style={{ display: 'none' }}>
+            <PrintableInvoice
+                ref={el => (printRefs.current[session.id] = el)}
+                session={session}
+            />
+        </div>
+      ))}
+
       <NewTreatmentPlanModal
         isOpen={isNewPlanModalOpen}
         onOpenChange={setIsNewPlanModalOpen}
