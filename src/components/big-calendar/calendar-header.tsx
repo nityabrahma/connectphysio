@@ -1,4 +1,6 @@
 
+"use client";
+
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
@@ -7,6 +9,7 @@ import type { CalendarView } from '.';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar as MiniCalendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 interface CalendarHeaderProps {
   currentDate: Date;
@@ -16,6 +19,8 @@ interface CalendarHeaderProps {
 }
 
 export function CalendarHeader({ currentDate, onDateChange, view, onViewChange }: CalendarHeaderProps) {
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
   const handlePrev = () => {
     switch (view) {
       case 'month':
@@ -48,14 +53,10 @@ export function CalendarHeader({ currentDate, onDateChange, view, onViewChange }
     onDateChange(new Date());
   };
   
-  const dateFormat = () => {
-    switch (view) {
-      case 'month':
-        return 'MMMM yyyy';
-      case 'week':
-        return `MMM d, yyyy`;
-      case 'day':
-        return 'MMMM d, yyyy';
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      onDateChange(date);
+      setIsDatePickerOpen(false);
     }
   }
 
@@ -66,7 +67,7 @@ export function CalendarHeader({ currentDate, onDateChange, view, onViewChange }
         <Button variant="outline" size="sm" onClick={handleToday}>Today</Button>
         <Button variant="outline" size="icon" onClick={handleNext}><ChevronRight className="h-4 w-4"/></Button>
         
-        <Popover>
+        <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant={"outline"}
@@ -83,7 +84,7 @@ export function CalendarHeader({ currentDate, onDateChange, view, onViewChange }
                 <MiniCalendar
                     mode="single"
                     selected={currentDate}
-                    onSelect={(d) => d && onDateChange(d)}
+                    onSelect={handleDateSelect}
                     initialFocus
                 />
             </PopoverContent>
