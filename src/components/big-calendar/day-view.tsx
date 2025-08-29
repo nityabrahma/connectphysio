@@ -28,18 +28,6 @@ export function DayView({
     [events, date]
   );
   
-  const eventsByHour = useMemo(() => {
-    const grouped: Record<number, CalendarEvent<Session>[]> = {};
-    dayEvents.forEach(event => {
-      const startHour = event.start.getHours();
-      if (!grouped[startHour]) {
-        grouped[startHour] = [];
-      }
-      grouped[startHour].push(event);
-    });
-    return grouped;
-  }, [dayEvents]);
-
   const getEventPosition = (event: CalendarEvent) => {
     const startHour = event.start.getHours();
     const startMinute = event.start.getMinutes();
@@ -75,10 +63,14 @@ export function DayView({
            {hours.map((_, hourIndex) => (
               <div key={hourIndex} className="h-16 border-b"></div>
             ))}
-            {Object.values(eventsByHour).flat().map((event) => {
-                const hourEvents = eventsByHour[event.start.getHours()] || [];
-                const total = hourEvents.length;
-                const index = hourEvents.findIndex(e => e.id === event.id);
+            {dayEvents.map((event) => {
+                const concurrentEvents = dayEvents.filter(e => 
+                  e.id !== event.id && (e.start < event.end && e.end > event.start)
+                );
+                const allEventsInSlot = [event, ...concurrentEvents].sort((a,b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
+                const total = allEventsInSlot.length;
+                const index = allEventsInSlot.findIndex(e => e.id === event.id);
+
                 return (
                     <div
                         key={event.id}

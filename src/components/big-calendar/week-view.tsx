@@ -74,10 +74,12 @@ export function WeekView({ date, events, eventComponent: EventComponent }: WeekV
                 ))}
                 {currentDayEvents.map(event => {
                     const concurrentEvents = currentDayEvents.filter(e => 
-                       (e.start < event.end && e.end > event.start)
+                       e.id !== event.id && (e.start < event.end && e.end > event.start)
                     );
-                    const total = concurrentEvents.length;
-                    const index = concurrentEvents.findIndex(e => e.id === event.id);
+                    const allEventsInSlot = [event, ...concurrentEvents].sort((a,b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
+
+                    const total = allEventsInSlot.length;
+                    const index = allEventsInSlot.findIndex(e => e.id === event.id);
 
                     return (
                        <div
