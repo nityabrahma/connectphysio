@@ -9,7 +9,10 @@ import {
   UserPlus,
   User,
   Edit,
-  DollarSign
+  DollarSign,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useMemo, useState, useEffect, useRef } from "react";
 import type { Patient, Session, Therapist, Treatment, TreatmentPlan, Centre } from "@/types/domain";
@@ -20,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
-import { format, parse } from "date-fns";
+import { format, parse, addDays, subDays } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -305,35 +308,6 @@ export default function AppointmentsPage() {
         </div>
         
          <div className="flex flex-col flex-1 gap-6 min-h-0">
-          <Card>
-            <CardContent className="p-2 md:p-4 flex flex-col md:flex-row gap-4 justify-center items-center">
-              <MiniCalendar
-                mode="single"
-                month={visibleMonth}
-                onMonthChange={setVisibleMonth}
-                selected={selectedDate}
-                onSelect={(d) => {
-                  if (d) {
-                    setSelectedDate(d);
-                    setActiveTab("day");
-                  }
-                }}
-                className="rounded-md border"
-              />
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const now = new Date();
-                  setVisibleMonth(now);
-                  setSelectedDate(now);
-                  setActiveTab("day");
-                }}
-                className="w-full md:w-auto"
-              >
-                Today
-              </Button>
-            </CardContent>
-          </Card>
           <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <CardContent className="p-0 md:p-0 flex-1 flex flex-col min-h-0">
               <Calendar
