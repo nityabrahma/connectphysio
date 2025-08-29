@@ -1,9 +1,9 @@
 
 'use client';
 
-import { QuestionnaireForm, type QuestionnaireFormValues } from '../questionnaire-form';
+import { ConsultationQuestionsForm } from '../consultation-questions-form';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -11,11 +11,9 @@ import { LS_KEYS } from '@/lib/constants';
 import type { Questionnaire } from '@/types/domain';
 import { useToast } from '@/hooks/use-toast';
 import { generateId } from '@/lib/ids';
-import { useAuth } from '@/hooks/use-auth';
 
-export default function NewQuestionnairePage() {
+export default function NewConsultationQuestionsPage() {
   const router = useRouter();
-  const { user } = useAuth();
   const { toast } = useToast();
   const [questionnaires, setQuestionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
 
@@ -26,8 +24,8 @@ export default function NewQuestionnairePage() {
       createdAt: new Date().toISOString(),
     };
     setQuestionnaires([...questionnaires, newQuestionnaire]);
-    toast({ title: "Questionnaire created" });
-    router.push('/settings/questionnaires');
+    toast({ title: "Form created" });
+    router.push('/settings/consultation-questions');
   };
 
   return (
@@ -37,13 +35,13 @@ export default function NewQuestionnairePage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">New Questionnaire</h1>
+            <h1 className="text-3xl font-bold tracking-tight">New Consultation Form</h1>
             <p className="text-muted-foreground">Create a new form for session completion.</p>
         </div>
       </div>
       <Card>
         <CardContent className="p-6">
-          <QuestionnaireForm onSubmit={handleFormSubmit} />
+          <ConsultationQuestionsForm onSubmit={handleFormSubmit} />
         </CardContent>
       </Card>
     </div>

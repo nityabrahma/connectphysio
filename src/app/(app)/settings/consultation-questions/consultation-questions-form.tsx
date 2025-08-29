@@ -47,12 +47,12 @@ const formSchema = z.object({
   questions: z.array(questionSchema),
 })
 
-export type QuestionnaireFormValues = z.infer<typeof formSchema>
+export type ConsultationQuestionsFormValues = z.infer<typeof formSchema>
 
-interface QuestionnaireFormProps {
+interface ConsultationQuestionsFormProps {
     onSubmit: (values: Omit<Questionnaire, 'id' | 'createdAt'>) => void;
     onDelete?: (id: string) => void;
-    questionnaire?: Questionnaire | null;
+    formDef?: Questionnaire | null;
 }
 
 const defaultQuestions: Omit<Question, 'id'>[] = [
@@ -62,11 +62,11 @@ const defaultQuestions: Omit<Question, 'id'>[] = [
     { label: "Follow-up Plan", type: 'text', placeholder: "e.g., Continue with exercises, Re-assess next session" }
 ];
 
-export function QuestionnaireForm({ onSubmit, onDelete, questionnaire }: QuestionnaireFormProps) {
+export function ConsultationQuestionsForm({ onSubmit, onDelete, formDef }: ConsultationQuestionsFormProps) {
     const { user: currentUser } = useAuth();
-    const isEditing = !!questionnaire;
+    const isEditing = !!formDef;
     
-    const form = useForm<QuestionnaireFormValues>({
+    const form = useForm<ConsultationQuestionsFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             title: "",
@@ -80,17 +80,17 @@ export function QuestionnaireForm({ onSubmit, onDelete, questionnaire }: Questio
     });
 
     useEffect(() => {
-        if (questionnaire) {
-            form.reset(questionnaire);
+        if (formDef) {
+            form.reset(formDef);
         } else {
             form.reset({
                 title: "Default Follow-up Form",
                 questions: defaultQuestions.map(q => ({...q, id: generateId()})),
             });
         }
-    }, [questionnaire, form]);
+    }, [formDef, form]);
 
-    const handleFormSubmit = (values: QuestionnaireFormValues) => {
+    const handleFormSubmit = (values: ConsultationQuestionsFormValues) => {
         if (!currentUser) return;
         onSubmit({ ...values, centreId: currentUser.centreId });
     }
@@ -192,7 +192,7 @@ export function QuestionnaireForm({ onSubmit, onDelete, questionnaire }: Questio
                 </div>
 
                 <div className="flex justify-between items-center pt-4">
-                    {isEditing && questionnaire && onDelete && (
+                    {isEditing && formDef && onDelete && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                             <Button type="button" variant="destructive">Delete Form</Button>
@@ -201,18 +201,18 @@ export function QuestionnaireForm({ onSubmit, onDelete, questionnaire }: Questio
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this questionnaire.
+                                This action cannot be undone. This will permanently delete this form.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(questionnaire.id)}>Delete</AlertDialogAction>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(formDef.id)}>Delete</AlertDialogAction>
                             </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                     )}
                     <div className="flex justify-end gap-2 ml-auto">
-                        <Button type="submit">{isEditing ? 'Save Changes' : 'Create Questionnaire'}</Button>
+                        <Button type="submit">{isEditing ? 'Save Changes' : 'Create Form'}</Button>
                     </div>
                 </div>
             </form>

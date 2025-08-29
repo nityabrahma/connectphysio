@@ -1,7 +1,7 @@
 
 'use client';
 
-import { QuestionnaireForm } from '../../questionnaire-form';
+import { ConsultationQuestionsForm } from '../../consultation-questions-form';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,42 +12,42 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
-export default function EditQuestionnairePage() {
+export default function EditConsultationQuestionPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
   
-  const questionnaireId = params.id as string;
+  const formId = params.id as string;
 
   const [questionnaires, setQuestionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
-  const questionnaire = questionnaires.find(q => q.id === questionnaireId);
+  const formDef = questionnaires.find(q => q.id === formId);
 
   const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
-    if (!questionnaire) return;
+    if (!formDef) return;
 
-    const updatedQuestionnaire = { ...questionnaire, ...values, updatedAt: new Date().toISOString() };
-    setQuestionnaires(questionnaires.map(q => q.id === questionnaireId ? updatedQuestionnaire : q));
-    toast({ title: "Questionnaire updated" });
-    router.push('/settings/questionnaires');
+    const updatedForm = { ...formDef, ...values, updatedAt: new Date().toISOString() };
+    setQuestionnaires(questionnaires.map(q => q.id === formId ? updatedForm : q));
+    toast({ title: "Form updated" });
+    router.push('/settings/consultation-questions');
   };
   
   const handleDelete = (id: string) => {
     setQuestionnaires(questionnaires.filter(q => q.id !== id));
-    toast({ title: "Questionnaire deleted", variant: "destructive" });
-    router.push('/settings/questionnaires');
+    toast({ title: "Form deleted", variant: "destructive" });
+    router.push('/settings/consultation-questions');
   }
 
-  if (!questionnaire) {
+  if (!formDef) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <h2 className="text-2xl font-semibold mb-4">Questionnaire not found</h2>
+        <h2 className="text-2xl font-semibold mb-4">Form not found</h2>
         <p className="text-muted-foreground mb-6">
-          The questionnaire you are looking for does not exist.
+          The form you are looking for does not exist.
         </p>
         <Button asChild>
-          <Link href="/settings/questionnaires">
+          <Link href="/settings/consultation-questions">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Questionnaires
+            Back to Forms
           </Link>
         </Button>
       </div>
@@ -61,16 +61,16 @@ export default function EditQuestionnairePage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">Edit Questionnaire</h1>
-            <p className="text-muted-foreground">Update the details for "{questionnaire.title}".</p>
+            <h1 className="text-3xl font-bold tracking-tight">Edit Form</h1>
+            <p className="text-muted-foreground">Update the details for "{formDef.title}".</p>
         </div>
       </div>
       <Card>
          <CardContent className="p-6">
-          <QuestionnaireForm
+          <ConsultationQuestionsForm
             onSubmit={handleFormSubmit}
             onDelete={handleDelete}
-            questionnaire={questionnaire}
+            formDef={formDef}
           />
         </CardContent>
       </Card>

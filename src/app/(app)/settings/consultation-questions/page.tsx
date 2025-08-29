@@ -12,7 +12,7 @@ import { PlusCircle, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function QuestionnairesPage() {
+export default function ConsultationQuestionsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
@@ -26,11 +26,11 @@ export default function QuestionnairesPage() {
   const centreQuestionnaires = questionnaires.filter(q => q.centreId === user?.centreId);
 
   const handleAddClick = () => {
-    router.push('/settings/questionnaires/new');
+    router.push('/settings/consultation-questions/new');
   };
   
   const handleEditClick = (q: Questionnaire) => {
-    router.push(`/settings/questionnaires/edit/${q.id}`);
+    router.push(`/settings/consultation-questions/edit/${q.id}`);
   }
   
   if (user?.role !== 'admin') {
@@ -40,17 +40,17 @@ export default function QuestionnairesPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Questionnaires</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Consultation Questions</h1>
         <p className="text-muted-foreground">Create and manage forms for session completion.</p>
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Your Questionnaires</CardTitle>
+            <CardTitle>Your Forms</CardTitle>
             <CardDescription>These forms are used to gather follow-up information from patients.</CardDescription>
           </div>
-          <Button onClick={handleAddClick}><PlusCircle/>New Questionnaire</Button>
+          <Button onClick={handleAddClick}><PlusCircle/>New Form</Button>
         </CardHeader>
         <CardContent>
           {centreQuestionnaires.length > 0 ? (
@@ -69,8 +69,8 @@ export default function QuestionnairesPage() {
             </div>
           ) : (
              <div className="text-center py-12 text-muted-foreground">
-                <p>No questionnaires created yet.</p>
-                <p className="text-sm">Click "New Questionnaire" to get started.</p>
+                <p>No forms created yet.</p>
+                <p className="text-sm">Click "New Form" to get started.</p>
              </div>
           )}
         </CardContent>

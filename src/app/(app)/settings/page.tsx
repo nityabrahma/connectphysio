@@ -47,14 +47,14 @@ export default function SettingsPage() {
             {user?.role === 'admin' && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Questionnaires</CardTitle>
+                        <CardTitle>Consultation Questions</CardTitle>
                         <CardDescription>
                             Create and manage forms for session completion.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button onClick={() => router.push('/settings/questionnaires')}>
-                            Manage Questionnaires
+                        <Button onClick={() => router.push('/settings/consultation-questions')}>
+                            Manage Forms
                         </Button>
                     </CardContent>
                 </Card>

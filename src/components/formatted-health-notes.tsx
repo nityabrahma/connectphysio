@@ -53,7 +53,7 @@ export const FormattedHealthNotes = ({ notes }: { notes?: string }) => {
     
     // Fallback for old questionnaire format
      if (parsed.questionnaireId && parsed.answers) {
-      return <p className="bg-secondary/50 p-3 rounded-md text-sm">Legacy questionnaire data is not displayable.</p>;
+      return <p className="bg-secondary/50 p-3 rounded-md text-sm">Legacy consultation questions data is not displayable.</p>;
     }
 
     throw new Error("Unknown notes format");
