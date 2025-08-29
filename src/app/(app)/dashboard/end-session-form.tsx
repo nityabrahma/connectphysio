@@ -37,7 +37,6 @@ const answerSchema = z.object({
 
 const formSchema = z.object({
     treatmentDescription: z.string().min(1, "Treatment description is required."),
-    treatmentCharges: z.coerce.number().min(0, "Charges cannot be negative."),
     answers: z.array(answerSchema),
 });
 
@@ -70,7 +69,6 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
         resolver: zodResolver(formSchema),
         defaultValues: {
             treatmentDescription: "",
-            treatmentCharges: 0,
             answers: treatmentQuestionnaire?.questions.map(q => ({ questionId: q.id, answer: "" })) || [],
         }
     });
@@ -84,7 +82,6 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
         if (isOpen) {
             form.reset({
                 treatmentDescription: "",
-                treatmentCharges: 0,
                 answers: treatmentQuestionnaire?.questions.map(q => ({ questionId: q.id, answer: "" })) || [],
             });
         }
@@ -94,7 +91,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
         const healthNotes = JSON.stringify({
             treatment: {
                 description: values.treatmentDescription,
-                charges: values.treatmentCharges,
+                charges: 0,
             },
             answers: values.answers,
             questionnaireId: treatmentQuestionnaire?.id,
@@ -102,7 +99,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
         
         const newTreatment = {
             description: values.treatmentDescription,
-            charges: values.treatmentCharges,
+            charges: 0,
         };
 
         onSubmit(session.id, healthNotes, newTreatment);
@@ -133,19 +130,6 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                                                     <FormLabel>Treatment Description</FormLabel>
                                                     <FormControl>
                                                         <Textarea placeholder="e.g., Ultrasound Therapy, IFT" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="treatmentCharges"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Charges (₹)</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="number" {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
