@@ -381,13 +381,15 @@ export default function PatientDetailPage() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   const printRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const [activePrintSessionId, setActivePrintSessionId] = useState<string | null>(null);
+  
   const handlePrint = useReactToPrint({
     content: () => {
-      const activeSessionId = Object.keys(printRefs.current).find(id => printRefs.current[id]);
-      return activeSessionId ? printRefs.current[activeSessionId] : null;
+      if (!activePrintSessionId) return null;
+      return printRefs.current[activePrintSessionId];
     },
     onAfterPrint: () => {
-      Object.keys(printRefs.current).forEach(id => printRefs.current[id] = null);
+      setActivePrintSessionId(null);
     }
   });
 
@@ -477,8 +479,10 @@ export default function PatientDetailPage() {
     
     setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
     
-    printRefs.current = { [session.id]: printRefs.current[session.id] };
-    handlePrint();
+    setActivePrintSessionId(session.id);
+    setTimeout(() => {
+        handlePrint();
+    }, 100);
 
     toast({ title: "Session marked as paid" });
   };
@@ -910,3 +914,5 @@ const SessionList = ({
     </div>
   );
 };
+
+    

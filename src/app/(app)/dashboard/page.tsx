@@ -41,15 +41,15 @@ const TodaysAppointmentsList = () => {
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   
   const printRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const [activePrintSessionId, setActivePrintSessionId] = useState<string | null>(null);
 
   const handlePrint = useReactToPrint({
     content: () => {
-      const activeSessionId = Object.keys(printRefs.current).find(id => printRefs.current[id]);
-      return activeSessionId ? printRefs.current[activeSessionId] : null;
+      if (!activePrintSessionId) return null;
+      return printRefs.current[activePrintSessionId];
     },
     onAfterPrint: () => {
-      // Clear all refs after printing
-      Object.keys(printRefs.current).forEach(id => printRefs.current[id] = null);
+      setActivePrintSessionId(null);
     }
   });
 
@@ -65,7 +65,7 @@ const TodaysAppointmentsList = () => {
      return filtered.sort((a, b) => {
         const timeA = parse(`${a.date} ${a.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
         const timeB = parse(`${b.date} ${b.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
-        return timeA.getTime() - timeB.getTime();
+        return timeA.getTime() - b.getTime();
     });
   }, [sessions, user]);
 
@@ -107,9 +107,10 @@ const TodaysAppointmentsList = () => {
     
     setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
     
-    // Set the specific ref for printing
-    printRefs.current = { [session.id]: printRefs.current[session.id] };
-    handlePrint();
+    setActivePrintSessionId(session.id);
+    setTimeout(() => {
+        handlePrint();
+    }, 100);
     
     toast({ title: "Session marked as paid" });
   };
@@ -500,3 +501,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
