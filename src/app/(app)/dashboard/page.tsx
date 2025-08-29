@@ -131,7 +131,7 @@ const TodaysAppointmentsList = () => {
                 <div className="flex-1">
                   <Link href={`/patient-details/${patient.id}`} className="font-semibold hover:underline">{patient.name}</Link>
                    <p className="text-sm text-muted-foreground">
-                    {session.startTime} - {session.endTime} with {getTherapistName(session.therapistId)}
+                    {format(parse(session.startTime, "HH:mm", new Date()), "h:mm a")} - {format(parse(session.endTime, "HH:mm", new Date()), "h:mm a")} with {getTherapistName(session.therapistId)}
                   </p>
                   <div className="flex gap-2 mt-2 flex-wrap">
                     <Badge variant="outline" className="capitalize">
