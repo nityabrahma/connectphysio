@@ -30,7 +30,6 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 const upcomingSchema = z.object({
   date: z.date({ required_error: "A date is required."}),
@@ -80,150 +79,148 @@ export function EditSessionModal({ isOpen, onOpenChange, session, onUpdate }: Ed
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-0">
-                <ScrollArea className="h-full">
-                    <div className="p-6">
-                        <DialogHeader>
-                            <DialogTitle>Edit Session</DialogTitle>
-                            <DialogDescription>
-                                {isCompleted ? "Update notes for this completed session." : "Reschedule or update the status of this session."}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(handleFormSubmit)}>
-                                <div className="space-y-4 py-4">
-                                    {!isCompleted && (
-                                        <>
+            <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Edit Session</DialogTitle>
+                    <DialogDescription>
+                        {isCompleted ? "Update notes for this completed session." : "Reschedule or update the status of this session."}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="overflow-y-auto flex-1 -mr-6 pr-6">
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+                            <div className="space-y-4 py-4">
+                                {!isCompleted && (
+                                    <>
+                                        <FormField
+                                            control={form.control}
+                                            name="date"
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-col">
+                                                <FormLabel>Date</FormLabel>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                        variant={"outline"}
+                                                        className={cn(
+                                                            "w-full pl-3 text-left font-normal",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                        >
+                                                        {field.value ? (
+                                                            format(field.value, "PPP")
+                                                        ) : (
+                                                            <span>Pick a date</span>
+                                                        )}
+                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={field.value}
+                                                        onSelect={field.onChange}
+                                                        initialFocus
+                                                    />
+                                                    </PopoverContent>
+                                                </Popover>
+                                                <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <div className="flex gap-4">
                                             <FormField
                                                 control={form.control}
-                                                name="date"
+                                                name="startTime"
                                                 render={({ field }) => (
-                                                    <FormItem className="flex flex-col">
-                                                    <FormLabel>Date</FormLabel>
-                                                    <Popover>
-                                                        <PopoverTrigger asChild>
+                                                    <FormItem>
+                                                        <FormLabel>Start Time</FormLabel>
                                                         <FormControl>
-                                                            <Button
-                                                            variant={"outline"}
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                            >
-                                                            {field.value ? (
-                                                                format(field.value, "PPP")
-                                                            ) : (
-                                                                <span>Pick a date</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                            </Button>
+                                                            <Input type="time" {...field} />
                                                         </FormControl>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value}
-                                                            onSelect={field.onChange}
-                                                            initialFocus
-                                                        />
-                                                        </PopoverContent>
-                                                    </Popover>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="endTime"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>End Time</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="time" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                        <FormField
+                                            control={form.control}
+                                            name="status"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Status</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select status" />
+                                                        </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="scheduled">Scheduled</SelectItem>
+                                                            <SelectItem value="checked-in">Checked In</SelectItem>
+                                                            <SelectItem value="completed">Completed</SelectItem>
+                                                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                     <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <div className="flex gap-4">
-                                                <FormField
-                                                    control={form.control}
-                                                    name="startTime"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Start Time</FormLabel>
-                                                            <FormControl>
-                                                                <Input type="time" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="endTime"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>End Time</FormLabel>
-                                                            <FormControl>
-                                                                <Input type="time" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </div>
-                                            <FormField
-                                                control={form.control}
-                                                name="status"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Status</FormLabel>
-                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                            <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select status" />
-                                                            </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                <SelectItem value="scheduled">Scheduled</SelectItem>
-                                                                <SelectItem value="checked-in">Checked In</SelectItem>
-                                                                <SelectItem value="completed">Completed</SelectItem>
-                                                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </>
-                                    )}
-                                    {isCompleted && (
-                                        <>
-                                            <FormField
-                                                control={form.control}
-                                                name="healthNotes"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Health Notes</FormLabel>
-                                                        <FormControl>
-                                                            <Textarea placeholder="Session health notes..." {...field} rows={5} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="notes"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Internal Notes (Optional)</FormLabel>
-                                                        <FormControl>
-                                                            <Textarea placeholder="Internal session notes..." {...field} rows={5} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </>
-                                    )}
-                                </div>
-                                <div className="flex-col-reverse sm:flex-row sm:justify-end w-full pt-4 flex gap-2">
-                                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                                    <Button type="submit">Save Changes</Button>
-                                </div>
-                            </form>
-                        </Form>
-                    </div>
-                </ScrollArea>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </>
+                                )}
+                                {isCompleted && (
+                                    <>
+                                        <FormField
+                                            control={form.control}
+                                            name="healthNotes"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Health Notes</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea placeholder="Session health notes..." {...field} rows={5} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="notes"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Internal Notes (Optional)</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea placeholder="Internal session notes..." {...field} rows={5} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </>
+                                )}
+                            </div>
+                            <div className="flex-col-reverse sm:flex-row sm:justify-end w-full pt-4 flex gap-2">
+                                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                                <Button type="submit">Save Changes</Button>
+                            </div>
+                        </form>
+                    </Form>
+                </div>
             </DialogContent>
         </Dialog>
     )

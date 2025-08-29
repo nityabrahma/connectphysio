@@ -45,7 +45,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useMemo, useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useParams, useRouter } from "next/navigation";
 import { usePatients } from "@/hooks/use-patients";
 import { Button } from "@/components/ui/button";
@@ -112,7 +111,7 @@ const ViewSessionModal = ({
             with {getTherapistName(session.therapistId)}.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-1 -mr-6 pr-6">
+        <div className="flex-1 overflow-y-auto -mr-6 pr-6">
           <div className="space-y-6 py-4">
             <div>
               <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
@@ -135,7 +134,7 @@ const ViewSessionModal = ({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
@@ -318,23 +317,23 @@ const SessionHistoryModal = ({
                             <TabsTrigger value="completed">Completed</TabsTrigger>
                         </TabsList>
                         <div className="flex-1 mt-4 relative">
-                            <ScrollArea className="absolute inset-0 w-full h-full pr-4">
-                            <TabsContent value="upcoming">
-                                <SessionList
-                                sessions={upcomingSessions}
-                                setSessionToEdit={setSessionToEdit}
-                                getTherapistName={getTherapistName}
-                                />
-                            </TabsContent>
-                            <TabsContent value="completed">
-                                <SessionList
-                                sessions={completedSessions}
-                                isCompletedList
-                                setSessionToView={setSessionToView}
-                                getTherapistName={getTherapistName}
-                                />
-                            </TabsContent>
-                            </ScrollArea>
+                            <div className="absolute inset-0 w-full h-full overflow-y-auto pr-4">
+                                <TabsContent value="upcoming">
+                                    <SessionList
+                                    sessions={upcomingSessions}
+                                    setSessionToEdit={setSessionToEdit}
+                                    getTherapistName={getTherapistName}
+                                    />
+                                </TabsContent>
+                                <TabsContent value="completed">
+                                    <SessionList
+                                    sessions={completedSessions}
+                                    isCompletedList
+                                    setSessionToView={setSessionToView}
+                                    getTherapistName={getTherapistName}
+                                    />
+                                </TabsContent>
+                            </div>
                         </div>
                     </Tabs>
                 </div>
@@ -722,7 +721,7 @@ export default function PatientDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col min-h-0 pt-4 space-y-4">
-                 <ScrollArea className="flex-1 -mr-4 pr-4">
+                 <div className="flex-1 overflow-y-auto -mr-4 pr-4">
                     <div className="space-y-4">
                         {sortedTreatments.length > 0 ? sortedTreatments.map((treatment, index) => (
                              <Card key={treatment.date} className={cn(index > 0 && "opacity-60")}>
@@ -740,7 +739,7 @@ export default function PatientDetailPage() {
                             <p className="text-sm text-muted-foreground text-center py-8">No treatments recorded for this plan.</p>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
           </div>
