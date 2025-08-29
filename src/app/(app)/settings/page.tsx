@@ -33,7 +33,7 @@ export default function SettingsPage() {
                 <p className="text-muted-foreground">Manage your application preferences.</p>
             </div>
             
-            <Card>
+            {/* <Card>
                 <CardHeader>
                     <CardTitle>Appearance</CardTitle>
                     <CardDescription>Customize the look and feel of the application.</CardDescription>
@@ -42,7 +42,7 @@ export default function SettingsPage() {
                     <p className="font-medium">Theme</p>
                     <ThemeSwitch />
                 </CardContent>
-            </Card>
+            </Card> */}
 
             {user?.role === 'admin' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
