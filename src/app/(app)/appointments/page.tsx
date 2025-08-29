@@ -9,11 +9,10 @@ import {
   UserPlus,
   User,
   Edit,
-  Printer,
   DollarSign
 } from "lucide-react";
-import { useMemo, useState, useEffect, useRef } from "react";
-import type { Patient, Session, Therapist, Treatment, TreatmentPlan, Centre } from "@/types/domain";
+import { useMemo, useState, useEffect } from "react";
+import type { Patient, Session, Therapist, Treatment, TreatmentPlan } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { usePatients } from "@/hooks/use-patients";
@@ -40,8 +39,6 @@ import type { CalendarEvent } from "@/components/big-calendar";
 import { Calendar } from "@/components/big-calendar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useReactToPrint } from "react-to-print";
-import { PrintableInvoice } from "@/components/printable-invoice";
 
 
 export default function AppointmentsPage() {
@@ -54,7 +51,6 @@ export default function AppointmentsPage() {
     LS_KEYS.SESSIONS,
     []
   );
-  const [centres, setCentres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
   const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
@@ -68,26 +64,6 @@ export default function AppointmentsPage() {
   }, [isMobile]);
 
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
-
-  const printRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
-  const [activePrintSessionId, setActivePrintSessionId] = useState<string | null>(null);
-  
-  const handlePrint = useReactToPrint({
-    content: () => {
-      if (!activePrintSessionId) return null;
-      return printRefs.current[activePrintSessionId];
-    },
-     onAfterPrint: () => {
-      setActivePrintSessionId(null);
-    }
-  });
-
-  useEffect(() => {
-    if (activePrintSessionId) {
-      handlePrint();
-    }
-  }, [activePrintSessionId, handlePrint]);
-
 
   const centreSessions = useMemo(() => {
     let filtered = sessions.filter(
@@ -158,20 +134,6 @@ export default function AppointmentsPage() {
     setSessionToEnd(null);
   }
 
-   const handlePrintInvoice = (session: Session) => {
-    const currentCentre = centres.find(c => c.id === user?.centreId);
-    if (!currentCentre) return;
-
-    const invoiceCounter = (currentCentre.invoiceCounter || 0) + 1;
-    setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, invoiceCounter } : c));
-    
-    setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
-    
-    setActivePrintSessionId(session.id);
-
-    toast({ title: "Session marked as paid" });
-  };
-
   const onNavigate = (date: Date) => {
     setSelectedDate(date);
     setVisibleMonth(date);
@@ -216,18 +178,10 @@ export default function AppointmentsPage() {
 
     return (
       <Popover>
-        <div style={{ display: 'none' }}>
-            <PrintableInvoice
-                ref={el => (printRefs.current[event.resource.id] = el)}
-                session={event.resource}
-            />
-        </div>
         <PopoverTrigger asChild>
           <div
             className={cn(
               "p-1 h-full w-full cursor-pointer text-primary-foreground rounded-md border-l-4 absolute",
-              event.resource.status === "paid" &&
-                "bg-purple-500/80 border-purple-700",
               event.resource.status === "completed" &&
                 "bg-green-500/80 border-green-700",
               event.resource.status === "checked-in" &&
@@ -281,7 +235,7 @@ export default function AppointmentsPage() {
               </div>
             </div>
             {canManageSession(event.resource) &&
-              (event.resource.status !== "completed" && event.resource.status !== "paid") && (
+              (event.resource.status !== "completed") && (
                 <div className="flex gap-2 w-full pt-4 border-t">
                   {event.resource.status === "scheduled" && (
                     <Button
@@ -316,18 +270,6 @@ export default function AppointmentsPage() {
                   </Button>
                 </div>
               )}
-               {canManageSession(event.resource) && event.resource.status === 'completed' && (
-                    <div className="flex gap-2 w-full pt-4 border-t">
-                        <Button size="sm" variant="outline" onClick={() => handlePrintInvoice(event.resource)}>
-                            <Printer /> Print Invoice
-                        </Button>
-                    </div>
-                )}
-                 {canManageSession(event.resource) && event.resource.status === 'paid' && (
-                    <div className="flex gap-2 w-full pt-4 border-t items-center text-sm text-muted-foreground">
-                       <DollarSign className="text-green-500"/> Invoice #{event.resource.invoiceNumber} Paid
-                    </div>
-                )}
           </div>
         </PopoverContent>
       </Popover>

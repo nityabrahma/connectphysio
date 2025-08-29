@@ -2,12 +2,12 @@
 "use client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut, Printer } from "lucide-react";
-import type { Patient, Session, Treatment, TreatmentPlan, Centre } from "@/types/domain";
+import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut } from "lucide-react";
+import type { Patient, Session, Treatment, TreatmentPlan } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { isSameDay, format, parse } from "date-fns";
 import { usePatients } from "@/hooks/use-patients";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,41 +25,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { EndSessionForm } from "./end-session-form";
 import Link from "next/link";
-import { useReactToPrint } from "react-to-print";
-import { PrintableInvoice } from "@/components/printable-invoice";
 
 const TodaysAppointmentsList = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
   const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
-  const [centres, setCentres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<any[]>(LS_KEYS.THERAPISTS, []);
   const router = useRouter();
 
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   
-  const printRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
-  const [activePrintSessionId, setActivePrintSessionId] = useState<string | null>(null);
-
-  const handlePrint = useReactToPrint({
-    content: () => {
-      if (!activePrintSessionId) return null;
-      return printRefs.current[activePrintSessionId];
-    },
-    onAfterPrint: () => {
-      setActivePrintSessionId(null);
-    }
-  });
-
-  useEffect(() => {
-    if (activePrintSessionId) {
-      handlePrint();
-    }
-  }, [activePrintSessionId, handlePrint]);
-
-
   const todaysSessions = useMemo(() => {
     let filtered = sessions.filter(
       (s) =>
@@ -104,21 +81,6 @@ const TodaysAppointmentsList = () => {
     setSessionToEnd(null);
   }
 
-  const handlePrintInvoice = (session: Session) => {
-    const currentCentre = centres.find(c => c.id === user?.centreId);
-    if (!currentCentre) return;
-
-    const invoiceCounter = (currentCentre.invoiceCounter || 0) + 1;
-    setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, invoiceCounter } : c));
-    
-    setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
-    
-    setActivePrintSessionId(session.id);
-    
-    toast({ title: "Session marked as paid" });
-  };
-
-
   const getPatient = (patientId: string) =>
     patients.find((p) => p.id === patientId);
   const getTherapistName = (therapistId: string) =>
@@ -158,12 +120,6 @@ const TodaysAppointmentsList = () => {
               key={session.id}
               className="p-4 bg-muted/50 rounded-lg flex flex-col sm:flex-row justify-between sm:items-start gap-4"
             >
-              <div style={{ display: 'none' }}>
-                <PrintableInvoice
-                  ref={el => (printRefs.current[session.id] = el)}
-                  session={session}
-                />
-              </div>
               <div className="flex items-center gap-4 flex-1">
                  <Avatar>
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
@@ -192,11 +148,6 @@ const TodaysAppointmentsList = () => {
                   <Button size="sm" variant="secondary" onClick={() => setSessionToEnd(session)}>
                     <LogOut className="mr-2 h-4 w-4" /> End Session
                   </Button>
-                )}
-                 {canManageSession(session) && session.status === 'completed' && (
-                    <Button size="sm" variant="outline" onClick={() => handlePrintInvoice(session)}>
-                        <Printer className="mr-2 h-4 w-4" /> Print Invoice
-                    </Button>
                 )}
               </div>
             </li>
@@ -404,9 +355,9 @@ const TherapistDashboard = () => {
         <CardContent>
           <div className="text-2xl font-bold">{todaysSessions.length}</div>
           <p className="text-xs text-muted-foreground">
-            {todaysSessions.filter((s) => s.status === "completed" || s.status === "paid").length}{" "}
+            {todaysSessions.filter((s) => s.status === "completed").length}{" "}
             completed,{" "}
-            {todaysSessions.filter((s) => s.status !== "completed" && s.status !== "paid").length}{" "}
+            {todaysSessions.filter((s) => s.status !== "completed").length}{" "}
             upcoming
           </p>
         </CardContent>

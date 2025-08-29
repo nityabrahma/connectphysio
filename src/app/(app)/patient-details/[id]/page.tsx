@@ -9,7 +9,6 @@ import type {
   Therapist,
   TreatmentPlan,
   Treatment,
-  Centre,
 } from "@/types/domain";
 import {
   Card,
@@ -37,7 +36,6 @@ import {
   History,
   Info,
   HeartPulse,
-  Printer,
 } from "lucide-react";
 import {
   Select,
@@ -46,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useParams, useRouter } from "next/navigation";
 import { usePatients } from "@/hooks/use-patients";
@@ -89,8 +87,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { FormattedHealthNotes } from "@/components/formatted-health-notes";
-import { useReactToPrint } from "react-to-print";
-import { PrintableInvoice } from "@/components/printable-invoice";
 
 
 const ViewSessionModal = ({
@@ -279,7 +275,6 @@ const SessionHistoryModal = ({
     setSessionToView,
     getTherapistName,
     planName,
-    onPrintInvoice,
 } : {
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
@@ -288,7 +283,6 @@ const SessionHistoryModal = ({
     setSessionToView: (s: Session) => void,
     getTherapistName: (id: string) => string,
     planName: string,
-    onPrintInvoice: (session: Session) => void,
 }) => {
 
     const upcomingSessions = useMemo(() => {
@@ -302,7 +296,7 @@ const SessionHistoryModal = ({
     }, [sessions]);
 
     const completedSessions = useMemo(() => {
-        return sessions.filter((s) => s.status === "completed" || s.status === "paid");
+        return sessions.filter((s) => s.status === "completed");
     }, [sessions]);
 
     return (
@@ -330,7 +324,6 @@ const SessionHistoryModal = ({
                                 sessions={upcomingSessions}
                                 setSessionToEdit={setSessionToEdit}
                                 getTherapistName={getTherapistName}
-                                onPrintInvoice={onPrintInvoice}
                                 />
                             </TabsContent>
                             <TabsContent value="completed">
@@ -339,7 +332,6 @@ const SessionHistoryModal = ({
                                 isCompletedList
                                 setSessionToView={setSessionToView}
                                 getTherapistName={getTherapistName}
-                                onPrintInvoice={onPrintInvoice}
                                 />
                             </TabsContent>
                             </ScrollArea>
@@ -357,7 +349,6 @@ const SessionHistoryModal = ({
 export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { user } = useAuth();
   const { toast } = useToast();
   const { getPatient, deletePatient } = usePatients();
   const patientId = params.id as string;
@@ -368,7 +359,6 @@ export default function PatientDetailPage() {
     []
   );
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
-  const [centres, setCentres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
   const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(
     LS_KEYS.TREATMENT_PLANS,
     []
@@ -379,26 +369,6 @@ export default function PatientDetailPage() {
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
   const [isEditNotesModalOpen, setIsEditNotesModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-
-  const printRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
-  const [activePrintSessionId, setActivePrintSessionId] = useState<string | null>(null);
-  
-  const handlePrint = useReactToPrint({
-    content: () => {
-      if (!activePrintSessionId) return null;
-      return printRefs.current[activePrintSessionId];
-    },
-    onAfterPrint: () => {
-      setActivePrintSessionId(null);
-    }
-  });
-  
-  useEffect(() => {
-    if (activePrintSessionId) {
-      handlePrint();
-    }
-  }, [activePrintSessionId, handlePrint]);
-
 
   const patientTreatmentPlans = useMemo(() => {
     return treatmentPlans
@@ -474,20 +444,6 @@ export default function PatientDetailPage() {
     );
     setIsEditNotesModalOpen(false);
     toast({ title: "Clinical notes updated." });
-  };
-
-  const handlePrintInvoice = (session: Session) => {
-    const currentCentre = centres.find(c => c.id === user?.centreId);
-    if (!currentCentre) return;
-
-    const invoiceCounter = (currentCentre.invoiceCounter || 0) + 1;
-    setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, invoiceCounter } : c));
-    
-    setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
-    
-    setActivePrintSessionId(session.id);
-
-    toast({ title: "Session marked as paid" });
   };
 
   const patientSessions = useMemo(() => {
@@ -805,16 +761,6 @@ export default function PatientDetailPage() {
         onOpenChange={(isOpen) => !isOpen && setSessionToView(null)}
         getTherapistName={getTherapistName}
       />
-      
-      {patientSessions.map(session => (
-        <div key={session.id} style={{ display: 'none' }}>
-            <PrintableInvoice
-                ref={el => (printRefs.current[session.id] = el)}
-                session={session}
-            />
-        </div>
-      ))}
-
       <NewTreatmentPlanModal
         isOpen={isNewPlanModalOpen}
         onOpenChange={setIsNewPlanModalOpen}
@@ -835,7 +781,6 @@ export default function PatientDetailPage() {
             setSessionToView={setSessionToView}
             getTherapistName={getTherapistName}
             planName={activeTreatmentPlan.name}
-            onPrintInvoice={handlePrintInvoice}
         />
       )}
     </>
@@ -848,14 +793,12 @@ const SessionList = ({
   setSessionToEdit,
   setSessionToView,
   getTherapistName,
-  onPrintInvoice,
 }: {
   sessions: Session[];
   isCompletedList?: boolean;
   setSessionToEdit?: (s: Session) => void;
   setSessionToView?: (s: Session) => void;
   getTherapistName: (id: string) => string;
-  onPrintInvoice: (session: Session) => void;
 }) => {
   if (sessions.length === 0) {
     return (
@@ -906,11 +849,6 @@ const SessionList = ({
               >
                 <Edit className="h-4 w-4" />
               </Button>
-            )}
-            {isCompletedList && session.status === "completed" && (
-                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onPrintInvoice(session); }}>
-                    <Printer className="h-4 w-4" />
-                </Button>
             )}
         </div>
       ))}
