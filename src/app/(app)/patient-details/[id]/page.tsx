@@ -630,7 +630,7 @@ export default function PatientDetailPage() {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
-          {/* Left Column: Patient Details & Medical History */}
+          {/* Left Column: Patient Details, Medical History, Treatment */}
           <div className="lg:col-span-1 flex flex-col min-h-0 space-y-6">
              <Card>
                 <CardHeader>
@@ -673,9 +673,39 @@ export default function PatientDetailPage() {
                 </p>
               </CardContent>
             </Card>
+
+            <Card className="flex flex-col">
+              <CardHeader>
+                <CardTitle>Treatment</CardTitle>
+                <CardDescription>
+                  Plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col min-h-0 pt-4 space-y-4">
+                 <div className="flex-1 overflow-y-auto -mr-4 pr-4">
+                    <div className="space-y-4">
+                        {sortedTreatments.length > 0 ? sortedTreatments.map((treatment, index) => (
+                             <Card key={treatment.date} className={cn(index > 0 && "opacity-60")}>
+                                <CardHeader className="p-4">
+                                    <CardTitle className="text-base">
+                                        {format(new Date(treatment.date), "EEE, MMM d, yyyy")}
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-4 pt-0 text-sm">
+                                    <p>{treatment.description}</p>
+                                    <p className="font-semibold mt-2">Charges: ₹{treatment.charges}</p>
+                                </CardContent>
+                            </Card>
+                        )) : (
+                            <p className="text-sm text-muted-foreground text-center py-8">No treatments recorded for this plan.</p>
+                        )}
+                    </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Right Column: Clinical Notes & Treatment */}
+          {/* Right Column: Clinical Notes */}
           <div className="lg:col-span-2 flex flex-col min-h-0 space-y-6">
             <Card>
               <CardHeader className="flex flex-row justify-between items-start">
@@ -711,35 +741,6 @@ export default function PatientDetailPage() {
                     </p>
                   </TabsContent>
                 </Tabs>
-              </CardContent>
-            </Card>
-            <Card className="flex flex-col min-h-full">
-              <CardHeader>
-                <CardTitle>Treatment</CardTitle>
-                <CardDescription>
-                  Plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col min-h-0 pt-4 space-y-4">
-                 <div className="flex-1 overflow-y-auto -mr-4 pr-4">
-                    <div className="space-y-4">
-                        {sortedTreatments.length > 0 ? sortedTreatments.map((treatment, index) => (
-                             <Card key={treatment.date} className={cn(index > 0 && "opacity-60")}>
-                                <CardHeader className="p-4">
-                                    <CardTitle className="text-base">
-                                        {format(new Date(treatment.date), "EEE, MMM d, yyyy")}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-4 pt-0 text-sm">
-                                    <p>{treatment.description}</p>
-                                    <p className="font-semibold mt-2">Charges: ₹{treatment.charges}</p>
-                                </CardContent>
-                            </Card>
-                        )) : (
-                            <p className="text-sm text-muted-foreground text-center py-8">No treatments recorded for this plan.</p>
-                        )}
-                    </div>
-                </div>
               </CardContent>
             </Card>
           </div>
