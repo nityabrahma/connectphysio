@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import type { Patient, Session, Questionnaire } from "@/types/domain"
+import type { Patient, Session, TreatmentPlan } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -22,169 +22,183 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Slider } from "@/components/ui/slider"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { LS_KEYS } from "@/lib/constants"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+
+const formSchema = z.object({
+    consultation: z.string().min(1, "Consultation notes are required."),
+    therapy: z.string().min(1, "Therapy notes are required."),
+    treatmentDescription: z.string().min(1, "Treatment description is required."),
+    treatmentCharges: z.coerce.number().min(0, "Charges cannot be negative."),
+    experiments: z.string().optional(),
+    medicalConditions: z.string().optional(),
+});
+
+type EndSessionFormValues = z.infer<typeof formSchema>;
 
 interface EndSessionFormProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (sessionId: string, healthNotes?: string) => void;
+    onSubmit: (sessionId: string, healthNotes: string, treatment: { description: string, charges: number }) => void;
     session: Session;
     patient?: Patient;
 }
 
 export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patient }: EndSessionFormProps) {
-    const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
-    const [selectedQuestionnaireId, setSelectedQuestionnaireId] = useState<string | null>(null);
+    const [treatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
+    
+    const activeTreatmentPlan = useMemo(() => {
+        if (!patient) return null;
+        const patientPlans = treatmentPlans.filter(tp => tp.patientId === patient.id);
+        return patientPlans.find(tp => tp.isActive) || patientPlans[0] || null;
+    }, [treatmentPlans, patient]);
 
-    const activeQuestionnaire = useMemo(() => {
-        return questionnaires.find(q => q.id === selectedQuestionnaireId) || null;
-    }, [questionnaires, selectedQuestionnaireId]);
-
-    const formSchema = useMemo(() => {
-        if (!activeQuestionnaire) {
-            return z.object({});
-        }
-
-        const schemaShape = activeQuestionnaire.questions.reduce((acc, q) => {
-            let fieldSchema;
-            switch (q.type) {
-                case 'slider':
-                    fieldSchema = z.array(z.number()).length(1, { message: 'Please select a value.'});
-                    break;
-                case 'text':
-                default:
-                    fieldSchema = z.string().min(1, { message: `${q.label} is required.` });
-                    break;
-            }
-            return { ...acc, [q.id]: fieldSchema };
-        }, {} as Record<string, any>);
-        
-        return z.object(schemaShape);
-
-    }, [activeQuestionnaire]);
-
-    const form = useForm({
+    const form = useForm<EndSessionFormValues>({
         resolver: zodResolver(formSchema),
+        defaultValues: {
+            consultation: "",
+            therapy: "",
+            treatmentDescription: "",
+            treatmentCharges: 0,
+            experiments: "",
+            medicalConditions: "",
+        }
     });
 
     useEffect(() => {
         if (isOpen) {
-            // Reset selection when modal opens
-            setSelectedQuestionnaireId(null);
-            form.reset({});
+            form.reset();
         }
     }, [isOpen, form]);
 
-     useEffect(() => {
-        if (activeQuestionnaire) {
-            let defaultValues = {};
-            try {
-                if (session.healthNotes) {
-                    defaultValues = JSON.parse(session.healthNotes);
-                }
-            } catch (e) {
-                console.warn("Could not parse healthNotes from session", e);
+    const handleFormSubmit = (values: EndSessionFormValues) => {
+        const healthNotes = JSON.stringify({
+            consultation: values.consultation,
+            therapy: values.therapy,
+            experiments: values.experiments,
+            medicalConditions: values.medicalConditions,
+            treatment: {
+                description: values.treatmentDescription,
+                charges: values.treatmentCharges,
             }
-            
-            const initialValues = activeQuestionnaire.questions.reduce((acc, q) => {
-                const existingValue = (defaultValues as any)[q.id];
-                if (existingValue) {
-                    return { ...acc, [q.id]: existingValue };
-                }
-
-                switch (q.type) {
-                    case 'slider':
-                        return { ...acc, [q.id]: [q.min ?? 0] };
-                    case 'text':
-                    default:
-                        return { ...acc, [q.id]: '' };
-                }
-            }, {});
-            form.reset(initialValues);
-        }
-    }, [session, form, activeQuestionnaire]);
-
-    const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
-        const notes = JSON.stringify({
-            questionnaireId: selectedQuestionnaireId,
-            answers: values
         });
-        onSubmit(session.id, notes);
+        
+        const newTreatment = {
+            description: values.treatmentDescription,
+            charges: values.treatmentCharges,
+        };
+
+        onSubmit(session.id, healthNotes, newTreatment);
     }
     
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Complete Session</DialogTitle>
                     <DialogDescription>
-                        Fill out the questionnaire for {patient?.name}'s session before completing it.
+                        Fill out the clinical notes for {patient?.name}'s session before completing it. 
+                        The treatment will be added to the plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span>
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="flex-1 -mr-6 pr-6">
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>Select a Questionnaire</Label>
-                        <Select onValueChange={setSelectedQuestionnaireId} value={selectedQuestionnaireId || ""}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Choose a form..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {questionnaires.map(q => (
-                                    <SelectItem key={q.id} value={q.id}>{q.title}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {activeQuestionnaire && (
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 pt-4 border-t">
-                                {activeQuestionnaire.questions.map(q => (
+                  <Form {...form}>
+                      <form onSubmit={form.handleSubmit(handleFormSubmit)} id="end-session-form" className="space-y-4 py-4">
+                          <FormField
+                              control={form.control}
+                              name="consultation"
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel>Consultation Notes</FormLabel>
+                                      <FormControl>
+                                          <Textarea placeholder="Details about the consultation..." {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                           <FormField
+                              control={form.control}
+                              name="therapy"
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel>Therapy Notes</FormLabel>
+                                      <FormControl>
+                                          <Textarea placeholder="Details about the therapy provided..." {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                          <div className="pt-4 mt-4 border-t">
+                             <h3 className="text-lg font-semibold mb-2">Treatment Information</h3>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <FormField
-                                      key={q.id}
-                                      control={form.control}
-                                      name={q.id}
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>{q.label}</FormLabel>
-                                              <FormControl>
-                                                  {q.type === 'slider' ? (
-                                                       <div className="flex items-center gap-4">
-                                                          <Slider
-                                                              min={q.min}
-                                                              max={q.max}
-                                                              step={q.step}
-                                                              onValueChange={(value) => field.onChange(value)}
-                                                              value={field.value}
-                                                              defaultValue={field.value}
-                                                          />
-                                                          <span className="text-sm font-semibold w-12 text-center">{field.value?.[0]}</span>
-                                                      </div>
-                                                  ) : (
-                                                      <Textarea placeholder={q.placeholder || ''} {...field} />
-                                                  )}
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                                ))}
-                            </form>
-                        </Form>
-                    )}
-                  </div>
+                                    control={form.control}
+                                    name="treatmentDescription"
+                                    render={({ field }) => (
+                                        <FormItem className="md:col-span-2">
+                                            <FormLabel>Treatment Description</FormLabel>
+                                            <FormControl>
+                                                <Textarea placeholder="e.g., Ultrasound Therapy, IFT" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="treatmentCharges"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Charges (₹)</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                             </div>
+                          </div>
+                           <FormField
+                              control={form.control}
+                              name="experiments"
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel>Experiments (Optional)</FormLabel>
+                                      <FormControl>
+                                          <Textarea placeholder="Details about any experiments conducted..." {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                           <FormField
+                              control={form.control}
+                              name="medicalConditions"
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel>Medical Conditions (Optional)</FormLabel>
+                                      <FormControl>
+                                          <Textarea placeholder="Note any relevant medical conditions..." {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                      </form>
+                  </Form>
                 </ScrollArea>
                 <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end w-full pt-4 mt-auto">
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button type="button" onClick={form.handleSubmit(handleFormSubmit)} disabled={!activeQuestionnaire}>Confirm & Complete</Button>
+                    <Button type="submit" form="end-session-form" disabled={!activeTreatmentPlan}>
+                        {activeTreatmentPlan ? 'Confirm & Complete' : 'No Active Plan'}
+                    </Button>
                  </DialogFooter>
             </DialogContent>
         </Dialog>

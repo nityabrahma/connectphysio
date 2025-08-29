@@ -11,7 +11,7 @@ import {
   Edit,
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
-import type { Patient, Session, Therapist } from "@/types/domain";
+import type { Patient, Session, Therapist, Treatment, TreatmentPlan } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { usePatients } from "@/hooks/use-patients";
@@ -51,6 +51,7 @@ export default function AppointmentsPage() {
   );
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
+  const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
 
   // Left sidebar visible month + selected date for main calendar
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
@@ -111,29 +112,30 @@ export default function AppointmentsPage() {
     });
   }, [centreSessions, patients]);
 
-  const handleEndSessionSubmit = (
-    sessionId: string,
-    healthNotes: string | undefined
-  ) => {
-    if (
-      !healthNotes ||
-      healthNotes.trim() === "" ||
-      healthNotes.trim() === "{}"
-    ) {
-      toast({
-        title: "Please fill out the session form to complete the session.",
-        variant: "destructive",
-      });
-      return;
+  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    
+    // Find active treatment plan for the patient
+    const patientTreatmentPlans = treatmentPlans.filter(tp => tp.patientId === session.patientId);
+    const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
+
+    if (activePlan) {
+        const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
+        const updatedPlans = treatmentPlans.map(tp => 
+            tp.id === activePlan.id 
+                ? { ...tp, treatments: [...tp.treatments, newTreatment] } 
+                : tp
+        );
+        setTreatmentPlans(updatedPlans);
+    } else {
+        toast({ title: "No active treatment plan found to add treatment to.", variant: 'destructive' });
     }
-    setSessions(
-      sessions.map((s) =>
-        s.id === sessionId ? { ...s, status: "completed", healthNotes } : s
-      )
-    );
-    toast({ title: "Session Completed" });
+
+    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
+    toast({ title: 'Session Completed' });
     setSessionToEnd(null);
-  };
+  }
 
   const onNavigate = (date: Date) => {
     setSelectedDate(date);

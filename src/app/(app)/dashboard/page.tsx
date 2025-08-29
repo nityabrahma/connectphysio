@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut } from "lucide-react";
-import type { Patient, Session } from "@/types/domain";
+import type { Patient, Session, Treatment, TreatmentPlan } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ const TodaysAppointmentsList = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
+  const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
   const { patients } = usePatients();
   const [therapists] = useLocalStorage<any[]>(LS_KEYS.THERAPISTS, []);
   const router = useRouter();
@@ -56,11 +57,26 @@ const TodaysAppointmentsList = () => {
     toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
   };
   
-  const handleEndSessionSubmit = (sessionId: string, healthNotes: string | undefined) => {
-    if (!healthNotes || healthNotes.trim() === '' || healthNotes.trim() === '{}') {
-       toast({ title: 'Please fill out the session form to complete the session.', variant: 'destructive' });
-       return;
+  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    
+    // Find active treatment plan for the patient
+    const patientTreatmentPlans = treatmentPlans.filter(tp => tp.patientId === session.patientId);
+    const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
+
+    if (activePlan) {
+        const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
+        const updatedPlans = treatmentPlans.map(tp => 
+            tp.id === activePlan.id 
+                ? { ...tp, treatments: [...tp.treatments, newTreatment] } 
+                : tp
+        );
+        setTreatmentPlans(updatedPlans);
+    } else {
+        toast({ title: "No active treatment plan found to add treatment to.", variant: 'destructive' });
     }
+
     setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
     toast({ title: 'Session Completed' });
     setSessionToEnd(null);
