@@ -185,19 +185,9 @@ export function EditSessionModal({ isOpen, onOpenChange, session, onUpdate }: Ed
                                 )}
                                 {isCompleted && (
                                     <>
-                                        <FormField
-                                            control={form.control}
-                                            name="healthNotes"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Health Notes</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea placeholder="Session health notes..." {...field} rows={5} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <p className="text-sm text-muted-foreground">
+                                            Health notes are now managed in the main Consultation Notes section on the patient details page.
+                                        </p>
                                         <FormField
                                             control={form.control}
                                             name="notes"

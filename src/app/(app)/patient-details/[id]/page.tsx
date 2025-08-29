@@ -9,6 +9,7 @@ import type {
   Therapist,
   TreatmentPlan,
   Treatment,
+  Questionnaire,
 } from "@/types/domain";
 import {
   Card,
@@ -86,6 +87,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { FormattedHealthNotes } from "@/components/formatted-health-notes";
+import { ConsultationNotesForm } from "./consultation-notes-form";
 
 
 const ViewSessionModal = ({
@@ -194,78 +196,6 @@ const NewTreatmentPlanModal = ({
   );
 };
 
-const EditClinicalNotesModal = ({
-  plan,
-  isOpen,
-  onOpenChange,
-  onUpdate,
-}: {
-  plan: TreatmentPlan | null;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUpdate: (
-    planId: string,
-    updates: { history: string; examination: string }
-  ) => void;
-}) => {
-  const [history, setHistory] = useState("");
-  const [examination, setExamination] = useState("");
-
-  useEffect(() => {
-    if (plan) {
-      setHistory(plan.history || "");
-      setExamination(plan.examination || "");
-    }
-  }, [plan]);
-
-  const handleSubmit = () => {
-    if (plan) {
-      onUpdate(plan.id, { history, examination });
-    }
-  };
-
-  if (!plan) return null;
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Edit Clinical Notes</DialogTitle>
-          <DialogDescription>
-            Update notes for treatment plan: {plan.name}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="history">Current Problem / History</Label>
-            <Textarea
-              id="history"
-              value={history}
-              onChange={(e) => setHistory(e.target.value)}
-              rows={5}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="examination">Examination</Label>
-            <Textarea
-              id="examination"
-              value={examination}
-              onChange={(e) => setExamination(e.target.value)}
-              rows={5}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit}>Save Changes</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
 const SessionHistoryModal = ({
     isOpen,
     onOpenChange,
@@ -349,6 +279,7 @@ export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { getPatient, deletePatient } = usePatients();
   const patientId = params.id as string;
   const patient = getPatient(patientId);
@@ -362,13 +293,17 @@ export default function PatientDetailPage() {
     LS_KEYS.TREATMENT_PLANS,
     []
   );
+  const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
 
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
-  const [isEditNotesModalOpen, setIsEditNotesModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
+  const consultationForm = useMemo(() => {
+    return questionnaires.find(q => q.centreId === user?.centreId);
+  }, [questionnaires, user]);
+  
   const patientTreatmentPlans = useMemo(() => {
     return treatmentPlans
       .filter((tp) => tp.patientId === patientId)
@@ -432,19 +367,6 @@ export default function PatientDetailPage() {
     toast({ title: "New treatment plan started." });
   };
 
-  const handleUpdateClinicalNotes = (
-    planId: string,
-    updates: { history: string; examination: string }
-  ) => {
-    setTreatmentPlans(
-      treatmentPlans.map((plan) =>
-        plan.id === planId ? { ...plan, ...updates } : plan
-      )
-    );
-    setIsEditNotesModalOpen(false);
-    toast({ title: "Clinical notes updated." });
-  };
-
   const patientSessions = useMemo(() => {
     if (!activeTreatmentPlanId) return [];
     return sessions
@@ -455,6 +377,18 @@ export default function PatientDetailPage() {
       )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [sessions, patientId, activeTreatmentPlanId]);
+  
+  const latestSessionForPlan = useMemo(() => {
+    const completedSessions = patientSessions.filter(s => s.status === 'completed');
+    if (completedSessions.length > 0) {
+      return completedSessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+    }
+    const checkedInSessions = patientSessions.filter(s => s.status === 'checked-in');
+    if(checkedInSessions.length > 0) {
+        return checkedInSessions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+    }
+    return null;
+  }, [patientSessions]);
 
   const handleNewAppointmentClick = () => {
     if (!activeTreatmentPlanId) {
@@ -486,12 +420,12 @@ export default function PatientDetailPage() {
     setSessionToEdit(null);
   };
 
-  const todaysCheckedInSession = useMemo(() => {
-    return patientSessions.find(
-      (s) =>
-        s.status === "checked-in" && isSameDay(new Date(s.date), new Date())
+  const handleUpdateConsultationNotes = (sessionId: string, healthNotes: string) => {
+    setSessions(
+        sessions.map(s => s.id === sessionId ? { ...s, healthNotes } : s)
     );
-  }, [patientSessions]);
+    toast({ title: "Consultation notes saved." });
+  };
 
   if (!patient) {
     return (
@@ -705,44 +639,26 @@ export default function PatientDetailPage() {
             </Card>
           </div>
 
-          {/* Right Column: Clinical Notes */}
-          <div className="lg:col-span-2 flex flex-col space-y-6">
-            <Card>
-              <CardHeader className="flex flex-row justify-between items-start">
-                <div>
-                  <CardTitle>Clinical Notes</CardTitle>
-                  <CardDescription>
-                    Notes specific to the selected treatment plan.
-                  </CardDescription>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditNotesModalOpen(true)}
-                  disabled={!activeTreatmentPlan}
-                >
-                  <Edit className="mr-2 h-4 w-4" /> Edit
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="history">
-                  <TabsList>
-                    <TabsTrigger value="history">Current Problem</TabsTrigger>
-                    <TabsTrigger value="examination">Examination</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="history" className="pt-4 text-sm">
-                    <p className="p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
-                      {activeTreatmentPlan?.history || "No history provided for this plan."}
-                    </p>
-                  </TabsContent>
-                  <TabsContent value="examination" className="pt-4 space-y-4 text-sm">
-                    <p className="p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
-                      {activeTreatmentPlan?.examination || "No examination notes for this plan."}
-                    </p>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+          {/* Right Column: Consultation Notes */}
+          <div className="lg:col-span-2 flex flex-col">
+            {consultationForm ? (
+                <ConsultationNotesForm 
+                    questionnaire={consultationForm}
+                    session={latestSessionForPlan}
+                    onUpdate={handleUpdateConsultationNotes}
+                />
+            ) : (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Consultation Notes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground text-center py-8">
+                            No consultation form has been set up by the administrator.
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
           </div>
 
         </div>
@@ -765,12 +681,6 @@ export default function PatientDetailPage() {
         isOpen={isNewPlanModalOpen}
         onOpenChange={setIsNewPlanModalOpen}
         onSubmit={handleNewTreatmentPlan}
-      />
-      <EditClinicalNotesModal
-        plan={activeTreatmentPlan}
-        isOpen={isEditNotesModalOpen}
-        onOpenChange={setIsEditNotesModalOpen}
-        onUpdate={handleUpdateClinicalNotes}
       />
       {activeTreatmentPlan && (
         <SessionHistoryModal 
