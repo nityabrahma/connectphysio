@@ -11,8 +11,8 @@ import {
   Edit,
   DollarSign
 } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
-import type { Patient, Session, Therapist, Treatment, TreatmentPlan } from "@/types/domain";
+import { useMemo, useState, useEffect, useRef } from "react";
+import type { Patient, Session, Therapist, Treatment, TreatmentPlan, Centre } from "@/types/domain";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { usePatients } from "@/hooks/use-patients";
@@ -57,7 +57,7 @@ export default function AppointmentsPage() {
 
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [activeTab, setActiveTab] = useState<"day" | "week" | "month">("day");
+  const [activeTab, setActiveTab] = useState<"day" | "week">("day");
   
   useEffect(() => {
     setActiveTab(isMobile ? 'day' : 'week');

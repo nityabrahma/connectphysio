@@ -66,7 +66,6 @@ export function CalendarHeader({ currentDate, onDateChange, view, onViewChange }
       </div>
       <Tabs value={view} onValueChange={(v) => onViewChange(v as CalendarView)}>
         <TabsList>
-          <TabsTrigger value="month">Month</TabsTrigger>
           <TabsTrigger value="week">Week</TabsTrigger>
           <TabsTrigger value="day">Day</TabsTrigger>
         </TabsList>
