@@ -254,7 +254,7 @@ export default function AppointmentsPage() {
                       size="sm"
                       onClick={() => setSessionToEnd(event.resource)}
                     >
-                      <LogOut /> End Session
+                      <LogOut /> Update
                     </Button>
                   )}
                   <Button
@@ -335,3 +335,5 @@ export default function AppointmentsPage() {
     </>
   );
 }
+
+    

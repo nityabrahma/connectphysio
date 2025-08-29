@@ -707,7 +707,7 @@ export default function PatientDetailPage() {
                     )}
                     {canManageSession(todaysSession) && todaysSession.status === 'checked-in' && (
                       <Button size="sm" variant="secondary" onClick={() => setSessionToEnd(todaysSession)}>
-                        <LogOut className="mr-2 h-4 w-4" /> End Session
+                        <LogOut className="mr-2 h-4 w-4" /> Update
                       </Button>
                     )}
                   </div>
@@ -848,3 +848,5 @@ const SessionList = ({
     </div>
   );
 };
+
+    
