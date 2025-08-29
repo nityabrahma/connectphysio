@@ -20,6 +20,7 @@ export const LS_KEYS = {
   EXPERIMENTS: `${APP_NAMESPACE}:experiments`,
   MEDICAL_CONDITIONS: `${APP_NAMESPACE}:medicalConditions`,
   CENTRES: `${APP_NAMESPACE}:centres`,
+  TREATMENT_DEFS: `${APP_NAMESPACE}:treatmentDefs`,
 };
 
     

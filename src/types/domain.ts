@@ -134,6 +134,14 @@ export type Treatment = {
     charges: number;
 }
 
+export type TreatmentDef = {
+  id: ID;
+  name: string;
+  description?: string;
+  price: number;
+  centreId: ID;
+};
+
 export type TreatmentPlan = {
     id: ID;
     patientId: ID;
