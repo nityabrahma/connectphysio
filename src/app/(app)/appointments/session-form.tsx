@@ -63,6 +63,16 @@ interface SessionFormProps {
     treatmentPlans?: TreatmentPlan[];
 }
 
+const getRoundedTime = () => {
+    const now = new Date();
+    const minutes = now.getMinutes();
+    const roundedMinutes = Math.ceil(minutes / 30) * 30;
+    now.setMinutes(roundedMinutes);
+    now.setSeconds(0);
+    now.setMilliseconds(0);
+    return now;
+}
+
 export function SessionForm({ onSubmit, onDelete, session, patients, therapists, patientId, treatmentPlans }: SessionFormProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -83,8 +93,8 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
 
         let currentTime = start;
         while (currentTime < end) {
-        slots.push(format(currentTime, 'HH:mm'));
-        currentTime.setMinutes(currentTime.getMinutes() + 30);
+            slots.push(format(currentTime, 'HH:mm'));
+            currentTime.setMinutes(currentTime.getMinutes() + 30);
         }
         return slots;
     }, [currentCentre]);
@@ -95,6 +105,11 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
         const activePlan = treatmentPlans.find(tp => tp.isActive);
         return activePlan ? activePlan.id : treatmentPlans[0].id;
     }, [treatmentPlans, session]);
+    
+    const defaultStartTime = useMemo(() => {
+        if (session?.startTime) return session.startTime;
+        return format(getRoundedTime(), 'HH:mm');
+    }, [session]);
 
     const form = useForm<SessionFormValues>({
         resolver: zodResolver(formSchema),
@@ -103,8 +118,8 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
             therapistId: session?.therapistId || "",
             treatmentPlanId: defaultTreatmentPlanId,
             date: session ? new Date(session.date) : new Date(),
-            startTime: session?.startTime || format(new Date(), 'HH:mm'),
-            endTime: session?.endTime || format(new Date(Date.now() + 60 * 60 * 1000), 'HH:mm'),
+            startTime: defaultStartTime,
+            endTime: session?.endTime || format(new Date(parse(defaultStartTime, 'HH:mm', new Date()).getTime() + 60 * 60 * 1000), 'HH:mm'),
             status: session?.status || 'scheduled',
             healthNotes: session?.healthNotes || "",
             notes: session?.notes || "",
@@ -130,11 +145,17 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
     
     useEffect(() => {
         const startTimeWatcher = form.watch('startTime');
-        const parsedTime = parse(startTimeWatcher, 'HH:mm', new Date());
-        parsedTime.setHours(parsedTime.getHours() + 1);
-        const newEndTime = format(parsedTime, 'HH:mm');
-        form.setValue('endTime', newEndTime);
-    }, [form.watch('startTime'), form.setValue, form]);
+        if (startTimeWatcher) {
+            try {
+                const parsedTime = parse(startTimeWatcher, 'HH:mm', new Date());
+                parsedTime.setHours(parsedTime.getHours() + 1);
+                const newEndTime = format(parsedTime, 'HH:mm');
+                form.setValue('endTime', newEndTime);
+            } catch (e) {
+                // Ignore invalid time format during typing
+            }
+        }
+    }, [form.watch('startTime'), form.setValue, form, isEditing]);
 
     useEffect(() => {
         const subscription = form.watch((value, { name }) => {
@@ -278,7 +299,11 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                                             <SelectTrigger><SelectValue/></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {timeSlots.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
+                                            {timeSlots.map(time => (
+                                                <SelectItem key={time} value={time}>
+                                                    {format(parse(time, 'HH:mm', new Date()), 'h:mm a')}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -296,7 +321,11 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                                             <SelectTrigger><SelectValue/></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                             {timeSlots.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
+                                             {timeSlots.map(time => (
+                                                <SelectItem key={time} value={time}>
+                                                    {format(parse(time, 'HH:mm', new Date()), 'h:mm a')}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />

@@ -411,7 +411,9 @@ export default function AssignPackagePage() {
                         </SelectTrigger>
                         <SelectContent>
                           {timeSlots.map(time => (
-                            <SelectItem key={time} value={time}>{time}</SelectItem>
+                            <SelectItem key={time} value={time}>
+                               {format(parse(time, 'HH:mm', new Date()), 'h:mm a')}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
