@@ -26,18 +26,19 @@ export const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps
   const centre = centres.find(c => c.id === user?.centreId);
 
   const treatments = useMemo(() => {
+    if (!session.healthNotes) return [];
     try {
-        if (session.healthNotes) {
-            const notes = JSON.parse(session.healthNotes);
-            if (notes.treatment && notes.treatment.description && typeof notes.treatment.charges === 'number') {
-                return [{
-                    description: notes.treatment.description,
-                    charges: notes.treatment.charges
-                }];
-            }
-        }
+      const notes = JSON.parse(session.healthNotes);
+      if (notes.treatment && notes.treatment.description && typeof notes.treatment.charges === 'number') {
+        return [{
+          description: notes.treatment.description,
+          charges: notes.treatment.charges
+        }];
+      }
     } catch (e) {
-        console.error("Could not parse health notes for invoice:", e);
+      // Not a JSON string, so no structured treatment data is available.
+      // This is expected for older or manually entered notes.
+      return [];
     }
     return [];
   }, [session.healthNotes]);
@@ -111,6 +112,11 @@ export const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps
                             <TableCell className="text-right">₹{treatment.charges.toFixed(2)}</TableCell>
                         </TableRow>
                     ))}
+                     {treatments.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={2} className="text-center text-gray-500">No billable treatments recorded for this session.</TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
         </section>
