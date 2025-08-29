@@ -408,42 +408,6 @@ const SessionHistoryModal = ({
     )
 }
 
-const AddTreatmentForm = ({ plan, onAdd }: { plan: TreatmentPlan, onAdd: (planId: string, treatment: Treatment) => void }) => {
-    const [description, setDescription] = useState("");
-    const [charges, setCharges] = useState(0);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!description.trim()) return;
-        const newTreatment: Treatment = {
-            date: new Date().toISOString(),
-            description,
-            charges,
-        };
-        onAdd(plan.id, newTreatment);
-        setDescription("");
-        setCharges(0);
-    }
-    
-    return (
-        <form onSubmit={handleSubmit} className="p-4 bg-muted/50 rounded-lg space-y-3">
-            <h4 className="font-semibold">Add New Treatment Entry</h4>
-            <div className="space-y-2">
-                <Label htmlFor="treatment-desc">Description</Label>
-                <Textarea id="treatment-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="e.g. Ultrasound Therapy" required/>
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="treatment-charges">Charges (₹)</Label>
-                <Input id="treatment-charges" type="number" value={charges} onChange={e => setCharges(Number(e.target.value))} required/>
-            </div>
-            <div className="flex justify-end">
-                <Button type="submit">Add Treatment</Button>
-            </div>
-        </form>
-    )
-}
-
-
 export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -742,7 +706,7 @@ export default function PatientDetailPage() {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0 size-full">
-          {/* Left Column: Patient Details & Clinical Notes */}
+          {/* Left Column: Patient Details & Medical History */}
           <div className="lg:col-span-1 flex flex-col min-h-0 space-y-6">
              <Card>
                 <CardHeader>
@@ -785,7 +749,10 @@ export default function PatientDetailPage() {
                 </p>
               </CardContent>
             </Card>
+          </div>
 
+          {/* Right Column: Clinical Notes & Treatment */}
+          <div className="lg:col-span-2 flex flex-col min-h-0 space-y-6">
             <Card>
               <CardHeader className="flex flex-row justify-between items-start">
                 <div>
@@ -822,11 +789,7 @@ export default function PatientDetailPage() {
                 </Tabs>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Right Column: Treatment */}
-          <div className="lg:col-span-2 flex flex-col min-h-0">
-             <Card className="flex flex-col min-h-full">
+            <Card className="flex flex-col min-h-full">
               <CardHeader>
                 <CardTitle>Treatment</CardTitle>
                 <CardDescription>
@@ -853,19 +816,6 @@ export default function PatientDetailPage() {
                         )}
                     </div>
                 </ScrollArea>
-                 {todaysCheckedInSession && activeTreatmentPlan && (
-                     <div className="mt-auto pt-4 border-t">
-                        <Card className="border-primary bg-primary/5">
-                            <CardHeader>
-                                <CardTitle className="text-lg">Today's Session Checked-in</CardTitle>
-                                <CardDescription>Add a new treatment entry based on today's session.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <AddTreatmentForm plan={activeTreatmentPlan} onAdd={handleAddTreatment} />
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
               </CardContent>
             </Card>
           </div>
