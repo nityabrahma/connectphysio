@@ -220,10 +220,7 @@ const SessionHistoryModal = ({
     const upcomingSessions = useMemo(() => {
         return sessions.filter(
         (s) =>
-            (s.status === "scheduled" || s.status === "checked-in") &&
-            (isFuture(parseISO(s.date)) ||
-            format(new Date(s.date), "yyyy-MM-dd") ===
-                format(new Date(), "yyyy-MM-dd"))
+            (s.status === "scheduled" || s.status === "checked-in")
         );
     }, [sessions]);
 
@@ -820,7 +817,7 @@ const SessionList = ({
           <div className="flex-1">
             <p className="font-semibold">
               {format(new Date(session.date), "EEE, MMM d, yyyy")} &middot;{" "}
-              {session.startTime}
+              {format(parse(session.startTime, "HH:mm", new Date()), "h:mm a")}
             </p>
             <p className="text-sm text-muted-foreground">
               with {getTherapistName(session.therapistId)}
@@ -848,5 +845,3 @@ const SessionList = ({
     </div>
   );
 };
-
-    
