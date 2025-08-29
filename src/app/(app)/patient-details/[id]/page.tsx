@@ -205,24 +205,25 @@ const UpdateTreatmentModal = ({
     isOpen,
     onOpenChange,
     onSubmit,
-    currentTreatment,
+    treatmentToEdit,
 } : {
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
-    onSubmit: (description: string) => void,
-    currentTreatment?: Treatment,
+    onSubmit: (description: string, treatmentDate?: string) => void,
+    treatmentToEdit?: Treatment,
 }) => {
     const [description, setDescription] = useState("");
+    const isEditing = !!treatmentToEdit;
 
     useEffect(() => {
         if(isOpen) {
-            setDescription(currentTreatment?.description || "");
+            setDescription(treatmentToEdit?.description || "");
         }
-    }, [isOpen, currentTreatment]);
+    }, [isOpen, treatmentToEdit]);
     
     const handleSubmit = () => {
         if (description.trim()) {
-            onSubmit(description.trim());
+            onSubmit(description.trim(), treatmentToEdit?.date);
         }
     }
 
@@ -230,9 +231,9 @@ const UpdateTreatmentModal = ({
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Update Treatment</DialogTitle>
+                    <DialogTitle>{isEditing ? 'Edit Treatment' : 'Add New Treatment'}</DialogTitle>
                     <DialogDescription>
-                        Update the prescribed set of exercises for this treatment plan. This will become the new active treatment.
+                       {isEditing ? 'Update the details for this treatment entry.' : 'Add a new set of prescribed exercises for this treatment plan. This will become the new active treatment.'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
@@ -356,6 +357,7 @@ export default function PatientDetailPage() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   const [isUpdateTreatmentModalOpen, setIsUpdateTreatmentModalOpen] = useState(false);
+  const [treatmentToEdit, setTreatmentToEdit] = useState<Treatment | undefined>(undefined);
 
   const consultationForm = useMemo(() => {
     return questionnaires.find(q => q.centreId === user?.centreId);
@@ -389,9 +391,9 @@ export default function PatientDetailPage() {
     );
   }, [patientTreatmentPlans, activeTreatmentPlanId]);
   
-  const latestTreatment = useMemo(() => {
-    if (!activeTreatmentPlan || activeTreatmentPlan.treatments.length === 0) return undefined;
-    return [...activeTreatmentPlan.treatments].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+  const sortedTreatments = useMemo(() => {
+    if (!activeTreatmentPlan || activeTreatmentPlan.treatments.length === 0) return [];
+    return [...activeTreatmentPlan.treatments].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [activeTreatmentPlan]);
 
   const handleNewTreatmentPlan = (name: string) => {
@@ -424,23 +426,34 @@ export default function PatientDetailPage() {
     toast({ title: "New treatment plan started." });
   };
 
-  const handleUpdateTreatment = (description: string) => {
+  const handleUpdateTreatment = (description: string, treatmentDate?: string) => {
     if (!activeTreatmentPlan) return;
 
-    const newTreatment: Treatment = {
-      date: new Date().toISOString(),
-      description,
-      charges: 0,
-    };
+    const updatedPlans = treatmentPlans.map(tp => {
+      if (tp.id === activeTreatmentPlan.id) {
+        let newTreatments: Treatment[];
+        if (treatmentDate) { // Editing existing treatment
+          newTreatments = tp.treatments.map(t => 
+            t.date === treatmentDate ? { ...t, description } : t
+          );
+           toast({ title: "Treatment Updated" });
+        } else { // Adding new treatment
+          const newTreatment: Treatment = {
+            date: new Date().toISOString(),
+            description,
+            charges: 0,
+          };
+          newTreatments = [...tp.treatments, newTreatment];
+          toast({ title: "New Treatment Added" });
+        }
+        return { ...tp, treatments: newTreatments };
+      }
+      return tp;
+    });
 
-    const updatedPlans = treatmentPlans.map(tp => 
-      tp.id === activeTreatmentPlan.id 
-        ? { ...tp, treatments: [...tp.treatments, newTreatment] }
-        : tp
-    );
     setTreatmentPlans(updatedPlans);
     setIsUpdateTreatmentModalOpen(false);
-    toast({ title: "Treatment Updated" });
+    setTreatmentToEdit(undefined);
   };
 
   const patientSessions = useMemo(() => {
@@ -724,29 +737,34 @@ export default function PatientDetailPage() {
             <Card className="flex flex-col">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>Current Treatment</CardTitle>
+                    <CardTitle>Treatment History</CardTitle>
                     <CardDescription>
                     Plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span>
                     </CardDescription>
                 </div>
-                 <Button variant="outline" size="sm" onClick={() => setIsUpdateTreatmentModalOpen(true)}>
-                    <Replace className="mr-2 h-4 w-4"/> Update
+                 <Button variant="outline" size="sm" onClick={() => { setTreatmentToEdit(undefined); setIsUpdateTreatmentModalOpen(true); }}>
+                    <PlusCircle className="mr-2 h-4 w-4"/> New
                  </Button>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col min-h-0 pt-4 space-y-4">
                  <div className="flex-1 overflow-y-auto -mr-4 pr-4">
                     <div className="space-y-4">
-                        {latestTreatment ? (
-                             <Card>
-                                <CardHeader className="p-4">
-                                    <CardTitle className="text-base">
-                                        Updated on {format(new Date(latestTreatment.date), "MMM d, yyyy")}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-4 pt-0 text-sm">
-                                    <p className="whitespace-pre-wrap">{latestTreatment.description}</p>
-                                </CardContent>
-                            </Card>
+                        {sortedTreatments.length > 0 ? (
+                             sortedTreatments.map(treatment => (
+                                <Card key={treatment.date}>
+                                    <CardHeader className="p-4 flex-row items-start justify-between">
+                                        <CardTitle className="text-base">
+                                            Updated on {format(new Date(treatment.date), "MMM d, yyyy")}
+                                        </CardTitle>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setTreatmentToEdit(treatment); setIsUpdateTreatmentModalOpen(true); }}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent className="p-4 pt-0 text-sm">
+                                        <p className="whitespace-pre-wrap">{treatment.description}</p>
+                                    </CardContent>
+                                </Card>
+                            ))
                         ) : (
                             <p className="text-sm text-muted-foreground text-center py-8">No treatment prescribed for this plan yet.</p>
                         )}
@@ -833,7 +851,7 @@ export default function PatientDetailPage() {
         isOpen={isUpdateTreatmentModalOpen}
         onOpenChange={setIsUpdateTreatmentModalOpen}
         onSubmit={handleUpdateTreatment}
-        currentTreatment={latestTreatment}
+        treatmentToEdit={treatmentToEdit}
       />
       {activeTreatmentPlan && (
         <SessionHistoryModal 
