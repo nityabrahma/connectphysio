@@ -59,10 +59,6 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<"day" | "week">("day");
   
-  useEffect(() => {
-    setActiveTab(isMobile ? 'day' : 'week');
-  }, [isMobile]);
-
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
 
   const centreSessions = useMemo(() => {
