@@ -101,7 +101,7 @@ export default function PackagesPage() {
         <p className="text-muted-foreground">Manage therapy packages and billable treatment types.</p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <div className="flex flex-col gap-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
