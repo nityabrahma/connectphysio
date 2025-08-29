@@ -2,9 +2,9 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import type { Patient, Session, TreatmentPlan } from "@/types/domain"
+import type { Patient, Session, TreatmentPlan, Questionnaire } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -26,14 +26,19 @@ import { Textarea } from "@/components/ui/textarea"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { LS_KEYS } from "@/lib/constants"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/hooks/use-auth"
+import { Slider } from "@/components/ui/slider"
+import Link from "next/link"
+
+const answerSchema = z.object({
+  questionId: z.string(),
+  answer: z.any(),
+});
 
 const formSchema = z.object({
-    consultation: z.string().min(1, "Consultation notes are required."),
-    therapy: z.string().min(1, "Therapy notes are required."),
     treatmentDescription: z.string().min(1, "Treatment description is required."),
     treatmentCharges: z.coerce.number().min(0, "Charges cannot be negative."),
-    experiments: z.string().optional(),
-    medicalConditions: z.string().optional(),
+    answers: z.array(answerSchema),
 });
 
 type EndSessionFormValues = z.infer<typeof formSchema>;
@@ -47,7 +52,13 @@ interface EndSessionFormProps {
 }
 
 export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patient }: EndSessionFormProps) {
+    const { user } = useAuth();
     const [treatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
+    const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.TREATMENT_QUESTIONNAIRES, []);
+
+    const treatmentQuestionnaire = useMemo(() => {
+        return questionnaires.find(q => q.centreId === user?.centreId);
+    }, [questionnaires, user]);
     
     const activeTreatmentPlan = useMemo(() => {
         if (!patient) return null;
@@ -58,31 +69,35 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
     const form = useForm<EndSessionFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            consultation: "",
-            therapy: "",
             treatmentDescription: "",
             treatmentCharges: 0,
-            experiments: "",
-            medicalConditions: "",
+            answers: treatmentQuestionnaire?.questions.map(q => ({ questionId: q.id, answer: "" })) || [],
         }
+    });
+    
+     const { fields } = useFieldArray({
+        control: form.control,
+        name: "answers"
     });
 
     useEffect(() => {
         if (isOpen) {
-            form.reset();
+            form.reset({
+                treatmentDescription: "",
+                treatmentCharges: 0,
+                answers: treatmentQuestionnaire?.questions.map(q => ({ questionId: q.id, answer: "" })) || [],
+            });
         }
-    }, [isOpen, form]);
+    }, [isOpen, form, treatmentQuestionnaire]);
 
     const handleFormSubmit = (values: EndSessionFormValues) => {
         const healthNotes = JSON.stringify({
-            consultation: values.consultation,
-            therapy: values.therapy,
-            experiments: values.experiments,
-            medicalConditions: values.medicalConditions,
             treatment: {
                 description: values.treatmentDescription,
                 charges: values.treatmentCharges,
-            }
+            },
+            answers: values.answers,
+            questionnaireId: treatmentQuestionnaire?.id,
         });
         
         const newTreatment = {
@@ -107,32 +122,6 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
                             <div className="space-y-4 py-4">
-                                <FormField
-                                    control={form.control}
-                                    name="consultation"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Consultation Notes</FormLabel>
-                                            <FormControl>
-                                                <Textarea placeholder="Details about the consultation..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="therapy"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Therapy Notes</FormLabel>
-                                            <FormControl>
-                                                <Textarea placeholder="Details about the therapy provided..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                                 <div className="pt-4 mt-4 border-t">
                                     <h3 className="text-lg font-semibold mb-2">Treatment Information</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -164,32 +153,58 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                                         />
                                     </div>
                                 </div>
-                                <FormField
-                                    control={form.control}
-                                    name="experiments"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Experiments (Optional)</FormLabel>
-                                            <FormControl>
-                                                <Textarea placeholder="Details about any experiments conducted..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="medicalConditions"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Medical Conditions (Optional)</FormLabel>
-                                            <FormControl>
-                                                <Textarea placeholder="Note any relevant medical conditions..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+
+                                {treatmentQuestionnaire ? (
+                                    <div className="space-y-4 pt-4 border-t">
+                                        <h3 className="text-lg font-semibold">{treatmentQuestionnaire.title}</h3>
+                                        {fields.map((field, index) => {
+                                            const question = treatmentQuestionnaire.questions.find(q => q.id === field.questionId);
+                                            if (!question) return null;
+                                            
+                                            return (
+                                                <FormField
+                                                    key={field.id}
+                                                    control={form.control}
+                                                    name={`answers.${index}.answer`}
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>{question.label}</FormLabel>
+                                                            <FormControl>
+                                                                {question.type === 'slider' ? (
+                                                                    <div className="flex items-center gap-4">
+                                                                        <Slider
+                                                                            min={question.min || 0}
+                                                                            max={question.max || 10}
+                                                                            step={question.step || 1}
+                                                                            value={[field.value || 0]}
+                                                                            onValueChange={(value) => field.onChange(value[0])}
+                                                                        />
+                                                                        <span className="font-semibold w-12 text-center">{field.value || 0}</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <Textarea
+                                                                        placeholder={question.placeholder || ''}
+                                                                        {...field}
+                                                                    />
+                                                                )}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            )
+                                        })}
+                                    </div>
+                                ) : (
+                                    user?.role === 'admin' && (
+                                        <div className="text-center py-8 text-muted-foreground border-t mt-4">
+                                            <p>No treatment questionnaire found.</p>
+                                            <Button variant="link" asChild>
+                                                <Link href="/settings/treatment-questions">Create one in settings</Link>
+                                            </Button>
+                                        </div>
+                                    )
+                                )}
                             </div>
                             <div className="flex-col-reverse sm:flex-row sm:justify-end w-full pt-4 flex gap-2">
                                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -202,5 +217,5 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                 </div>
             </DialogContent>
         </Dialog>
-    )
+    );
 }
