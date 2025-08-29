@@ -20,8 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state"
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
+const SIDEBAR_LS_KEY = "sidebar_state"
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3.75rem"
@@ -71,15 +70,11 @@ const SidebarProvider = React.forwardRef<
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
 
-    // Read initial state from cookie
+    // Read initial state from localStorage
     const getInitialOpen = () => {
       if (typeof window === "undefined") return defaultOpen;
-      const cookieValue = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
-        ?.split("=")[1];
-      
-      return cookieValue ? cookieValue === 'true' : defaultOpen;
+      const storedValue = localStorage.getItem(SIDEBAR_LS_KEY);
+      return storedValue ? JSON.parse(storedValue) : defaultOpen;
     };
 
     // This is the internal state of the sidebar.
@@ -94,9 +89,10 @@ const SidebarProvider = React.forwardRef<
         } else {
           _setOpen(openState)
         }
-
-        // This sets the cookie to keep the sidebar state.
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        
+        if (typeof window !== "undefined") {
+            localStorage.setItem(SIDEBAR_LS_KEY, JSON.stringify(openState));
+        }
       },
       [setOpenProp, open]
     )
