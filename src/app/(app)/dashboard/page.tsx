@@ -65,7 +65,7 @@ const TodaysAppointmentsList = () => {
      return filtered.sort((a, b) => {
         const timeA = parse(`${a.date} ${a.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
         const timeB = parse(`${b.date} ${b.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
-        return timeA.getTime() - b.getTime();
+        return timeA.getTime() - timeB.getTime();
     });
   }, [sessions, user]);
 
