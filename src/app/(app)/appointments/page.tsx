@@ -304,9 +304,22 @@ export default function AppointmentsPage() {
           )}
         </div>
         
-         <div className="flex flex-col lg:flex-row flex-1 gap-6 min-h-0">
-          <Card className="w-full lg:max-w-xs">
-            <CardContent className="p-2 md:p-4 flex flex-col gap-3 justify-start items-center h-full">
+         <div className="flex flex-col flex-1 gap-6 min-h-0">
+          <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <CardContent className="p-0 md:p-0 flex-1 flex flex-col min-h-0">
+              <Calendar
+                events={events}
+                view={activeTab}
+                onViewChange={setActiveTab}
+                currentDate={selectedDate}
+                onDateChange={onNavigate}
+                eventComponent={EventComponent}
+              />
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-2 md:p-4 flex flex-col md:flex-row gap-4 justify-center items-center">
               <MiniCalendar
                 mode="single"
                 month={visibleMonth}
@@ -318,7 +331,7 @@ export default function AppointmentsPage() {
                     setActiveTab("day");
                   }
                 }}
-                className="rounded-md"
+                className="rounded-md border"
               />
               <Button
                 variant="outline"
@@ -328,23 +341,10 @@ export default function AppointmentsPage() {
                   setSelectedDate(now);
                   setActiveTab("day");
                 }}
-                className="w-full"
+                className="w-full md:w-auto"
               >
                 Today
               </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <CardContent className="p-0 md:p-0 flex-1 flex flex-col min-h-0">
-              <Calendar
-                events={events}
-                view={activeTab}
-                onViewChange={setActiveTab}
-                currentDate={selectedDate}
-                onDateChange={onNavigate}
-                eventComponent={EventComponent}
-              />
             </CardContent>
           </Card>
         </div>
