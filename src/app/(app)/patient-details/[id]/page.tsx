@@ -40,6 +40,7 @@ import {
   Clock,
   Check,
   LogOut,
+  Replace,
 } from "lucide-react";
 import {
   Select,
@@ -91,6 +92,7 @@ import { cn } from "@/lib/utils";
 import { FormattedHealthNotes } from "@/components/formatted-health-notes";
 import { ConsultationNotesForm } from "./consultation-notes-form";
 import { EndSessionForm } from "../../dashboard/end-session-form";
+import { Textarea } from "@/components/ui/textarea";
 
 
 const ViewSessionModal = ({
@@ -199,6 +201,59 @@ const NewTreatmentPlanModal = ({
   );
 };
 
+const UpdateTreatmentModal = ({
+    isOpen,
+    onOpenChange,
+    onSubmit,
+    currentTreatment,
+} : {
+    isOpen: boolean,
+    onOpenChange: (open: boolean) => void,
+    onSubmit: (description: string) => void,
+    currentTreatment?: Treatment,
+}) => {
+    const [description, setDescription] = useState("");
+
+    useEffect(() => {
+        if(isOpen) {
+            setDescription(currentTreatment?.description || "");
+        }
+    }, [isOpen, currentTreatment]);
+    
+    const handleSubmit = () => {
+        if (description.trim()) {
+            onSubmit(description.trim());
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Update Treatment</DialogTitle>
+                    <DialogDescription>
+                        Update the prescribed set of exercises for this treatment plan. This will become the new active treatment.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="treatment-description">Treatment Description</Label>
+                    <Textarea 
+                        id="treatment-description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Enter the group of exercises..."
+                        rows={5}
+                    />
+                </div>
+                 <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSubmit} disabled={!description.trim()}>Save Treatment</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 const SessionHistoryModal = ({
     isOpen,
     onOpenChange,
@@ -300,6 +355,7 @@ export default function PatientDetailPage() {
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
+  const [isUpdateTreatmentModalOpen, setIsUpdateTreatmentModalOpen] = useState(false);
 
   const consultationForm = useMemo(() => {
     return questionnaires.find(q => q.centreId === user?.centreId);
@@ -333,9 +389,9 @@ export default function PatientDetailPage() {
     );
   }, [patientTreatmentPlans, activeTreatmentPlanId]);
   
-  const sortedTreatments = useMemo(() => {
-    if (!activeTreatmentPlan) return [];
-    return [...activeTreatmentPlan.treatments].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const latestTreatment = useMemo(() => {
+    if (!activeTreatmentPlan || activeTreatmentPlan.treatments.length === 0) return undefined;
+    return [...activeTreatmentPlan.treatments].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
   }, [activeTreatmentPlan]);
 
   const handleNewTreatmentPlan = (name: string) => {
@@ -356,7 +412,7 @@ export default function PatientDetailPage() {
       treatments: [
         {
           date: new Date().toISOString(),
-          description: "Initial Treatment",
+          description: "Initial Treatment Plan - Please update.",
           charges: 0,
         },
       ],
@@ -366,6 +422,25 @@ export default function PatientDetailPage() {
     setActiveTreatmentPlanId(newPlan.id);
     setIsNewPlanModalOpen(false);
     toast({ title: "New treatment plan started." });
+  };
+
+  const handleUpdateTreatment = (description: string) => {
+    if (!activeTreatmentPlan) return;
+
+    const newTreatment: Treatment = {
+      date: new Date().toISOString(),
+      description,
+      charges: 0,
+    };
+
+    const updatedPlans = treatmentPlans.map(tp => 
+      tp.id === activeTreatmentPlan.id 
+        ? { ...tp, treatments: [...tp.treatments, newTreatment] }
+        : tp
+    );
+    setTreatmentPlans(updatedPlans);
+    setIsUpdateTreatmentModalOpen(false);
+    toast({ title: "Treatment Updated" });
   };
 
   const patientSessions = useMemo(() => {
@@ -380,8 +455,9 @@ export default function PatientDetailPage() {
   }, [sessions, patientId, activeTreatmentPlanId]);
 
   const todaysSession = useMemo(() => {
-    return patientSessions.find(s => isSameDay(new Date(s.date), new Date()));
-  }, [patientSessions]);
+    const allPatientSessions = sessions.filter(s => s.patientId === patientId);
+    return allPatientSessions.find(s => isSameDay(new Date(s.date), new Date()));
+  }, [sessions, patientId]);
   
   const latestSessionForPlan = useMemo(() => {
     if (todaysSession && (todaysSession.status === 'checked-in' || todaysSession.status === 'completed')) {
@@ -440,21 +516,17 @@ export default function PatientDetailPage() {
   
   const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
     const session = sessions.find(s => s.id === sessionId);
-    if (!session) return;
+    if (!session || !activeTreatmentPlan) return;
     
-    const patientTreatmentPlans = treatmentPlans.filter(tp => tp.patientId === session.patientId);
-    const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
-
-    if (activePlan) {
+    // Add treatment from session to the plan if description is provided
+    if (treatment.description) {
         const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
         const updatedPlans = treatmentPlans.map(tp => 
-            tp.id === activePlan.id 
+            tp.id === activeTreatmentPlan.id 
                 ? { ...tp, treatments: [...tp.treatments, newTreatment] } 
                 : tp
         );
         setTreatmentPlans(updatedPlans);
-    } else {
-        toast({ title: "No active treatment plan found to add treatment to.", variant: 'destructive' });
     }
 
     setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
@@ -650,29 +722,33 @@ export default function PatientDetailPage() {
             </Card>
 
             <Card className="flex flex-col">
-              <CardHeader>
-                <CardTitle>Treatment</CardTitle>
-                <CardDescription>
-                  Plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span>
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Current Treatment</CardTitle>
+                    <CardDescription>
+                    Plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span>
+                    </CardDescription>
+                </div>
+                 <Button variant="outline" size="sm" onClick={() => setIsUpdateTreatmentModalOpen(true)}>
+                    <Replace className="mr-2 h-4 w-4"/> Update
+                 </Button>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col min-h-0 pt-4 space-y-4">
                  <div className="flex-1 overflow-y-auto -mr-4 pr-4">
                     <div className="space-y-4">
-                        {sortedTreatments.length > 0 ? sortedTreatments.map((treatment, index) => (
-                             <Card key={treatment.date} className={cn(index > 0 && "opacity-60")}>
+                        {latestTreatment ? (
+                             <Card>
                                 <CardHeader className="p-4">
                                     <CardTitle className="text-base">
-                                        {format(new Date(treatment.date), "EEE, MMM d, yyyy")}
+                                        Updated on {format(new Date(latestTreatment.date), "MMM d, yyyy")}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 text-sm">
-                                    <p>{treatment.description}</p>
-                                    <p className="font-semibold mt-2">Charges: ₹{treatment.charges}</p>
+                                    <p className="whitespace-pre-wrap">{latestTreatment.description}</p>
                                 </CardContent>
                             </Card>
-                        )) : (
-                            <p className="text-sm text-muted-foreground text-center py-8">No treatments recorded for this plan.</p>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-8">No treatment prescribed for this plan yet.</p>
                         )}
                     </div>
                 </div>
@@ -752,6 +828,12 @@ export default function PatientDetailPage() {
         isOpen={isNewPlanModalOpen}
         onOpenChange={setIsNewPlanModalOpen}
         onSubmit={handleNewTreatmentPlan}
+      />
+      <UpdateTreatmentModal 
+        isOpen={isUpdateTreatmentModalOpen}
+        onOpenChange={setIsUpdateTreatmentModalOpen}
+        onSubmit={handleUpdateTreatment}
+        currentTreatment={latestTreatment}
       />
       {activeTreatmentPlan && (
         <SessionHistoryModal 

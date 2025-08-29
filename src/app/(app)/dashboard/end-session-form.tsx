@@ -36,7 +36,7 @@ const answerSchema = z.object({
 });
 
 const formSchema = z.object({
-    treatmentDescription: z.string().min(1, "Treatment description is required."),
+    treatmentDescription: z.string().optional(),
     answers: z.array(answerSchema),
 });
 
@@ -98,7 +98,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
         });
         
         const newTreatment = {
-            description: values.treatmentDescription,
+            description: values.treatmentDescription || "",
             charges: 0,
         };
 
@@ -127,9 +127,9 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                                             name="treatmentDescription"
                                             render={({ field }) => (
                                                 <FormItem className="md:col-span-2">
-                                                    <FormLabel>Treatment Description</FormLabel>
+                                                    <FormLabel>Treatment Description (Optional)</FormLabel>
                                                     <FormControl>
-                                                        <Textarea placeholder="e.g., Ultrasound Therapy, IFT" {...field} />
+                                                        <Textarea placeholder="e.g., Ultrasound Therapy, IFT. Leave blank to follow current plan." {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>

@@ -64,7 +64,7 @@ const TodaysAppointmentsList = () => {
     const patientTreatmentPlans = treatmentPlans.filter(tp => tp.patientId === session.patientId);
     const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
 
-    if (activePlan) {
+    if (activePlan && treatment.description) {
         const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
         const updatedPlans = treatmentPlans.map(tp => 
             tp.id === activePlan.id 
@@ -72,7 +72,7 @@ const TodaysAppointmentsList = () => {
                 : tp
         );
         setTreatmentPlans(updatedPlans);
-    } else {
+    } else if (!activePlan) {
         toast({ title: "No active treatment plan found to add treatment to.", variant: 'destructive' });
     }
 
@@ -458,5 +458,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
