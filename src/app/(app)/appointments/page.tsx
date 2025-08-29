@@ -305,19 +305,6 @@ export default function AppointmentsPage() {
         </div>
         
          <div className="flex flex-col flex-1 gap-6 min-h-0">
-          <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <CardContent className="p-0 md:p-0 flex-1 flex flex-col min-h-0">
-              <Calendar
-                events={events}
-                view={activeTab}
-                onViewChange={setActiveTab}
-                currentDate={selectedDate}
-                onDateChange={onNavigate}
-                eventComponent={EventComponent}
-              />
-            </CardContent>
-          </Card>
-          
           <Card>
             <CardContent className="p-2 md:p-4 flex flex-col md:flex-row gap-4 justify-center items-center">
               <MiniCalendar
@@ -345,6 +332,18 @@ export default function AppointmentsPage() {
               >
                 Today
               </Button>
+            </CardContent>
+          </Card>
+          <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <CardContent className="p-0 md:p-0 flex-1 flex flex-col min-h-0">
+              <Calendar
+                events={events}
+                view={activeTab}
+                onViewChange={setActiveTab}
+                currentDate={selectedDate}
+                onDateChange={onNavigate}
+                eventComponent={EventComponent}
+              />
             </CardContent>
           </Card>
         </div>
