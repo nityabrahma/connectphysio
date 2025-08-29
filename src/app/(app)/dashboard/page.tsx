@@ -7,7 +7,7 @@ import type { Patient, Session, Treatment, TreatmentPlan, Centre } from "@/types
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { LS_KEYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { isSameDay, format, parse } from "date-fns";
 import { usePatients } from "@/hooks/use-patients";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -52,6 +52,12 @@ const TodaysAppointmentsList = () => {
       setActivePrintSessionId(null);
     }
   });
+
+  useEffect(() => {
+    if (activePrintSessionId) {
+      handlePrint();
+    }
+  }, [activePrintSessionId, handlePrint]);
 
 
   const todaysSessions = useMemo(() => {
@@ -108,9 +114,6 @@ const TodaysAppointmentsList = () => {
     setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
     
     setActivePrintSessionId(session.id);
-    setTimeout(() => {
-        handlePrint();
-    }, 100);
     
     toast({ title: "Session marked as paid" });
   };
@@ -501,5 +504,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

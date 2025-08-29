@@ -392,6 +392,12 @@ export default function PatientDetailPage() {
       setActivePrintSessionId(null);
     }
   });
+  
+  useEffect(() => {
+    if (activePrintSessionId) {
+      handlePrint();
+    }
+  }, [activePrintSessionId, handlePrint]);
 
 
   const patientTreatmentPlans = useMemo(() => {
@@ -480,9 +486,6 @@ export default function PatientDetailPage() {
     setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
     
     setActivePrintSessionId(session.id);
-    setTimeout(() => {
-        handlePrint();
-    }, 100);
 
     toast({ title: "Session marked as paid" });
   };
@@ -914,5 +917,3 @@ const SessionList = ({
     </div>
   );
 };
-
-    

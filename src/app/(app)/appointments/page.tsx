@@ -82,6 +82,12 @@ export default function AppointmentsPage() {
     }
   });
 
+  useEffect(() => {
+    if (activePrintSessionId) {
+      handlePrint();
+    }
+  }, [activePrintSessionId, handlePrint]);
+
 
   const centreSessions = useMemo(() => {
     let filtered = sessions.filter(
@@ -162,9 +168,6 @@ export default function AppointmentsPage() {
     setSessions(sessions.map(s => s.id === session.id ? { ...s, status: 'paid', invoiceNumber: invoiceCounter } : s));
     
     setActivePrintSessionId(session.id);
-    setTimeout(() => {
-        handlePrint();
-    }, 100);
 
     toast({ title: "Session marked as paid" });
   };
@@ -421,7 +424,3 @@ export default function AppointmentsPage() {
     </>
   );
 }
-
-    
-
-    
