@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { PlusCircle, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function QuestionnairesPage() {
   const { user } = useAuth();
@@ -25,11 +26,11 @@ export default function QuestionnairesPage() {
   const centreQuestionnaires = questionnaires.filter(q => q.centreId === user?.centreId);
 
   const handleAddClick = () => {
-    router.push('/questionnaires/new');
+    router.push('/settings/questionnaires/new');
   };
   
   const handleEditClick = (q: Questionnaire) => {
-    router.push(`/questionnaires/edit/${q.id}`);
+    router.push(`/settings/questionnaires/edit/${q.id}`);
   }
   
   if (user?.role !== 'admin') {

@@ -1,12 +1,17 @@
+
 'use client';
 import { ThemeSwitch } from '@/components/theme-switch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LS_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function SettingsPage() {
     const { toast } = useToast();
+    const router = useRouter();
+    const { user } = useAuth();
 
     const handleResetData = () => {
         // Clear all app-related data from localStorage
@@ -38,6 +43,22 @@ export default function SettingsPage() {
                     <ThemeSwitch />
                 </CardContent>
             </Card>
+
+            {user?.role === 'admin' && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Questionnaires</CardTitle>
+                        <CardDescription>
+                            Create and manage forms for session completion.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={() => router.push('/settings/questionnaires')}>
+                            Manage Questionnaires
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
 
             <Card>
                 <CardHeader>

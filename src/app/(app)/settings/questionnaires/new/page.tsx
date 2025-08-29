@@ -27,7 +27,7 @@ export default function NewQuestionnairePage() {
     };
     setQuestionnaires([...questionnaires, newQuestionnaire]);
     toast({ title: "Questionnaire created" });
-    router.push('/questionnaires');
+    router.push('/settings/questionnaires');
   };
 
   return (

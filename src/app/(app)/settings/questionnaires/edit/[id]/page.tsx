@@ -28,13 +28,13 @@ export default function EditQuestionnairePage() {
     const updatedQuestionnaire = { ...questionnaire, ...values, updatedAt: new Date().toISOString() };
     setQuestionnaires(questionnaires.map(q => q.id === questionnaireId ? updatedQuestionnaire : q));
     toast({ title: "Questionnaire updated" });
-    router.push('/questionnaires');
+    router.push('/settings/questionnaires');
   };
   
   const handleDelete = (id: string) => {
     setQuestionnaires(questionnaires.filter(q => q.id !== id));
     toast({ title: "Questionnaire deleted", variant: "destructive" });
-    router.push('/questionnaires');
+    router.push('/settings/questionnaires');
   }
 
   if (!questionnaire) {
@@ -45,7 +45,7 @@ export default function EditQuestionnairePage() {
           The questionnaire you are looking for does not exist.
         </p>
         <Button asChild>
-          <Link href="/questionnaires">
+          <Link href="/settings/questionnaires">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Questionnaires
           </Link>

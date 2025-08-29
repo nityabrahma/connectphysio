@@ -46,7 +46,6 @@ const navItems = [
   },
   { href: "/billing", label: "Billing", icon: CreditCard, roles: ["admin"] },
   { href: "/users", label: "Users", icon: UserCog, roles: ["admin"] },
-  { href: "/questionnaires", label: "Questionnaires", icon: ClipboardList, roles: ["admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ];
 
