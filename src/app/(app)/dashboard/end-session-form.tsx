@@ -23,12 +23,11 @@ import {
 } from "@/components/ui/dialog"
 import { useEffect, useMemo } from "react"
 import { Textarea } from "@/components/ui/textarea"
-import { useLocalStorage } from "@/hooks/use-local-storage"
-import { LS_KEYS } from "@/lib/constants"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/hooks/use-auth"
 import { Slider } from "@/components/ui/slider"
 import Link from "next/link"
+import { useRealtimeDb } from "@/hooks/use-realtime-db"
 
 const answerSchema = z.object({
   questionId: z.string(),
@@ -52,16 +51,16 @@ interface EndSessionFormProps {
 
 export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patient }: EndSessionFormProps) {
     const { user } = useAuth();
-    const [treatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
-    const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.TREATMENT_QUESTIONNAIRES, []);
+    const [treatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>('treatmentPlans', {});
+    const [questionnaires] = useRealtimeDb<Record<string, Questionnaire>>('treatmentQuestionnaires', {});
 
     const treatmentQuestionnaire = useMemo(() => {
-        return questionnaires.find(q => q.centreId === user?.centreId);
+        return Object.values(questionnaires).find(q => q.centreId === user?.centreId);
     }, [questionnaires, user]);
     
     const activeTreatmentPlan = useMemo(() => {
         if (!patient) return null;
-        const patientPlans = treatmentPlans.filter(tp => tp.patientId === patient.id);
+        const patientPlans = Object.values(treatmentPlans).filter(tp => tp.patientId === patient.id);
         return patientPlans.find(tp => tp.isActive) || patientPlans[0] || null;
     }, [treatmentPlans, patient]);
 

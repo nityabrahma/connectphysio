@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut } from "lucide-react";
 import type { Patient, Session, Treatment, TreatmentPlan } from "@/types/domain";
 import { useRealtimeDb } from "@/hooks/use-realtime-db";
-import { LS_KEYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState } from "react";
 import { isSameDay, format, parse } from "date-fns";
@@ -30,10 +29,10 @@ import { generateId } from "@/lib/ids";
 const TodaysAppointmentsList = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>(LS_KEYS.SESSIONS, {});
-  const [treatmentPlans, setTreatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>(LS_KEYS.TREATMENT_PLANS, {});
+  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>('sessions', {});
+  const [treatmentPlans, setTreatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>('treatmentPlans', {});
   const { patients } = usePatients();
-  const [therapists] = useRealtimeDb<Record<string, any>>(LS_KEYS.THERAPISTS, {});
+  const [therapists] = useRealtimeDb<Record<string, any>>('therapists', {});
   const router = useRouter();
 
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
@@ -174,8 +173,8 @@ const TodaysAppointmentsList = () => {
 
 const AdminDashboard = () => {
   const { user } = useAuth();
-  const [sessions] = useRealtimeDb<Record<string, Session>>(LS_KEYS.SESSIONS, {});
-  const [packageSales] = useRealtimeDb<Record<string, any>>(LS_KEYS.PACKAGE_SALES, {});
+  const [sessions] = useRealtimeDb<Record<string, Session>>('sessions', {});
+  const [packageSales] = useRealtimeDb<Record<string, any>>('packageSales', {});
   const { patients } = usePatients();
 
   const centrePackageSales = useMemo(
@@ -257,7 +256,7 @@ const AdminDashboard = () => {
 const ReceptionistDashboard = () => {
   const { user } = useAuth();
   const [sessions] = useRealtimeDb<Record<string, Session>>(
-    LS_KEYS.SESSIONS,
+    'sessions',
     {}
   );
 
@@ -317,7 +316,7 @@ const ReceptionistDashboard = () => {
 
 const TherapistDashboard = () => {
   const { user } = useAuth();
-  const [sessions] = useRealtimeDb<Record<string, Session>>(LS_KEYS.SESSIONS, {});
+  const [sessions] = useRealtimeDb<Record<string, Session>>('sessions', {});
   const { patients } = usePatients();
 
   const therapistSessions = useMemo(() => {
