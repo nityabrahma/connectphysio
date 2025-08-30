@@ -25,10 +25,8 @@ export type User = {
 };
 
 export type AuthSession = {
-  userId: ID;
   token: string;
-  issuedAt: string;
-  expiresAt?: string;
+  userId: string; // Keep userId for quick client-side access if needed
 };
 
 export type Patient = {

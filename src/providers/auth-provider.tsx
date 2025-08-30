@@ -28,38 +28,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useRealtimeDb<Record<string, User>>('users', {});
   const [centres, setCentres] = useRealtimeDb<Record<string, Centre>>('centres', {});
-  const [session, setSession] = useLocalStorage<AuthSession | null>(LS_KEYS.AUTH_SESSION, null);
   const router = useRouter();
 
   useEffect(() => {
     const validateSession = () => {
-      if (session && users) {
-        const currentUser = users[session.userId];
-        if (currentUser) {
-          setUser(currentUser);
-        } else {
-          setSession(null);
-          setUser(null);
+      // JWT is not stored in DB, but in browser storage.
+      // This logic will be replaced by JWT validation.
+      const token = localStorage.getItem(LS_KEYS.AUTH_SESSION) || sessionStorage.getItem(LS_KEYS.AUTH_SESSION);
+      
+      if (token && users) {
+        // In a real app, you would verify the JWT against a secret key.
+        // For this demo, we'll decode it and assume it's valid if it has a userId.
+        try {
+          // A real implementation would use a library like jwt-decode on the client
+          // or verification on a server.
+          const decoded: { userId: string } = JSON.parse(atob(token.split('.')[1]));
+          const currentUser = users[decoded.userId];
+          if (currentUser) {
+            setUser(currentUser);
+          } else {
+            logout();
+          }
+        } catch (error) {
+            console.error("Failed to decode token", error);
+            logout();
         }
       } else {
         setUser(null);
       }
       setLoading(false);
     };
-    validateSession();
-  }, [session, users, setSession]);
+
+    if (Object.keys(users).length > 0) {
+        validateSession();
+    }
+  }, [users]);
   
   const login = async (email: string, password: string, rememberMe = false): Promise<boolean> => {
     const usersArray = Object.values(users || {});
     const foundUser = usersArray.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (foundUser && foundUser.passwordHash === mockHash(password)) {
-      const newSession: AuthSession = {
-        userId: foundUser.id,
-        token: generateId(),
-        issuedAt: new Date().toISOString(),
-      };
-      setSession(newSession);
+      // In a real app, this token would be generated on the server by a secure endpoint.
+      // For this demo, we are simulating JWT creation.
+      const payload = { userId: foundUser.id, iat: Math.floor(Date.now() / 1000) };
+      // Base64Url encode header, payload and a fake signature
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const encodedPayload = btoa(JSON.stringify(payload));
+      const signature = 'mock_signature'; // Fake signature for demo
+      const token = `${header}.${encodedPayload}.${signature}`;
+      
+      if (rememberMe) {
+        localStorage.setItem(LS_KEYS.AUTH_SESSION, token);
+        sessionStorage.removeItem(LS_KEYS.AUTH_SESSION);
+      } else {
+        sessionStorage.setItem(LS_KEYS.AUTH_SESSION, token);
+        localStorage.removeItem(LS_KEYS.AUTH_SESSION);
+      }
+
       setUser(foundUser);
       return true;
     }
@@ -67,7 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    setSession(null);
+    localStorage.removeItem(LS_KEYS.AUTH_SESSION);
+    sessionStorage.removeItem(LS_KEYS.AUTH_SESSION);
     setUser(null);
     router.push('/login');
   };

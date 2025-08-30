@@ -1,8 +1,11 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
 
+// NOTE: This hook is now primarily for non-Firebase, client-side state like 'seeded' flag.
+// App data should use useRealtimeDb.
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === 'undefined') {
@@ -32,7 +35,9 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      storage.setItem(key, valueToStore);
+      if (typeof window !== "undefined") {
+        storage.setItem(key, valueToStore);
+      }
     } catch (error) {
       console.error(error);
     }
