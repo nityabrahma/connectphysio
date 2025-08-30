@@ -2,18 +2,18 @@
 'use client';
 
 import { SessionForm, type SessionFormValues } from '../../session-form';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter, useParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import type { Patient, Session, Therapist } from '@/types/domain';
-import { LS_KEYS } from '@/lib/constants';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useMemo } from 'react';
 import { usePatients } from '@/hooks/use-patients';
 import Link from 'next/link';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
+import { format } from 'date-fns';
 
 export default function EditAppointmentPage() {
   const router = useRouter();
@@ -24,24 +24,30 @@ export default function EditAppointmentPage() {
   const sessionId = params.id as string;
 
   const { patients } = usePatients();
-  const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
-  const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
+  const [therapists] = useRealtimeDb<Record<string, Therapist>>('therapists', {});
+  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>('sessions', {});
 
-  const session = useMemo(() => sessions.find(s => s.id === sessionId), [sessions, sessionId]);
+  const session = useMemo(() => sessions[sessionId], [sessions, sessionId]);
 
   const centreTherapists = useMemo(() => {
-    return therapists.filter(t => t.centreId === user?.centreId);
+    return Object.values(therapists).filter(t => t.centreId === user?.centreId);
   }, [therapists, user]);
 
   const handleFormSubmit = (values: SessionFormValues) => {
     if (!session) return;
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, ...values } : s));
+    const updatedSession = { 
+        ...session, 
+        ...values,
+        date: format(values.date, "yyyy-MM-dd"),
+    };
+    setSessions({ ...sessions, [sessionId]: updatedSession });
     toast({ title: 'Appointment Updated' });
     router.push('/appointments');
   };
 
   const handleDelete = () => {
-    setSessions(sessions.filter(s => s.id !== sessionId));
+    const { [sessionId]: _, ...remainingSessions } = sessions;
+    setSessions(remainingSessions);
     toast({ title: "Session cancelled", variant: "destructive" });
     router.push('/appointments');
   };

@@ -2,19 +2,18 @@
 'use client';
 
 import { SessionForm, type SessionFormValues } from '../session-form';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import type { Patient, Session, Therapist, TreatmentPlan } from '@/types/domain';
-import { LS_KEYS } from '@/lib/constants';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { generateId } from '@/lib/ids';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { usePatients } from '@/hooks/use-patients';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
 
 
 export default function NewAppointmentPage() {
@@ -24,19 +23,19 @@ export default function NewAppointmentPage() {
   const { toast } = useToast();
 
   const { patients } = usePatients();
-  const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
-  const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
-  const [treatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
+  const [therapists] = useRealtimeDb<Record<string, Therapist>>('therapists', {});
+  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>('sessions', {});
+  const [treatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>('treatmentPlans', {});
 
   const patientId = searchParams.get('patientId');
 
   const centreTherapists = useMemo(() => {
-    return therapists.filter(t => t.centreId === user?.centreId);
+    return Object.values(therapists).filter(t => t.centreId === user?.centreId);
   }, [therapists, user]);
 
   const patientTreatmentPlans = useMemo(() => {
     if (!patientId) return [];
-    return treatmentPlans
+    return Object.values(treatmentPlans)
         .filter(tp => tp.patientId === patientId)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [treatmentPlans, patientId]);
@@ -47,8 +46,9 @@ export default function NewAppointmentPage() {
         return;
     };
     
+    const newSessionId = generateId();
     const newSession: Session = {
-        id: generateId(),
+        id: newSessionId,
         patientId: values.patientId,
         therapistId: values.therapistId,
         treatmentPlanId: values.treatmentPlanId,
@@ -60,7 +60,7 @@ export default function NewAppointmentPage() {
         createdAt: new Date().toISOString(),
     };
     
-    setSessions([...sessions, newSession]);
+    setSessions({ ...sessions, [newSessionId]: newSession });
     toast({ title: 'Appointment Scheduled' });
     router.push('/appointments');
   };
