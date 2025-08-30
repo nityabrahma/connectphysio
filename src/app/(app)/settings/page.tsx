@@ -45,7 +45,7 @@ export default function SettingsPage() {
             </Card> */}
 
             {user?.role === 'admin' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <Card>
                         <CardHeader>
                             <CardTitle>Consultation Questions</CardTitle>
@@ -69,6 +69,19 @@ export default function SettingsPage() {
                         <CardContent>
                             <Button onClick={() => router.push('/settings/treatment-questions')}>
                                 Manage Treatment Forms
+                            </Button>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Examinations</CardTitle>
+                            <CardDescription>
+                                Manage the standard examination types for your clinic.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button onClick={() => router.push('/settings/examinations')}>
+                                Manage Examinations
                             </Button>
                         </CardContent>
                     </Card>

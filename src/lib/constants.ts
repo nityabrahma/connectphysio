@@ -21,6 +21,7 @@ export const LS_KEYS = {
   MEDICAL_CONDITIONS: `${APP_NAMESPACE}:medicalConditions`,
   CENTRES: `${APP_NAMESPACE}:centres`,
   TREATMENT_DEFS: `${APP_NAMESPACE}:treatmentDefs`,
+  EXAMINATION_DEFS: `${APP_NAMESPACE}:examinationDefs`,
 };
 
     

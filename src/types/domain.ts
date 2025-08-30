@@ -142,6 +142,13 @@ export type TreatmentDef = {
   centreId: ID;
 };
 
+export type ExaminationDef = {
+  id: ID;
+  name: string;
+  description?: string;
+  centreId: ID;
+}
+
 export type TreatmentPlan = {
     id: ID;
     patientId: ID;
