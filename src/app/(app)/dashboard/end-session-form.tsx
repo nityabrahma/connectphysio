@@ -69,7 +69,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
         resolver: zodResolver(formSchema),
         defaultValues: {
             treatmentDescription: "",
-            answers: treatmentQuestionnaire?.questions.map(q => ({ questionId: q.id, answer: "" })) || [],
+            answers: [],
         }
     });
     
@@ -79,19 +79,55 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
     });
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && treatmentQuestionnaire) {
+            let defaultDescription = "";
+            let defaultAnswers = treatmentQuestionnaire.questions.map(q => ({
+                 questionId: q.id, 
+                 answer: q.type === 'slider' ? q.min || 0 : "" 
+            }));
+
+            if (session.healthNotes) {
+                try {
+                    const parsedNotes = JSON.parse(session.healthNotes);
+                    if (parsedNotes.treatment?.description) {
+                        defaultDescription = parsedNotes.treatment.description;
+                    }
+                    if (parsedNotes.answers && Array.isArray(parsedNotes.answers)) {
+                        defaultAnswers = treatmentQuestionnaire.questions.map(q => {
+                            const savedAnswer = parsedNotes.answers.find((a: any) => a.questionId === q.id);
+                            return {
+                                questionId: q.id,
+                                answer: savedAnswer ? savedAnswer.answer : (q.type === 'slider' ? q.min || 0 : ""),
+                            };
+                        });
+                    }
+                } catch (e) {
+                    // Could be plain text from an older version, ignore parsing error
+                }
+            }
+
             form.reset({
-                treatmentDescription: "",
-                answers: treatmentQuestionnaire?.questions.map(q => ({ questionId: q.id, answer: "" })) || [],
+                treatmentDescription: defaultDescription,
+                answers: defaultAnswers,
             });
         }
-    }, [isOpen, form, treatmentQuestionnaire]);
+    }, [isOpen, form, treatmentQuestionnaire, session]);
+
 
     const handleFormSubmit = (values: EndSessionFormValues) => {
+        let existingNotes = {};
+        try {
+            if (session.healthNotes) {
+                existingNotes = JSON.parse(session.healthNotes);
+            }
+        } catch (e) {
+            // It might be a plain string, we'll overwrite it with the new structured format.
+        }
+
         const healthNotes = JSON.stringify({
+            ...existingNotes,
             treatment: {
                 description: values.treatmentDescription,
-                charges: 0,
             },
             answers: values.answers,
             questionnaireId: treatmentQuestionnaire?.id,
