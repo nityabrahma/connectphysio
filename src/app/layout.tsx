@@ -40,9 +40,11 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AppProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </AppProvider>
+          <AuthProvider>
+            <AppProvider>
+              {children}
+            </AppProvider>
+          </AuthProvider>
           <Toaster />
         </ThemeProvider>
       </body>

@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useLocalStorage } from './use-local-storage';
-import { LS_KEYS } from '@/lib/constants';
+import { useRealtimeDb } from './use-realtime-db';
 import type { Patient } from '@/types/domain';
 import { generateId } from '@/lib/ids';
 import { useToast } from './use-toast';
@@ -11,20 +10,21 @@ import { useMemo } from 'react';
 
 export function usePatients() {
   const { user: currentUser } = useAuth();
-  const [patients, setPatients] = useLocalStorage<Patient[]>(LS_KEYS.PATIENTS, []);
+  const [patients, setPatients] = useRealtimeDb<Record<string, Patient>>('patients', {});
   const { toast } = useToast();
 
   const centrePatients = useMemo(() => {
-    return patients.filter(p => p.centreId === currentUser?.centreId)
+    return Object.values(patients).filter(p => p.centreId === currentUser?.centreId)
   },[patients, currentUser]);
 
   const addPatient = (patientData: Omit<Patient, 'id' | 'createdAt'>) => {
+    const newId = generateId();
     const newPatient: Patient = {
       ...patientData,
-      id: generateId(),
+      id: newId,
       createdAt: new Date().toISOString(),
     };
-    setPatients([...patients, newPatient]);
+    setPatients({ ...patients, [newId]: newPatient });
     toast({
       title: "Patient Added",
       description: `${newPatient.name} has been added to the system.`
@@ -33,21 +33,26 @@ export function usePatients() {
   };
 
   const getPatient = (id: string) => {
-    return patients.find(p => p.id === id);
+    return patients[id];
   };
 
   const updatePatient = (id: string, updates: Partial<Omit<Patient, 'id' | 'createdAt'>>) => {
-    setPatients(patients.map(p => (p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p)));
-    toast({
-      title: "Patient Updated",
-      description: `The details for ${updates.name || 'the patient'} have been updated.`
-    })
+    const patientToUpdate = patients[id];
+    if (patientToUpdate) {
+        const updatedPatient = { ...patientToUpdate, ...updates, updatedAt: new Date().toISOString() };
+        setPatients({ ...patients, [id]: updatedPatient });
+        toast({
+            title: "Patient Updated",
+            description: `The details for ${updates.name || 'the patient'} have been updated.`
+        });
+    }
   };
 
   const deletePatient = (id: string) => {
-    const patientToDelete = patients.find(p => p.id === id);
+    const patientToDelete = patients[id];
     if (patientToDelete) {
-      setPatients(patients.filter(p => p.id !== id));
+      const { [id]: _, ...remainingPatients } = patients;
+      setPatients(remainingPatients);
       toast({
         title: "Patient Deleted",
         description: `The record for ${patientToDelete.name} has been deleted.`,

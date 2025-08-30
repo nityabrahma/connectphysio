@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut } from "lucide-react";
 import type { Patient, Session, Treatment, TreatmentPlan } from "@/types/domain";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useRealtimeDb } from "@/hooks/use-realtime-db";
 import { LS_KEYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState } from "react";
@@ -25,20 +25,21 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { EndSessionForm } from "./end-session-form";
 import Link from "next/link";
+import { generateId } from "@/lib/ids";
 
 const TodaysAppointmentsList = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [sessions, setSessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
-  const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
+  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>(LS_KEYS.SESSIONS, {});
+  const [treatmentPlans, setTreatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>(LS_KEYS.TREATMENT_PLANS, {});
   const { patients } = usePatients();
-  const [therapists] = useLocalStorage<any[]>(LS_KEYS.THERAPISTS, []);
+  const [therapists] = useRealtimeDb<Record<string, any>>(LS_KEYS.THERAPISTS, {});
   const router = useRouter();
 
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   
   const todaysSessions = useMemo(() => {
-    let filtered = sessions.filter(
+    let filtered = Object.values(sessions).filter(
       (s) =>
         isSameDay(new Date(s.date), new Date()) && s.centreId === user?.centreId
     );
@@ -53,30 +54,32 @@ const TodaysAppointmentsList = () => {
   }, [sessions, user]);
 
   const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status } : s));
-    toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
+    const sessionToUpdate = sessions[sessionId];
+    if (sessionToUpdate) {
+        setSessions({ ...sessions, [sessionId]: { ...sessionToUpdate, status } });
+        toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
+    }
   };
   
   const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
-    const session = sessions.find(s => s.id === sessionId);
+    const session = sessions[sessionId];
     if (!session) return;
     
-    const patientTreatmentPlans = treatmentPlans.filter(tp => tp.patientId === session.patientId);
+    const patientTreatmentPlans = Object.values(treatmentPlans).filter(tp => tp.patientId === session.patientId);
     const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
 
     if (activePlan && treatment.description) {
         const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
-        const updatedPlans = treatmentPlans.map(tp => 
-            tp.id === activePlan.id 
-                ? { ...tp, treatments: [...tp.treatments, newTreatment] } 
-                : tp
-        );
-        setTreatmentPlans(updatedPlans);
+        const updatedPlan = {
+            ...activePlan,
+            treatments: [...(activePlan.treatments || []), newTreatment]
+        };
+        setTreatmentPlans({ ...treatmentPlans, [activePlan.id]: updatedPlan });
     } else if (!activePlan) {
         toast({ title: "No active treatment plan found to add treatment to.", variant: 'destructive' });
     }
 
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
+    setSessions({ ...sessions, [sessionId]: { ...session, status: 'completed', healthNotes } });
     toast({ title: 'Session Completed' });
     setSessionToEnd(null);
   }
@@ -84,7 +87,7 @@ const TodaysAppointmentsList = () => {
   const getPatient = (patientId: string) =>
     patients.find((p) => p.id === patientId);
   const getTherapistName = (therapistId: string) =>
-    therapists.find((t) => t.id === therapistId)?.name || "Unknown";
+    therapists[therapistId]?.name || "Unknown";
   const getInitials = (name: string) =>
     name
       .split(" ")
@@ -171,12 +174,12 @@ const TodaysAppointmentsList = () => {
 
 const AdminDashboard = () => {
   const { user } = useAuth();
-  const [sessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
-  const [packageSales] = useLocalStorage<any[]>(LS_KEYS.PACKAGE_SALES, []);
+  const [sessions] = useRealtimeDb<Record<string, Session>>(LS_KEYS.SESSIONS, {});
+  const [packageSales] = useRealtimeDb<Record<string, any>>(LS_KEYS.PACKAGE_SALES, {});
   const { patients } = usePatients();
 
   const centrePackageSales = useMemo(
-    () => packageSales.filter((p) => p.centreId === user?.centreId),
+    () => Object.values(packageSales).filter((p) => p.centreId === user?.centreId),
     [packageSales, user]
   );
   const centrePatients = useMemo(
@@ -184,7 +187,7 @@ const AdminDashboard = () => {
     [patients, user]
   );
   const centreSessions = useMemo(
-    () => sessions.filter((s) => s.centreId === user?.centreId),
+    () => Object.values(sessions).filter((s) => s.centreId === user?.centreId),
     [sessions, user]
   );
   
@@ -253,13 +256,13 @@ const AdminDashboard = () => {
 
 const ReceptionistDashboard = () => {
   const { user } = useAuth();
-  const [sessions, setSessions] = useLocalStorage<Session[]>(
+  const [sessions] = useRealtimeDb<Record<string, Session>>(
     LS_KEYS.SESSIONS,
-    []
+    {}
   );
 
   const centreSessions = useMemo(() => {
-    return sessions.filter((s) => s.centreId === user?.centreId);
+    return Object.values(sessions).filter((s) => s.centreId === user?.centreId);
   }, [sessions, user]);
 
   const todaysSessions = useMemo(() => {
@@ -314,12 +317,12 @@ const ReceptionistDashboard = () => {
 
 const TherapistDashboard = () => {
   const { user } = useAuth();
-  const [sessions] = useLocalStorage<Session[]>(LS_KEYS.SESSIONS, []);
+  const [sessions] = useRealtimeDb<Record<string, Session>>(LS_KEYS.SESSIONS, {});
   const { patients } = usePatients();
 
   const therapistSessions = useMemo(() => {
     if (!user || !user.therapistId) return [];
-    return sessions.filter((s) => s.therapistId === user.therapistId);
+    return Object.values(sessions).filter((s) => s.therapistId === user.therapistId);
   }, [sessions, user]);
 
   const todaysSessions = useMemo(() => {

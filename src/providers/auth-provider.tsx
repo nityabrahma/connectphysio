@@ -3,10 +3,11 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { LS_KEYS } from '@/lib/constants';
 import { generateId } from '@/lib/ids';
 import type { User, AuthSession, Centre } from '@/types/domain';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 // Mock password hashing for demo purposes. DO NOT use in production.
 const mockHash = (password: string) => `hashed_${password}`;
@@ -25,19 +26,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useLocalStorage<User[]>(LS_KEYS.USERS, []);
-  const [centres, setCentres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
+  const [users, setUsers] = useRealtimeDb<Record<string, User>>('users', {});
+  const [centres, setCentres] = useRealtimeDb<Record<string, Centre>>('centres', {});
   const [session, setSession] = useLocalStorage<AuthSession | null>(LS_KEYS.AUTH_SESSION, null);
   const router = useRouter();
 
   useEffect(() => {
     const validateSession = () => {
-      if (session) {
-        const currentUser = users.find(u => u.id === session.userId);
+      if (session && users) {
+        const currentUser = users[session.userId];
         if (currentUser) {
           setUser(currentUser);
         } else {
-          // Session is invalid, clear it
           setSession(null);
           setUser(null);
         }
@@ -50,14 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, users, setSession]);
   
   const login = async (email: string, password: string, rememberMe = false): Promise<boolean> => {
-    const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const usersArray = Object.values(users || {});
+    const foundUser = usersArray.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (foundUser && foundUser.passwordHash === mockHash(password)) {
       const newSession: AuthSession = {
         userId: foundUser.id,
-        token: generateId(), // Simple token for demo
+        token: generateId(),
         issuedAt: new Date().toISOString(),
-        // In a real app, set a proper expiry
       };
       setSession(newSession);
       setUser(foundUser);
@@ -73,7 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const registerAdmin = async (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'passwordHash' | 'role' | 'centreId' | 'centreName'> & { password?: string, centreName: string, openingTime: string, closingTime: string }): Promise<User | null> => {
-    const existingUser = users.find(u => u.email.toLowerCase() === userData.email.toLowerCase());
+    const usersArray = Object.values(users || {});
+    const existingUser = usersArray.find(u => u.email.toLowerCase() === userData.email.toLowerCase());
     if (existingUser) {
       throw new Error('An account with this email already exists.');
     }
@@ -89,11 +90,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         openingTime: userData.openingTime,
         closingTime: userData.closingTime,
     }
-    setCentres([...centres, newCentre]);
+    setCentres({ ...centres, [newCentreId]: newCentre });
     
+    const newUserId = generateId();
     const newUser: User = {
       ...userData,
-      id: generateId(),
+      id: newUserId,
       role: 'admin',
       centreId: newCentreId,
       centreName: userData.centreName,
@@ -105,14 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // @ts-ignore - password is not a valid property on User
     delete newUser.password;
 
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
+    setUsers({ ...users, [newUserId]: newUser });
     
     return newUser;
   };
 
   const updateUser = (userId: string, updates: Partial<Omit<User, 'password' | 'passwordHash'> & { password?: string }>) => {
-    const userToUpdate = users.find(u => u.id === userId);
+    const userToUpdate = users[userId];
     if (!userToUpdate) return;
   
     const updatedUser = { ...userToUpdate, ...updates, updatedAt: new Date().toISOString() };
@@ -123,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // @ts-ignore
     delete updatedUser.password;
     
-    setUsers(users.map(u => (u.id === userId ? updatedUser : u)));
+    setUsers({ ...users, [userId]: updatedUser });
     if(user?.id === userId) {
       setUser(updatedUser);
     }
