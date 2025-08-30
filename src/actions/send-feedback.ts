@@ -1,48 +1,39 @@
 
 'use server';
 
-import nodemailer from 'nodemailer';
-
 export async function sendFeedbackEmail(formData: FormData) {
   const message = formData.get('feedback') as string;
   const page = formData.get('page') as string;
   const userEmail = formData.get('userEmail') as string;
+  const apiKey = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY;
 
-  const { SMTP_USER, SMTP_PASS, FEEDBACK_RECIPIENT_EMAIL } = process.env;
-
-  if (!SMTP_USER || !SMTP_PASS || !FEEDBACK_RECIPIENT_EMAIL) {
-    console.error('Email sending credentials are not configured in environment variables.');
-    // In production, you might not want to expose such detailed errors to the client.
+  if (!apiKey) {
+    console.error('Web3Forms API key is not configured in environment variables.');
     return { error: 'The server is not configured to send emails. Please contact support.' };
   }
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS, // Use an "App Password" for Gmail, not your regular password
+  const response = await fetch("https://api.web3forms.com/submit", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
     },
+    body: JSON.stringify({
+      access_key: apiKey,
+      subject: `New Feedback from ${userEmail}`,
+      from_name: "ConnectPhysio Feedback",
+      page: page,
+      email: userEmail,
+      message: message,
+    }),
   });
 
-  const mailOptions = {
-    from: `"ConnectPhysio Feedback" <${SMTP_USER}>`,
-    to: FEEDBACK_RECIPIENT_EMAIL,
-    subject: `New Feedback from ${userEmail}`,
-    html: `
-      <h2>New Feedback Received</h2>
-      <p><strong>From:</strong> ${userEmail}</p>
-      <p><strong>Page:</strong> ${page}</p>
-      <hr>
-      <h3>Message:</h3>
-      <p style="white-space: pre-wrap;">${message}</p>
-    `,
-  };
+  const result = await response.json();
 
-  try {
-    await transporter.sendMail(mailOptions);
+  if (result.success) {
     return { success: true };
-  } catch (error) {
-    console.error('Failed to send feedback email:', error);
+  } else {
+    console.error('Failed to send feedback email:', result.message);
     return { error: 'There was an issue sending your feedback. Please try again later.' };
   }
 }
