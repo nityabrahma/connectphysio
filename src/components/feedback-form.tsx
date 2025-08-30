@@ -18,28 +18,18 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import { generateId } from "@/lib/ids";
-
-const FEEDBACK_LS_KEY = "connectphysio:feedback";
-
-interface FeedbackSubmission {
-  id: string;
-  feedback: string;
-  page: string;
-  submittedAt: string;
-}
+import { useAuth } from "@/hooks/use-auth";
+import { sendFeedbackEmail } from "@/actions/send-feedback";
 
 export function FeedbackForm() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [feedbackSubmissions, setFeedbackSubmissions] = useLocalStorage<
-    FeedbackSubmission[]
-  >(FEEDBACK_LS_KEY, []);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (feedback.trim().length === 0) {
       toast({
@@ -49,21 +39,30 @@ export function FeedbackForm() {
       return;
     }
 
-    const newSubmission: FeedbackSubmission = {
-      id: generateId(),
-      feedback,
-      page: pathname,
-      submittedAt: new Date().toISOString(),
-    };
+    setIsLoading(true);
 
-    setFeedbackSubmissions([...feedbackSubmissions, newSubmission]);
+    const formData = new FormData();
+    formData.append("feedback", feedback);
+    formData.append("page", pathname);
+    formData.append("userEmail", user?.email || "Anonymous");
 
-    toast({
-      title: "Feedback Submitted",
-      description: "Thank you for your valuable input!",
-    });
-    setFeedback("");
-    setIsOpen(false);
+    const result = await sendFeedbackEmail(formData);
+
+    if (result?.error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to Send Feedback",
+        description: result.error,
+      });
+    } else {
+      toast({
+        title: "Feedback Submitted",
+        description: "Thank you for your valuable input! It has been sent.",
+      });
+      setFeedback("");
+      setIsOpen(false);
+    }
+    setIsLoading(false);
   };
 
   return (
@@ -89,11 +88,13 @@ export function FeedbackForm() {
             <Label htmlFor="feedback">Your Feedback</Label>
             <Textarea
               id="feedback"
+              name="feedback"
               placeholder="Tell us what you think..."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="text-xs text-muted-foreground">
@@ -102,12 +103,12 @@ export function FeedbackForm() {
         </form>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">
+            <Button type="button" variant="outline" disabled={isLoading}>
               Cancel
             </Button>
           </DialogClose>
-          <Button type="submit" form="feedback-form">
-            Submit Feedback
+          <Button type="submit" form="feedback-form" disabled={isLoading}>
+            {isLoading ? "Sending..." : "Submit Feedback"}
           </Button>
         </DialogFooter>
       </DialogContent>
