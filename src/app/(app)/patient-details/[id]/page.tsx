@@ -468,9 +468,8 @@ export default function PatientDetailPage() {
   }, [sessions, patientId, activeTreatmentPlanId]);
 
   const todaysSession = useMemo(() => {
-    const allPatientSessions = sessions.filter(s => s.patientId === patientId);
-    return allPatientSessions.find(s => isSameDay(new Date(s.date), new Date()));
-  }, [sessions, patientId]);
+    return patientSessions.find(s => isSameDay(new Date(s.date), new Date()));
+  }, [patientSessions]);
   
   const latestSessionForPlan = useMemo(() => {
     if (todaysSession && (todaysSession.status === 'checked-in' || todaysSession.status === 'completed')) {
