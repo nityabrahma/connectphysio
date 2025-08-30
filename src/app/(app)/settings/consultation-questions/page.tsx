@@ -3,19 +3,17 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import { LS_KEYS } from "@/lib/constants";
 import type { Questionnaire } from "@/types/domain";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { PlusCircle, Edit, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useRealtimeDb } from "@/hooks/use-realtime-db";
 
 export default function ConsultationQuestionsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
+  const [questionnaires] = useRealtimeDb<Record<string, Questionnaire>>('questionnaires', {});
   
   useEffect(() => {
     if (user && user.role !== 'admin') {
@@ -23,7 +21,7 @@ export default function ConsultationQuestionsPage() {
     }
   }, [user, router]);
   
-  const centreQuestionnaires = questionnaires.filter(q => q.centreId === user?.centreId);
+  const centreQuestionnaires = useMemo(() => Object.values(questionnaires).filter(q => q.centreId === user?.centreId), [questionnaires, user]);
 
   const handleAddClick = () => {
     router.push('/settings/consultation-questions/new');

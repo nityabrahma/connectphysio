@@ -4,8 +4,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { usePatients } from '@/hooks/use-patients';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { LS_KEYS } from '@/lib/constants';
 import type {
   Patient,
   PackageDef,
@@ -41,6 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
 
 
 type Frequency = "daily" | "daily_business" | "every_2_days" | "every_3_days" | "weekly";
@@ -54,17 +53,11 @@ export default function AssignPackagePage() {
   const { getPatient, updatePatient } = usePatients();
   const { toast } = useToast();
 
-  const [packages] = useLocalStorage<PackageDef[]>(LS_KEYS.PACKAGES, []);
-  const [packageSales, setPackageSales] = useLocalStorage<PackageSale[]>(
-    LS_KEYS.PACKAGE_SALES,
-    []
-  );
-  const [sessions, setSessions] = useLocalStorage<Session[]>(
-    LS_KEYS.SESSIONS,
-    []
-  );
-  const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
-  const [centres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
+  const [packages] = useRealtimeDb<Record<string, PackageDef>>('packages', {});
+  const [packageSales, setPackageSales] = useRealtimeDb<Record<string, PackageSale>>('packageSales', {});
+  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>('sessions', {});
+  const [therapists] = useRealtimeDb<Record<string, Therapist>>('therapists', {});
+  const [centres] = useRealtimeDb<Record<string, Centre>>('centres', {});
 
   const [selectedPackageId, setSelectedPackageId] = useState<string>('');
   const [notes, setNotes] = useState('');
@@ -75,8 +68,9 @@ export default function AssignPackagePage() {
   const [frequency, setFrequency] = useState<Frequency>('daily_business');
 
   const patient = getPatient(patientId);
-  const availablePackages = packages.filter((p) => p.centreId === user?.centreId);
-  const currentCentre = centres.find(c => c.id === user?.centreId);
+  const availablePackages = useMemo(() => Object.values(packages).filter((p) => p.centreId === user?.centreId), [packages, user]);
+  const currentCentre = useMemo(() => Object.values(centres).find(c => c.id === user?.centreId), [centres, user]);
+  const centreTherapists = useMemo(() => Object.values(therapists).filter(t => t.centreId === user?.centreId), [therapists, user]);
 
   const selectedPackage = availablePackages.find((p) => p.id === selectedPackageId);
 
@@ -152,9 +146,7 @@ export default function AssignPackagePage() {
     }
 
     if (patient.packageSaleId) {
-      const existingSale = packageSales.find(
-        (s) => s.id === patient.packageSaleId
-      );
+      const existingSale = packageSales[patient.packageSaleId];
       if (existingSale && existingSale.status === 'active') {
         toast({
           variant: 'destructive',
@@ -164,9 +156,10 @@ export default function AssignPackagePage() {
         return;
       }
     }
-
+    
+    const newSaleId = generateId();
     const newSale: PackageSale = {
-      id: generateId(),
+      id: newSaleId,
       patientId: patient.id,
       packageId: selectedPackage.id,
       centreId: user.centreId,
@@ -180,10 +173,7 @@ export default function AssignPackagePage() {
       status: 'active',
     };
 
-    const availableTherapists = therapists.filter(
-      (t) => t.centreId === user.centreId
-    );
-    if (availableTherapists.length === 0) {
+    if (centreTherapists.length === 0) {
       toast({
         variant: 'destructive',
         title: 'No therapists available to schedule sessions.',
@@ -194,16 +184,18 @@ export default function AssignPackagePage() {
 
     const [startHour, startMinute] = selectedTime.split(':').map(Number);
 
-    const newSessions = selectedDates.map(
+    const newSessions: Record<string, Session> = {};
+    selectedDates.forEach(
       (sessionDate, i) => {
         const assignedTherapist =
-          availableTherapists[i % availableTherapists.length];
+          centreTherapists[i % centreTherapists.length];
 
         const endTimeDate = new Date(sessionDate);
         endTimeDate.setHours(startHour, startMinute + 60);
-
+        
+        const newSessionId = generateId();
         const newSession: Session = {
-          id: generateId(),
+          id: newSessionId,
           patientId: patient.id,
           therapistId: assignedTherapist.id,
           centreId: user.centreId,
@@ -215,17 +207,17 @@ export default function AssignPackagePage() {
           createdAt: new Date().toISOString(),
           notes: i === 0 ? `Package sale notes: ${notes}` : undefined,
         };
-        return newSession;
+        newSessions[newSessionId] = newSession;
       }
     );
 
-    setSessions([...sessions, ...newSessions]);
-    setPackageSales([...packageSales, newSale]);
+    setSessions({ ...sessions, ...newSessions });
+    setPackageSales({ ...packageSales, [newSaleId]: newSale });
     updatePatient(patient.id, { packageSaleId: newSale.id });
 
     toast({
       title: 'Package Assigned',
-      description: `${selectedPackage.name} assigned to ${patient.name} and ${newSessions.length} sessions scheduled.`,
+      description: `${selectedPackage.name} assigned to ${patient.name} and ${Object.keys(newSessions).length} sessions scheduled.`,
     });
     router.push(`/patient-details/${patient.id}`);
   };

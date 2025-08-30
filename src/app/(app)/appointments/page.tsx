@@ -9,21 +9,14 @@ import {
   UserPlus,
   User,
   Edit,
-  DollarSign,
-  Calendar as CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
-import { useMemo, useState, useEffect, useRef } from "react";
-import type { Patient, Session, Therapist, Treatment, TreatmentPlan, Centre } from "@/types/domain";
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import { LS_KEYS } from "@/lib/constants";
+import { useMemo, useState } from "react";
+import type { Patient, Session, Therapist, Treatment, TreatmentPlan } from "@/types/domain";
 import { usePatients } from "@/hooks/use-patients";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Calendar as MiniCalendar } from "@/components/ui/calendar";
-import { format, parse, addDays, subDays } from "date-fns";
+import { format, parse } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,31 +34,25 @@ import {
 import type { CalendarEvent } from "@/components/big-calendar";
 import { Calendar } from "@/components/big-calendar";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
-
+import { useRealtimeDb } from "@/hooks/use-realtime-db";
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
-  const isMobile = useIsMobile();
 
-  const [sessions, setSessions] = useLocalStorage<Session[]>(
-    LS_KEYS.SESSIONS,
-    []
-  );
+  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>("sessions", {});
   const { patients } = usePatients();
-  const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
-  const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
+  const [therapists] = useRealtimeDb<Record<string, Therapist>>("therapists", {});
+  const [treatmentPlans, setTreatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>("treatmentPlans", {});
 
-  const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<"day" | "week">("day");
   
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
 
   const centreSessions = useMemo(() => {
-    let filtered = sessions.filter(
+    let filtered = Object.values(sessions).filter(
       (s) => s.centreId === user?.centreId && s.status !== "cancelled"
     );
     if (user?.role === "therapist") {
@@ -110,39 +97,35 @@ export default function AppointmentsPage() {
   }, [centreSessions, patients]);
 
   const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
-    const session = sessions.find(s => s.id === sessionId);
+    const session = sessions[sessionId];
     if (!session) return;
     
-    const patientTreatmentPlans = treatmentPlans.filter(tp => tp.patientId === session.patientId);
+    const patientTreatmentPlans = Object.values(treatmentPlans).filter(tp => tp.patientId === session.patientId);
     const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
 
-    if (activePlan) {
+    if (activePlan && treatment.description) {
         const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
-        const updatedPlans = treatmentPlans.map(tp => 
-            tp.id === activePlan.id 
-                ? { ...tp, treatments: [...tp.treatments, newTreatment] } 
-                : tp
-        );
-        setTreatmentPlans(updatedPlans);
-    } else {
+        const updatedPlan = {
+            ...activePlan,
+            treatments: [...(activePlan.treatments || []), newTreatment]
+        };
+        setTreatmentPlans({ ...treatmentPlans, [activePlan.id]: updatedPlan });
+    } else if (!activePlan) {
         toast({ title: "No active treatment plan found to add treatment to.", variant: 'destructive' });
     }
 
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
+    setSessions({ ...sessions, [sessionId]: { ...session, status: 'completed', healthNotes } });
     toast({ title: 'Session Completed' });
     setSessionToEnd(null);
   }
 
   const onNavigate = (date: Date) => {
     setSelectedDate(date);
-    setVisibleMonth(date);
   };
 
   const EventComponent = ({ event, total, index }: { event: CalendarEvent<Session>, total: number, index: number }) => {
     const patient = patients.find((p) => p.id === event.resource.patientId);
-    const therapist = therapists.find(
-      (t) => t.id === event.resource.therapistId
-    );
+    const therapist = therapists[event.resource.therapistId];
     const getInitials = (name: string) =>
       name
         .split(" ")
@@ -164,12 +147,13 @@ export default function AppointmentsPage() {
       sessionId: string,
       status: Session["status"]
     ) => {
-      setSessions(
-        sessions.map((s) => (s.id === sessionId ? { ...s, status } : s))
-      );
-      toast({
-        title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-      });
+      const sessionToUpdate = sessions[sessionId];
+      if (sessionToUpdate) {
+        setSessions({ ...sessions, [sessionId]: { ...sessionToUpdate, status }});
+        toast({
+          title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        });
+      }
     };
     
     const width = total > 1 ? `${100 / total}%` : '100%';
@@ -337,5 +321,3 @@ export default function AppointmentsPage() {
     </>
   );
 }
-
-    

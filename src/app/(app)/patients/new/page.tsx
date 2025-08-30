@@ -7,17 +7,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { LS_KEYS } from '@/lib/constants';
 import type { TreatmentPlan } from '@/types/domain';
 import { generateId } from '@/lib/ids';
 import { useToast } from '@/hooks/use-toast';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
 
 export default function NewPatientPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addPatient } = usePatients();
-  const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(LS_KEYS.TREATMENT_PLANS, []);
+  const [treatmentPlans, setTreatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>('treatmentPlans', {});
   const { toast } = useToast();
 
   const redirectToAppointment = searchParams.get('redirectToAppointment');
@@ -28,8 +27,9 @@ export default function NewPatientPage() {
     
     if (newPatient) {
       if (initialTreatmentPlanName.trim()) {
+        const newPlanId = generateId();
         const newPlan: TreatmentPlan = {
-          id: generateId(),
+          id: newPlanId,
           patientId: newPatient.id,
           name: initialTreatmentPlanName,
           createdAt: new Date().toISOString(),
@@ -38,7 +38,7 @@ export default function NewPatientPage() {
           examination: "Initial examination.",
           treatments: [],
         };
-        setTreatmentPlans([...treatmentPlans, newPlan]);
+        setTreatmentPlans({ ...treatmentPlans, [newPlanId]: newPlan });
         toast({ title: "Initial treatment plan created." });
       }
 

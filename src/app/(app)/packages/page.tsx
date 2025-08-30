@@ -4,23 +4,22 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import { LS_KEYS } from "@/lib/constants";
 import type { PackageDef, TreatmentDef } from "@/types/domain";
 import { useToast } from "@/hooks/use-toast";
 import { generateId } from "@/lib/ids";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { PlusCircle } from "lucide-react";
 import { PackageForm } from "./package-form";
 import { TreatmentForm } from "./treatment-form";
+import { useRealtimeDb } from "@/hooks/use-realtime-db";
 
 
 export default function PackagesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [packages, setPackages] = useLocalStorage<PackageDef[]>(LS_KEYS.PACKAGES, []);
-  const [treatments, setTreatments] = useLocalStorage<TreatmentDef[]>(LS_KEYS.TREATMENT_DEFS, []);
+  const [packages, setPackages] = useRealtimeDb<Record<string, PackageDef>>('packages', {});
+  const [treatments, setTreatments] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
   
   const [isPackageFormOpen, setIsPackageFormOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<PackageDef | null>(null);
@@ -28,8 +27,8 @@ export default function PackagesPage() {
   const [isTreatmentFormOpen, setIsTreatmentFormOpen] = useState(false);
   const [selectedTreatment, setSelectedTreatment] = useState<TreatmentDef | null>(null);
 
-  const centrePackages = packages.filter(p => p.centreId === user?.centreId);
-  const centreTreatments = treatments.filter(t => t.centreId === user?.centreId);
+  const centrePackages = useMemo(() => Object.values(packages).filter(p => p.centreId === user?.centreId), [packages, user]);
+  const centreTreatments = useMemo(() => Object.values(treatments).filter(t => t.centreId === user?.centreId), [treatments, user]);
 
   // Package Handlers
   const handleAddPackageClick = () => {
@@ -44,21 +43,23 @@ export default function PackagesPage() {
 
   const handlePackageFormSubmit = (values: Omit<PackageDef, 'id'>) => {
     if (selectedPackage) {
-      setPackages(packages.map(p => p.id === selectedPackage.id ? { ...p, ...values } : p));
+      setPackages({ ...packages, [selectedPackage.id]: { ...selectedPackage, ...values } });
       toast({ title: "Package updated" });
     } else {
+      const newPackageId = generateId();
       const newPackage: PackageDef = {
         ...values,
-        id: generateId(),
+        id: newPackageId,
       };
-      setPackages([...packages, newPackage]);
+      setPackages({ ...packages, [newPackageId]: newPackage });
       toast({ title: "Package created" });
     }
     setIsPackageFormOpen(false);
   };
   
   const handleDeletePackage = (packageId: string) => {
-    setPackages(packages.filter(p => p.id !== packageId));
+    const { [packageId]: _, ...remainingPackages } = packages;
+    setPackages(remainingPackages);
     toast({ title: "Package deleted", variant: "destructive" });
     setIsPackageFormOpen(false);
   }
@@ -76,18 +77,20 @@ export default function PackagesPage() {
 
   const handleTreatmentFormSubmit = (values: Omit<TreatmentDef, 'id'>) => {
     if (selectedTreatment) {
-        setTreatments(treatments.map(t => t.id === selectedTreatment.id ? { ...selectedTreatment, ...values } : t));
+        setTreatments({ ...treatments, [selectedTreatment.id]: { ...selectedTreatment, ...values } });
         toast({ title: "Treatment updated" });
     } else {
-        const newTreatment: TreatmentDef = { ...values, id: generateId() };
-        setTreatments([...treatments, newTreatment]);
+        const newTreatmentId = generateId();
+        const newTreatment: TreatmentDef = { ...values, id: newTreatmentId };
+        setTreatments({ ...treatments, [newTreatmentId]: newTreatment });
         toast({ title: "Treatment created" });
     }
     setIsTreatmentFormOpen(false);
   };
 
   const handleDeleteTreatment = (treatmentId: string) => {
-      setTreatments(treatments.filter(t => t.id !== treatmentId));
+      const { [treatmentId]: _, ...remainingTreatments } = treatments;
+      setTreatments(remainingTreatments);
       toast({ title: "Treatment deleted", variant: "destructive" });
       setIsTreatmentFormOpen(false);
   };

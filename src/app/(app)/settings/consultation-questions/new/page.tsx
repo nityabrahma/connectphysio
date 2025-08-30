@@ -6,24 +6,24 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { LS_KEYS } from '@/lib/constants';
 import type { Questionnaire } from '@/types/domain';
 import { useToast } from '@/hooks/use-toast';
 import { generateId } from '@/lib/ids';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
 
 export default function NewConsultationQuestionsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [questionnaires, setQuestionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
+  const [questionnaires, setQuestionnaires] = useRealtimeDb<Record<string, Questionnaire>>('questionnaires', {});
 
   const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
+    const newQuestionnaireId = generateId();
     const newQuestionnaire: Questionnaire = {
       ...values,
-      id: generateId(),
+      id: newQuestionnaireId,
       createdAt: new Date().toISOString(),
     };
-    setQuestionnaires([...questionnaires, newQuestionnaire]);
+    setQuestionnaires({ ...questionnaires, [newQuestionnaireId]: newQuestionnaire });
     toast({ title: "Form created" });
     router.push('/settings/consultation-questions');
   };

@@ -9,8 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useState, type FormEvent, useEffect, useMemo } from 'react';
 import type { Centre } from '@/types/domain';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { LS_KEYS } from '@/lib/constants';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
 
 // Mock password hashing for demo purposes. DO NOT use in production.
 const mockHash = (password: string) => `hashed_${password}`;
@@ -19,7 +18,7 @@ export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   
-  const [centres, setCentres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
+  const [centres, setCentres] = useRealtimeDb<Record<string, Centre>>('centres', {});
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -32,7 +31,7 @@ export default function ProfilePage() {
   const [closingTime, setClosingTime] = useState('');
 
   const currentCentre = useMemo(() => {
-    return centres.find(c => c.id === user?.centreId)
+    return user ? centres[user.centreId] : null;
   }, [centres, user]);
   
   useEffect(() => {
@@ -63,7 +62,7 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!currentCentre) return;
     
-    setCentres(centres.map(c => c.id === currentCentre.id ? { ...c, openingTime, closingTime } : c));
+    setCentres({ ...centres, [currentCentre.id]: { ...currentCentre, openingTime, closingTime } });
      toast({
       title: 'Clinic Settings Updated',
       description: 'Your clinic operating hours have been updated.',

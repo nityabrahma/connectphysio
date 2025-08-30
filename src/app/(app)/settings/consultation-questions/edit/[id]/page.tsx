@@ -7,10 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import type { Questionnaire } from '@/types/domain';
-import { LS_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
 
 export default function EditConsultationQuestionPage() {
   const router = useRouter();
@@ -19,20 +18,21 @@ export default function EditConsultationQuestionPage() {
   
   const formId = params.id as string;
 
-  const [questionnaires, setQuestionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
-  const formDef = questionnaires.find(q => q.id === formId);
+  const [questionnaires, setQuestionnaires] = useRealtimeDb<Record<string, Questionnaire>>('questionnaires', {});
+  const formDef = questionnaires[formId];
 
   const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
     if (!formDef) return;
 
     const updatedForm = { ...formDef, ...values, updatedAt: new Date().toISOString() };
-    setQuestionnaires(questionnaires.map(q => q.id === formId ? updatedForm : q));
+    setQuestionnaires({ ...questionnaires, [formId]: updatedForm });
     toast({ title: "Form updated" });
     router.push('/settings/consultation-questions');
   };
   
   const handleDelete = (id: string) => {
-    setQuestionnaires(questionnaires.filter(q => q.id !== id));
+    const { [id]: _, ...remainingForms } = questionnaires;
+    setQuestionnaires(remainingForms);
     toast({ title: "Form deleted", variant: "destructive" });
     router.push('/settings/consultation-questions');
   }

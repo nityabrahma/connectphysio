@@ -22,7 +22,6 @@ import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format, parse } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
-import { Input } from "@/components/ui/input"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,8 +35,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
-import { useLocalStorage } from "@/hooks/use-local-storage"
-import { LS_KEYS } from "@/lib/constants"
+import { useRealtimeDb } from "@/hooks/use-realtime-db"
 
 const formSchema = z.object({
   patientId: z.string().min(1, "Patient is required."),
@@ -55,7 +53,7 @@ export type SessionFormValues = z.infer<typeof formSchema>
 
 interface SessionFormProps {
     onSubmit: (values: SessionFormValues) => void;
-    onDelete?: (sessionId: string) => void;
+    onDelete?: () => void;
     session?: Session;
     patients: Patient[];
     therapists: Therapist[];
@@ -78,8 +76,8 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
     const router = useRouter();
     const isEditing = !!session;
     
-    const [centres] = useLocalStorage<Centre[]>(LS_KEYS.CENTRES, []);
-    const currentCentre = useMemo(() => centres.find(c => c.id === user?.centreId), [centres, user]);
+    const [centres] = useRealtimeDb<Record<string, Centre>>('centres', {});
+    const currentCentre = useMemo(() => Object.values(centres).find(c => c.id === user?.centreId), [centres, user]);
 
     const timeSlots = useMemo(() => {
         if (!currentCentre) return [];
@@ -129,13 +127,17 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
     useEffect(() => {
         if (patientId) {
             form.setValue('patientId', patientId);
-            const patientPlans = treatmentPlans?.filter(tp => tp.patientId === patientId) || [];
-            if (patientPlans.length > 0) {
-                 const activePlan = patientPlans.find(tp => tp.isActive) || patientPlans[0];
-                 form.setValue('treatmentPlanId', activePlan.id);
-            }
+        }
+    }, [patientId, form]);
+
+    useEffect(() => {
+        const patientPlans = treatmentPlans?.filter(tp => tp.patientId === patientId) || [];
+        if (patientPlans.length > 0) {
+            const activePlan = patientPlans.find(tp => tp.isActive) || patientPlans[0];
+            form.setValue('treatmentPlanId', activePlan.id);
         }
     }, [patientId, form, treatmentPlans]);
+
 
     useEffect(() => {
         if (!isEditing && therapists.length === 1) {
@@ -170,7 +172,6 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
     const handleFormSubmit = (values: SessionFormValues) => {
         onSubmit(values);
     }
-
 
     const canEditHealthNotes = user?.role === 'admin' || user?.role === 'therapist';
 
@@ -226,7 +227,7 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                         )}
                     />
                     
-                    {selectedPatientId && treatmentPlans && (
+                    {selectedPatientId && treatmentPlans && treatmentPlans.length > 0 && (
                          <FormField
                             control={form.control}
                             name="treatmentPlanId"
@@ -403,7 +404,7 @@ export function SessionForm({ onSubmit, onDelete, session, patients, therapists,
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(session.id)}>Delete</AlertDialogAction>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={onDelete}>Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>

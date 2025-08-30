@@ -25,9 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useLocalStorage } from "@/hooks/use-local-storage"
-import { LS_KEYS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
+import { useRealtimeDb } from "@/hooks/use-realtime-db"
 
 interface PatientCardProps {
     patient: Patient;
@@ -41,18 +40,18 @@ interface PatientCardProps {
 }
 
 export function PatientCard({ patient, onView, onEdit, onAssignPackage, onNewAppointment, onDelete, canManage, isSelecting = false }: PatientCardProps) {
-    const [packages] = useLocalStorage<PackageDef[]>(LS_KEYS.PACKAGES, []);
-    const [packageSales] = useLocalStorage<PackageSale[]>(LS_KEYS.PACKAGE_SALES, []);
+    const [packages] = useRealtimeDb<Record<string, PackageDef>>('packages', {});
+    const [packageSales] = useRealtimeDb<Record<string, PackageSale>>('packageSales', {});
 
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
 
     const getPackageName = () => {
         if (!patient.packageSaleId) return <Badge variant="secondary">None</Badge>;
         
-        const sale = packageSales.find(s => s.id === patient.packageSaleId);
+        const sale = packageSales[patient.packageSaleId];
         if (!sale) return <Badge variant="secondary">None</Badge>;
         
-        const pkg = packages.find(p => p.id === sale.packageId);
+        const pkg = packages[sale.packageId];
         if (!pkg) return <Badge variant="outline">Unknown Package</Badge>;
         
         return <Badge variant={sale.status === 'active' ? 'default' : 'secondary'}>{pkg.name}</Badge>;
@@ -120,5 +119,3 @@ export function PatientCard({ patient, onView, onEdit, onAssignPackage, onNewApp
         </div>
     )
 }
-
-    

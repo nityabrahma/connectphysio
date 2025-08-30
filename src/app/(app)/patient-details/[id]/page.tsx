@@ -1,9 +1,8 @@
 
 "use client";
 
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import { LS_KEYS } from "@/lib/constants";
-import type {
+import { useRealtimeDb } from "@/hooks/use-realtime-db";
+import {
   Patient,
   Session,
   Therapist,
@@ -20,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format, isFuture, parseISO, isSameDay, parse } from "date-fns";
+import { format, isSameDay, parse } from "date-fns";
 import {
   Mail,
   Phone,
@@ -40,7 +39,6 @@ import {
   Clock,
   Check,
   LogOut,
-  Replace,
 } from "lucide-react";
 import {
   Select,
@@ -340,16 +338,10 @@ export default function PatientDetailPage() {
   const patientId = params.id as string;
   const patient = getPatient(patientId);
 
-  const [sessions, setSessions] = useLocalStorage<Session[]>(
-    LS_KEYS.SESSIONS,
-    []
-  );
-  const [therapists] = useLocalStorage<Therapist[]>(LS_KEYS.THERAPISTS, []);
-  const [treatmentPlans, setTreatmentPlans] = useLocalStorage<TreatmentPlan[]>(
-    LS_KEYS.TREATMENT_PLANS,
-    []
-  );
-  const [questionnaires] = useLocalStorage<Questionnaire[]>(LS_KEYS.QUESTIONNAIRES, []);
+  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>("sessions", {});
+  const [therapists] = useRealtimeDb<Record<string, Therapist>>("therapists", {});
+  const [treatmentPlans, setTreatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>("treatmentPlans", {});
+  const [questionnaires] = useRealtimeDb<Record<string, Questionnaire>>("questionnaires", {});
 
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
@@ -360,11 +352,11 @@ export default function PatientDetailPage() {
   const [treatmentToEdit, setTreatmentToEdit] = useState<Treatment | undefined>(undefined);
 
   const consultationForm = useMemo(() => {
-    return questionnaires.find(q => q.centreId === user?.centreId);
+    return Object.values(questionnaires).find(q => q.centreId === user?.centreId);
   }, [questionnaires, user]);
   
   const patientTreatmentPlans = useMemo(() => {
-    return treatmentPlans
+    return Object.values(treatmentPlans)
       .filter((tp) => tp.patientId === patientId)
       .sort(
         (a, b) =>
@@ -392,19 +384,25 @@ export default function PatientDetailPage() {
   }, [patientTreatmentPlans, activeTreatmentPlanId]);
   
   const sortedTreatments = useMemo(() => {
-    if (!activeTreatmentPlan || activeTreatmentPlan.treatments.length === 0) return [];
+    if (!activeTreatmentPlan || !activeTreatmentPlan.treatments) return [];
     return [...activeTreatmentPlan.treatments].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [activeTreatmentPlan]);
 
   const handleNewTreatmentPlan = (name: string) => {
     if (!patient) return;
 
-    const updatedPlans = treatmentPlans.map((p) =>
-      p.patientId === patientId ? { ...p, isActive: false } : p
-    );
-
+    const updatedPlans: Record<string, TreatmentPlan> = {};
+    Object.entries(treatmentPlans).forEach(([id, plan]) => {
+        if (plan.patientId === patientId) {
+            updatedPlans[id] = { ...plan, isActive: false };
+        } else {
+            updatedPlans[id] = plan;
+        }
+    });
+    
+    const newPlanId = generateId();
     const newPlan: TreatmentPlan = {
-      id: generateId(),
+      id: newPlanId,
       patientId: patient.id,
       name: name,
       createdAt: new Date().toISOString(),
@@ -420,7 +418,7 @@ export default function PatientDetailPage() {
       ],
     };
 
-    setTreatmentPlans([...updatedPlans, newPlan]);
+    setTreatmentPlans({ ...updatedPlans, [newPlanId]: newPlan });
     setActiveTreatmentPlanId(newPlan.id);
     setIsNewPlanModalOpen(false);
     toast({ title: "New treatment plan started." });
@@ -429,36 +427,33 @@ export default function PatientDetailPage() {
   const handleUpdateTreatment = (description: string, treatmentDate?: string) => {
     if (!activeTreatmentPlan) return;
 
-    const updatedPlans = treatmentPlans.map(tp => {
-      if (tp.id === activeTreatmentPlan.id) {
-        let newTreatments: Treatment[];
-        if (treatmentDate) { // Editing existing treatment
-          newTreatments = tp.treatments.map(t => 
-            t.date === treatmentDate ? { ...t, description } : t
-          );
-           toast({ title: "Treatment Updated" });
-        } else { // Adding new treatment
-          const newTreatment: Treatment = {
-            date: new Date().toISOString(),
-            description,
-            charges: 0,
-          };
-          newTreatments = [...tp.treatments, newTreatment];
-          toast({ title: "New Treatment Added" });
-        }
-        return { ...tp, treatments: newTreatments };
-      }
-      return tp;
-    });
+    const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
+    let newTreatments: Treatment[];
 
-    setTreatmentPlans(updatedPlans);
+    if (treatmentDate) { // Editing existing treatment
+      newTreatments = (planToUpdate.treatments || []).map(t => 
+        t.date === treatmentDate ? { ...t, description } : t
+      );
+      toast({ title: "Treatment Updated" });
+    } else { // Adding new treatment
+      const newTreatment: Treatment = {
+        date: new Date().toISOString(),
+        description,
+        charges: 0,
+      };
+      newTreatments = [...(planToUpdate.treatments || []), newTreatment];
+      toast({ title: "New Treatment Added" });
+    }
+    
+    const updatedPlan = { ...planToUpdate, treatments: newTreatments };
+    setTreatmentPlans({ ...treatmentPlans, [activeTreatmentPlan.id]: updatedPlan });
     setIsUpdateTreatmentModalOpen(false);
     setTreatmentToEdit(undefined);
   };
 
   const patientSessions = useMemo(() => {
     if (!activeTreatmentPlanId) return [];
-    return sessions
+    return Object.values(sessions)
       .filter(
         (s) =>
           s.patientId === patientId &&
@@ -507,41 +502,40 @@ export default function PatientDetailPage() {
   };
 
   const handleUpdateSession = (updatedSession: Session) => {
-    setSessions(
-      sessions.map((s) => (s.id === updatedSession.id ? updatedSession : s))
-    );
+    setSessions({ ...sessions, [updatedSession.id]: updatedSession });
     toast({ title: "Session Updated" });
     setSessionToEdit(null);
   };
 
   const handleUpdateConsultationNotes = (sessionId: string, healthNotes: string) => {
-    setSessions(
-        sessions.map(s => s.id === sessionId ? { ...s, healthNotes } : s)
-    );
-    toast({ title: "Consultation notes saved." });
+    const sessionToUpdate = sessions[sessionId];
+    if (sessionToUpdate) {
+        setSessions({ ...sessions, [sessionId]: { ...sessionToUpdate, healthNotes } });
+        toast({ title: "Consultation notes saved." });
+    }
   };
   
   const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status } : s));
-    toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
+    const sessionToUpdate = sessions[sessionId];
+    if (sessionToUpdate) {
+        setSessions({ ...sessions, [sessionId]: { ...sessionToUpdate, status }});
+        toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
+    }
   };
   
   const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
-    const session = sessions.find(s => s.id === sessionId);
+    const session = sessions[sessionId];
     if (!session || !activeTreatmentPlan) return;
     
     // Add treatment from session to the plan if description is provided
     if (treatment.description) {
         const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
-        const updatedPlans = treatmentPlans.map(tp => 
-            tp.id === activeTreatmentPlan.id 
-                ? { ...tp, treatments: [...tp.treatments, newTreatment] } 
-                : tp
-        );
-        setTreatmentPlans(updatedPlans);
+        const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
+        const updatedPlan = { ...planToUpdate, treatments: [...(planToUpdate.treatments || []), newTreatment] };
+        setTreatmentPlans({ ...treatmentPlans, [activeTreatmentPlan.id]: updatedPlan });
     }
 
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: 'completed', healthNotes } : s));
+    setSessions({ ...sessions, [sessionId]: { ...session, status: 'completed', healthNotes } });
     toast({ title: 'Session Completed' });
     setSessionToEnd(null);
   }
@@ -565,7 +559,7 @@ export default function PatientDetailPage() {
 
   const getTherapistName = (therapistId: string) => {
     return (
-      therapists.find((t) => t.id === therapistId)?.name || "Unknown Therapist"
+      therapists[therapistId]?.name || "Unknown Therapist"
     );
   };
   
