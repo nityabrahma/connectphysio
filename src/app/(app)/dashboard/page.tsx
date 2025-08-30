@@ -146,7 +146,7 @@ const TodaysAppointmentsList = () => {
                     <Check className="mr-2 h-4 w-4" /> Check In
                   </Button>
                 )}
-                {canManageSession(session) && session.status === 'checked-in' && (
+                {canManageSession(session) && (session.status === 'checked-in' || session.status === 'completed') && (
                   <Button size="sm" variant="secondary" onClick={() => setSessionToEnd(session)}>
                     <LogOut className="mr-2 h-4 w-4" /> Update
                   </Button>

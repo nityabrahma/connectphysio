@@ -234,7 +234,7 @@ export default function AppointmentsPage() {
               </div>
             </div>
             {canManageSession(event.resource) &&
-              (event.resource.status !== "completed") && (
+              (event.resource.status !== "cancelled") && (
                 <div className="flex gap-2 w-full pt-4 border-t">
                   {event.resource.status === "scheduled" && (
                     <Button
@@ -249,7 +249,7 @@ export default function AppointmentsPage() {
                       <Check /> Check In
                     </Button>
                   )}
-                  {event.resource.status === "checked-in" && (
+                  {(event.resource.status === "checked-in" || event.resource.status === 'completed') && (
                     <Button
                       size="sm"
                       onClick={() => setSessionToEnd(event.resource)}
@@ -257,16 +257,18 @@ export default function AppointmentsPage() {
                       <LogOut /> Update
                     </Button>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="ml-auto"
-                    onClick={() =>
-                      router.push(`/appointments/edit/${event.resource.id}`)
-                    }
-                  >
-                    <Edit /> Edit
-                  </Button>
+                  {event.resource.status !== 'completed' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="ml-auto"
+                      onClick={() =>
+                        router.push(`/appointments/edit/${event.resource.id}`)
+                      }
+                    >
+                      <Edit /> Edit
+                    </Button>
+                  )}
                 </div>
               )}
           </div>

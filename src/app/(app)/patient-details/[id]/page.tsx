@@ -796,7 +796,7 @@ export default function PatientDetailPage() {
                         <Check className="mr-2 h-4 w-4" /> Check In
                       </Button>
                     )}
-                    {canManageSession(todaysSession) && todaysSession.status === 'checked-in' && (
+                    {canManageSession(todaysSession) && (todaysSession.status === 'checked-in' || todaysSession.status === 'completed') && (
                       <Button size="sm" variant="secondary" onClick={() => setSessionToEnd(todaysSession)}>
                         <LogOut className="mr-2 h-4 w-4" /> Update
                       </Button>
