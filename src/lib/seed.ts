@@ -1,3 +1,4 @@
+
 // lib/seed.ts
 import { ref, set } from 'firebase/database';
 import { db } from './firebase';
@@ -83,10 +84,10 @@ export const seedInitialData = async () => {
       ]
   }];
   
-  const treatmentQuestionnaireId = generateId();
-  const treatmentQuestionnaires: Questionnaire[] = [{
-      id: treatmentQuestionnaireId,
-      title: "Default Treatment Form",
+  const sessionQuestionnaireId = generateId();
+  const sessionQuestionnaires: Questionnaire[] = [{
+      id: sessionQuestionnaireId,
+      title: "Default Session Form",
       centreId: centre1Id,
       createdAt: new Date().toISOString(),
       questions: [
@@ -108,7 +109,7 @@ export const seedInitialData = async () => {
     treatmentPlans: treatmentPlans.reduce((acc, item) => ({ ...acc, [item.id]: item }), {}),
     sessions: sessions.reduce((acc, item) => ({ ...acc, [item.id]: item }), {}),
     questionnaires: consultationQuestionnaires.reduce((acc, item) => ({ ...acc, [item.id]: item }), {}),
-    treatmentQuestionnaires: treatmentQuestionnaires.reduce((acc, item) => ({ ...acc, [item.id]: item }), {}),
+    sessionQuestionnaires: sessionQuestionnaires.reduce((acc, item) => ({ ...acc, [item.id]: item }), {}),
     packageSales: {},
   };
   

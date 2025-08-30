@@ -61,14 +61,14 @@ export default function SettingsPage() {
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Treatment Questions</CardTitle>
+                            <CardTitle>Session Questions</CardTitle>
                             <CardDescription>
                                 Create and manage forms for specific treatments.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Button onClick={() => router.push('/settings/treatment-questions')}>
-                                Manage Treatment Forms
+                            <Button onClick={() => router.push('/settings/session-questions')}>
+                                Manage Session Forms
                             </Button>
                         </CardContent>
                     </Card>

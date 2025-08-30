@@ -53,7 +53,7 @@ const navItems = [
     roles: ["admin"],
     subItems: [
         { href: "/settings/consultation-questions", label: "Consultation Questions", roles: ["admin"] },
-        { href: "/settings/treatment-questions", label: "Treatment Questions", roles: ["admin"] },
+        { href: "/settings/session-questions", label: "Session Questions", roles: ["admin"] },
         { href: "/settings/examinations", label: "Examinations", roles: ["admin"] },
     ]
   },

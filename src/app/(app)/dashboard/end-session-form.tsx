@@ -52,9 +52,9 @@ interface EndSessionFormProps {
 export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patient }: EndSessionFormProps) {
     const { user } = useAuth();
     const [treatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>('treatmentPlans', {});
-    const [questionnaires] = useRealtimeDb<Record<string, Questionnaire>>('treatmentQuestionnaires', {});
+    const [questionnaires] = useRealtimeDb<Record<string, Questionnaire>>('sessionQuestionnaires', {});
 
-    const treatmentQuestionnaire = useMemo(() => {
+    const sessionQuestionnaire = useMemo(() => {
         return Object.values(questionnaires).find(q => q.centreId === user?.centreId);
     }, [questionnaires, user]);
     
@@ -78,9 +78,9 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
     });
 
     useEffect(() => {
-        if (isOpen && treatmentQuestionnaire) {
+        if (isOpen && sessionQuestionnaire) {
             let defaultDescription = "";
-            let defaultAnswers = treatmentQuestionnaire.questions.map(q => ({
+            let defaultAnswers = sessionQuestionnaire.questions.map(q => ({
                  questionId: q.id, 
                  answer: q.type === 'slider' ? q.min || 0 : "" 
             }));
@@ -92,7 +92,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                         defaultDescription = parsedNotes.treatment.description;
                     }
                     if (parsedNotes.answers && Array.isArray(parsedNotes.answers)) {
-                        defaultAnswers = treatmentQuestionnaire.questions.map(q => {
+                        defaultAnswers = sessionQuestionnaire.questions.map(q => {
                             const savedAnswer = parsedNotes.answers.find((a: any) => a.questionId === q.id);
                             return {
                                 questionId: q.id,
@@ -110,7 +110,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                 answers: defaultAnswers,
             });
         }
-    }, [isOpen, form, treatmentQuestionnaire, session]);
+    }, [isOpen, form, sessionQuestionnaire, session]);
 
 
     const handleFormSubmit = (values: EndSessionFormValues) => {
@@ -129,7 +129,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                 description: values.treatmentDescription,
             },
             answers: values.answers,
-            questionnaireId: treatmentQuestionnaire?.id,
+            questionnaireId: sessionQuestionnaire?.id,
         });
         
         const newTreatment = {
@@ -173,11 +173,11 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                                     </div>
                                 </div>
 
-                                {treatmentQuestionnaire ? (
+                                {sessionQuestionnaire ? (
                                     <div className="space-y-4 pt-4 border-t">
-                                        <h3 className="text-lg font-semibold">{treatmentQuestionnaire.title}</h3>
+                                        <h3 className="text-lg font-semibold">{sessionQuestionnaire.title}</h3>
                                         {fields.map((field, index) => {
-                                            const question = treatmentQuestionnaire.questions.find(q => q.id === field.questionId);
+                                            const question = sessionQuestionnaire.questions.find(q => q.id === field.questionId);
                                             if (!question) return null;
                                             
                                             return (
@@ -217,9 +217,9 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                                 ) : (
                                     user?.role === 'admin' && (
                                         <div className="text-center py-8 text-muted-foreground border-t mt-4">
-                                            <p>No treatment questionnaire found.</p>
+                                            <p>No session questionnaire found.</p>
                                             <Button variant="link" asChild>
-                                                <Link href="/settings/treatment-questions">Create one in settings</Link>
+                                                <Link href="/settings/session-questions">Create one in settings</Link>
                                             </Button>
                                         </div>
                                     )

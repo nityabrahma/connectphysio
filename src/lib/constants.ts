@@ -14,7 +14,7 @@ export const LS_KEYS = {
   THEME: `${APP_NAMESPACE}:theme`,
   SEEDED: `${APP_NAMESPACE}:seeded`,
   QUESTIONNAIRES: `${APP_NAMESPACE}:questionnaires`,
-  TREATMENT_QUESTIONNAIRES: `${APP_NAMESPACE}:treatmentQuestionnaires`,
+  SESSION_QUESTIONNAIRES: `${APP_NAMESPACE}:sessionQuestionnaires`,
   TREATMENT_PLANS: `${APP_NAMESPACE}:treatmentPlans`,
   DIAGNOSES: `${APP_NAMESPACE}:diagnoses`,
   EXPERIMENTS: `${APP_NAMESPACE}:experiments`,
@@ -23,5 +23,3 @@ export const LS_KEYS = {
   TREATMENT_DEFS: `${APP_NAMESPACE}:treatmentDefs`,
   EXAMINATION_DEFS: `${APP_NAMESPACE}:examinationDefs`,
 };
-
-    
