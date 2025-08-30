@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { generateId } from "@/lib/ids";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { PlusCircle } from "lucide-react";
+import { ArrowLeft, PlusCircle } from "lucide-react";
 import { ExaminationForm } from "./examination-form";
 import { useRouter } from "next/navigation";
 
@@ -70,9 +70,14 @@ export default function ExaminationsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Examinations</h1>
-        <p className="text-muted-foreground">Manage standard examination types for your clinic.</p>
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Examinations</h1>
+          <p className="text-muted-foreground">Manage standard examination types for your clinic.</p>
+        </div>
       </div>
       
       <Card>

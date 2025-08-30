@@ -281,7 +281,7 @@ export default function AssignPackagePage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-4 sticky top-0 py-4 z-10">
+      <div className="flex items-center gap-4 py-4">
         <Button variant="outline" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
         </Button>

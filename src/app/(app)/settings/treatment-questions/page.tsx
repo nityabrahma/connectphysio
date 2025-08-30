@@ -8,7 +8,7 @@ import { LS_KEYS } from "@/lib/constants";
 import type { Questionnaire } from "@/types/domain";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { PlusCircle, Edit } from "lucide-react";
+import { PlusCircle, Edit, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -39,9 +39,14 @@ export default function TreatmentQuestionsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Treatment Questions</h1>
-        <p className="text-muted-foreground">Create and manage forms for specific treatments.</p>
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Treatment Questions</h1>
+          <p className="text-muted-foreground">Create and manage forms for specific treatments.</p>
+        </div>
       </div>
 
       <Card>
