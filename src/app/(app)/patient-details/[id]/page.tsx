@@ -94,7 +94,7 @@ import { ConsultationNotesForm } from "./consultation-notes-form";
 import { EndSessionForm } from "../../dashboard/end-session-form";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 
 
 const ViewSessionModal = ({
@@ -217,6 +217,7 @@ const UpdateTreatmentModal = ({
     treatmentDefs: TreatmentDef[],
 }) => {
     const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>([]);
+    const [inputValue, setInputValue] = useState('');
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const isEditing = !!treatmentToEdit;
 
@@ -225,9 +226,26 @@ const UpdateTreatmentModal = ({
             const currentTreatments = treatmentToEdit?.treatments || [];
             const matchingDefs = currentTreatments.map(name => treatmentDefs.find(def => def.name === name)).filter(Boolean) as TreatmentDef[];
             setSelectedTreatments(matchingDefs);
+            setInputValue('');
         }
     }, [isOpen, treatmentToEdit, treatmentDefs]);
     
+    const filteredTreatments = useMemo(() => {
+        if (!inputValue) return [];
+        return treatmentDefs.filter(def => 
+            def.name.toLowerCase().includes(inputValue.toLowerCase()) &&
+            !selectedTreatments.find(t => t.id === def.id) // Exclude already selected
+        );
+    }, [inputValue, treatmentDefs, selectedTreatments]);
+
+    useEffect(() => {
+        if (inputValue.length > 0 && filteredTreatments.length > 0) {
+            setIsPopoverOpen(true);
+        } else {
+            setIsPopoverOpen(false);
+        }
+    }, [inputValue, filteredTreatments]);
+
     const handleSubmit = () => {
         const treatmentNames = selectedTreatments.map(t => t.name);
         if (treatmentNames.length > 0) {
@@ -236,9 +254,8 @@ const UpdateTreatmentModal = ({
     }
     
     const handleSelectTreatment = (treatmentDef: TreatmentDef) => {
-        if (!selectedTreatments.find(t => t.id === treatmentDef.id)) {
-            setSelectedTreatments(prev => [...prev, treatmentDef]);
-        }
+        setSelectedTreatments(prev => [...prev, treatmentDef]);
+        setInputValue('');
         setIsPopoverOpen(false);
     }
     
@@ -256,16 +273,19 @@ const UpdateTreatmentModal = ({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
-                    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                         <PopoverTrigger asChild>
-                           <Input placeholder="Search and add treatments..."/>
+                            <Input 
+                                placeholder="Search and add treatments..."
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                            />
                         </PopoverTrigger>
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                             <Command>
-                                <CommandInput placeholder="Search treatments..." />
                                 <CommandEmpty>No treatment found.</CommandEmpty>
                                 <CommandGroup>
-                                {treatmentDefs.map((def) => (
+                                {filteredTreatments.map((def) => (
                                     <CommandItem
                                         key={def.id}
                                         onSelect={() => handleSelectTreatment(def)}
