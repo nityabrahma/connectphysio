@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRealtimeDb } from "@/hooks/use-realtime-db";
@@ -93,9 +92,17 @@ import { FormattedHealthNotes } from "@/components/formatted-health-notes";
 import { ConsultationNotesForm } from "./consultation-notes-form";
 import { EndSessionForm } from "../../dashboard/end-session-form";
 import { Textarea } from "@/components/ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
 
 const ViewSessionModal = ({
   session,
@@ -204,228 +211,262 @@ const NewTreatmentPlanModal = ({
 };
 
 const UpdateTreatmentModal = ({
-    isOpen,
-    onOpenChange,
-    onSubmit,
-    treatmentToEdit,
-    treatmentDefs,
-} : {
-    isOpen: boolean,
-    onOpenChange: (open: boolean) => void,
-    onSubmit: (treatments: string[], charges: number, treatmentDate?: string) => void,
-    treatmentToEdit?: Treatment,
-    treatmentDefs: TreatmentDef[],
+  isOpen,
+  onOpenChange,
+  onSubmit,
+  treatmentToEdit,
+  treatmentDefs,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (
+    treatments: string[],
+    charges: number,
+    treatmentDate?: string
+  ) => void;
+  treatmentToEdit?: Treatment;
+  treatmentDefs: TreatmentDef[];
 }) => {
-    const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>([]);
-    const [inputValue, setInputValue] = useState('');
-    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-    const isEditing = !!treatmentToEdit;
-    const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>(
+    []
+  );
+  const [inputValue, setInputValue] = useState("");
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const isEditing = !!treatmentToEdit;
+  const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        if(isOpen) {
-            const currentTreatments = treatmentToEdit?.treatments || [];
-            const matchingDefs = currentTreatments.map(name => treatmentDefs.find(def => def.name === name)).filter(Boolean) as TreatmentDef[];
-            setSelectedTreatments(matchingDefs);
-            setInputValue('');
-        }
-    }, [isOpen, treatmentToEdit, treatmentDefs]);
-    
-    const filteredTreatments = useMemo(() => {
-        if (!inputValue) return [];
-        return treatmentDefs.filter(def => 
-            def.name.toLowerCase().includes(inputValue.toLowerCase()) &&
-            !selectedTreatments.find(t => t.id === def.id)
-        );
-    }, [inputValue, treatmentDefs, selectedTreatments]);
-
-    useEffect(() => {
-        if (inputValue.length > 0 && filteredTreatments.length > 0) {
-            setIsPopoverOpen(true);
-        } else {
-            setIsPopoverOpen(false);
-        }
-    }, [inputValue, filteredTreatments]);
-    
-    const totalCharges = useMemo(() => {
-        return selectedTreatments.reduce((total, t) => total + t.price, 0);
-    }, [selectedTreatments]);
-
-    const handleSubmit = () => {
-        const treatmentNames = selectedTreatments.map(t => t.name);
-        if (treatmentNames.length > 0) {
-            onSubmit(treatmentNames, totalCharges, treatmentToEdit?.date);
-        }
+  useEffect(() => {
+    if (isOpen) {
+      const currentTreatments = treatmentToEdit?.treatments || [];
+      const matchingDefs = currentTreatments
+        .map((name) => treatmentDefs.find((def) => def.name === name))
+        .filter(Boolean) as TreatmentDef[];
+      setSelectedTreatments(matchingDefs);
+      setInputValue("");
     }
-    
-    const handleSelectTreatment = (treatmentDef: TreatmentDef) => {
-        setSelectedTreatments(prev => [...prev, treatmentDef]);
-        setInputValue('');
-        setIsPopoverOpen(false);
-        inputRef.current?.focus();
-    }
-    
-    const handleRemoveTreatment = (treatmentId: string) => {
-        setSelectedTreatments(prev => prev.filter(t => t.id !== treatmentId));
-    }
+  }, [isOpen, treatmentToEdit, treatmentDefs]);
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Edit Treatment' : 'Add New Treatment'}</DialogTitle>
-                    <DialogDescription>
-                       {isEditing ? 'Update the details for this treatment entry.' : 'Select the treatments performed. This will become the new active treatment description.'}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                        <PopoverTrigger asChild>
-                            {/* This is an invisible trigger that the Popover anchors to. The Input below controls its state. */}
-                            <div ref={inputRef} className="w-full" />
-                        </PopoverTrigger>
-                        
-                        <Input 
-                            ref={inputRef}
-                            placeholder="Search and add treatments..."
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            className="w-full"
-                        />
-                        
-                        <PopoverContent 
-                            className="w-[--radix-popover-trigger-width] p-0" 
-                            align="start"
-                            onOpenAutoFocus={(e) => e.preventDefault()} // Prevent focus stealing
-                        >
-                            <Command>
-                                <CommandEmpty>No treatment found.</CommandEmpty>
-                                <CommandGroup>
-                                {filteredTreatments.map((def) => (
-                                    <CommandItem
-                                        key={def.id}
-                                        onSelect={() => handleSelectTreatment(def)}
-                                        value={def.name}
-                                        className="flex justify-between"
-                                    >
-                                     <span>{def.name}</span>
-                                     <span className="text-muted-foreground">₹{def.price}</span>
-                                    </CommandItem>
-                                ))}
-                                </CommandGroup>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+  // Modified the filtering logic to match only the starting characters of treatment names
+  // This ensures that typing "te" matches "TENS Therapy" but not words containing "t" or "s" elsewhere
+  const filteredTreatments = useMemo(() => {
+    if (!inputValue) return [];
+    return treatmentDefs.filter(
+      (def) =>
+        def.name.toLowerCase().startsWith(inputValue.toLowerCase()) &&
+        !selectedTreatments.find((t) => t.id === def.id)
+    );
+  }, [inputValue, treatmentDefs, selectedTreatments]);
 
-                    <div className="space-y-2">
-                        <Label>Selected Treatments</Label>
-                        {selectedTreatments.length > 0 ? (
-                             <div className="flex flex-col gap-2 pt-2">
-                                {selectedTreatments.map(t => (
-                                    <Badge key={t.id} variant="secondary" className="flex items-center justify-between py-1.5 px-2">
-                                        <div className="flex items-center gap-2">
-                                            <button onClick={() => handleRemoveTreatment(t.id)} className="rounded-full hover:bg-muted-foreground/20">
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                            <span>{t.name}</span>
-                                        </div>
-                                        <span>₹{t.price}</span>
-                                    </Badge>
-                                ))}
-                                <div className="flex justify-between items-center pt-2 mt-2 border-t font-semibold">
-                                    <span>Total</span>
-                                    <span>₹{totalCharges}</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-sm text-muted-foreground pt-2">No treatments selected yet.</p>
-                        )}
+  // Modified to keep popover open when input is non-empty, even if no matches are found
+  // This allows displaying the "No treatment listed" message consistently
+  useEffect(() => {
+    if (inputValue.length > 0) {
+      setIsPopoverOpen(true);
+    } else {
+      setIsPopoverOpen(false);
+    }
+  }, [inputValue]);
+
+  const totalCharges = useMemo(() => {
+    return selectedTreatments.reduce((total, t) => total + t.price, 0);
+  }, [selectedTreatments]);
+
+  const handleSubmit = () => {
+    const treatmentNames = selectedTreatments.map((t) => t.name);
+    if (treatmentNames.length > 0) {
+      onSubmit(treatmentNames, totalCharges, treatmentToEdit?.date);
+    }
+  };
+
+  const handleSelectTreatment = (treatmentDef: TreatmentDef) => {
+    setSelectedTreatments((prev) => [...prev, treatmentDef]);
+    setInputValue("");
+    setIsPopoverOpen(false);
+    inputRef.current?.focus();
+  };
+
+  const handleRemoveTreatment = (treatmentId: string) => {
+    setSelectedTreatments((prev) => prev.filter((t) => t.id !== treatmentId));
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing ? "Edit Treatment" : "Add New Treatment"}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? "Update the details for this treatment entry."
+              : "Select the treatments performed. This will become the new active treatment description."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <Input
+            ref={inputRef}
+            placeholder="Search and add treatments..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            className="w-full"
+          />
+          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+            <PopoverTrigger asChild>
+              {/* This is an invisible trigger that the Popover anchors to. The Input below controls its state. */}
+              <div ref={inputRef} className="w-full" />
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-[--radix-popover-trigger-width] p-0"
+              align="start"
+              onOpenAutoFocus={(e) => e.preventDefault()} // Prevent focus stealing
+            >
+              <Command>
+                {/* Updated message to "No treatment listed" for clarity when no matches are found */}
+                <CommandEmpty>No treatment listed.</CommandEmpty>
+                <CommandGroup>
+                  {filteredTreatments.map((def) => (
+                    <CommandItem
+                      key={def.id}
+                      onSelect={() => handleSelectTreatment(def)}
+                      value={def.name}
+                      className="flex justify-between"
+                    >
+                      <span>{def.name}</span>
+                      <span className="text-muted-foreground">
+                        ₹{def.price}
+                      </span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <div className="space-y-2">
+            <Label>Selected Treatments</Label>
+            {selectedTreatments.length > 0 ? (
+              <div className="flex flex-col gap-2 pt-2">
+                {selectedTreatments.map((t) => (
+                  <Badge
+                    key={t.id}
+                    variant="secondary"
+                    className="flex items-center justify-between py-1.5 px-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleRemoveTreatment(t.id)}
+                        className="rounded-full hover:bg-muted-foreground/20"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      <span>{t.name}</span>
                     </div>
+                    <span>₹{t.price}</span>
+                  </Badge>
+                ))}
+                <div className="flex justify-between items-center pt-2 mt-2 border-t font-semibold">
+                  <span>Total</span>
+                  <span>₹{totalCharges}</span>
                 </div>
-                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSubmit} disabled={selectedTreatments.length === 0}>Save Treatment</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground pt-2">
+                No treatments selected yet.
+              </p>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={selectedTreatments.length === 0}
+          >
+            Save Treatment
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const SessionHistoryModal = ({
-    isOpen,
-    onOpenChange,
-    sessions,
-    setSessionToEdit,
-    setSessionToView,
-    getTherapistName,
-    planName,
-} : {
-    isOpen: boolean,
-    onOpenChange: (open: boolean) => void,
-    sessions: Session[],
-    setSessionToEdit: (s: Session) => void,
-    setSessionToView: (s: Session) => void,
-    getTherapistName: (id: string) => string,
-    planName: string,
+  isOpen,
+  onOpenChange,
+  sessions,
+  setSessionToEdit,
+  setSessionToView,
+  getTherapistName,
+  planName,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  sessions: Session[];
+  setSessionToEdit: (s: Session) => void;
+  setSessionToView: (s: Session) => void;
+  getTherapistName: (id: string) => string;
+  planName: string;
 }) => {
+  const upcomingSessions = useMemo(() => {
+    return sessions.filter(
+      (s) => s.status === "scheduled" || s.status === "checked-in"
+    );
+  }, [sessions]);
 
-    const upcomingSessions = useMemo(() => {
-        return sessions.filter(
-        (s) =>
-            (s.status === "scheduled" || s.status === "checked-in")
-        );
-    }, [sessions]);
+  const completedSessions = useMemo(() => {
+    return sessions.filter((s) => s.status === "completed");
+  }, [sessions]);
 
-    const completedSessions = useMemo(() => {
-        return sessions.filter((s) => s.status === "completed");
-    }, [sessions]);
-
-    return (
-         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Session History</DialogTitle>
-                    <DialogDescription>
-                        All sessions for treatment plan: <span className="font-semibold">{planName}</span>
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex-1 flex flex-col min-h-0 pt-4">
-                     <Tabs
-                        defaultValue="upcoming"
-                        className="w-full flex flex-col flex-1 min-h-0"
-                    >
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                            <TabsTrigger value="completed">Completed</TabsTrigger>
-                        </TabsList>
-                        <div className="flex-1 mt-4 relative">
-                            <div className="absolute inset-0 w-full h-full overflow-y-auto pr-4">
-                                <TabsContent value="upcoming">
-                                    <SessionList
-                                    sessions={upcomingSessions}
-                                    setSessionToEdit={setSessionToEdit}
-                                    getTherapistName={getTherapistName}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="completed">
-                                    <SessionList
-                                    sessions={completedSessions}
-                                    isCompletedList
-                                    setSessionToView={setSessionToView}
-                                    getTherapistName={getTherapistName}
-                                    />
-                                </TabsContent>
-                            </div>
-                        </div>
-                    </Tabs>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Session History</DialogTitle>
+          <DialogDescription>
+            All sessions for treatment plan:{" "}
+            <span className="font-semibold">{planName}</span>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 flex flex-col min-h-0 pt-4">
+          <Tabs
+            defaultValue="upcoming"
+            className="w-full flex flex-col flex-1 min-h-0"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+              <TabsTrigger value="completed">Completed</TabsTrigger>
+            </TabsList>
+            <div className="flex-1 mt-4 relative">
+              <div className="absolute inset-0 w-full h-full overflow-y-auto pr-4">
+                <TabsContent value="upcoming">
+                  <SessionList
+                    sessions={upcomingSessions}
+                    setSessionToEdit={setSessionToEdit}
+                    getTherapistName={getTherapistName}
+                  />
+                </TabsContent>
+                <TabsContent value="completed">
+                  <SessionList
+                    sessions={completedSessions}
+                    isCompletedList
+                    setSessionToView={setSessionToView}
+                    getTherapistName={getTherapistName}
+                  />
+                </TabsContent>
+              </div>
+            </div>
+          </Tabs>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export default function PatientDetailPage() {
   const router = useRouter();
@@ -436,26 +477,49 @@ export default function PatientDetailPage() {
   const patientId = params.id as string;
   const patient = getPatient(patientId);
 
-  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>("sessions", {});
-  const [therapists] = useRealtimeDb<Record<string, Therapist>>("therapists", {});
-  const [treatmentPlans, setTreatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>("treatmentPlans", {});
-  const [questionnaires] = useRealtimeDb<Record<string, Questionnaire>>("questionnaires", {});
-  const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
+  const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>(
+    "sessions",
+    {}
+  );
+  const [therapists] = useRealtimeDb<Record<string, Therapist>>(
+    "therapists",
+    {}
+  );
+  const [treatmentPlans, setTreatmentPlans] = useRealtimeDb<
+    Record<string, TreatmentPlan>
+  >("treatmentPlans", {});
+  const [questionnaires] = useRealtimeDb<Record<string, Questionnaire>>(
+    "questionnaires",
+    {}
+  );
+  const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>(
+    "treatmentDefs",
+    {}
+  );
 
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
-  const [isUpdateTreatmentModalOpen, setIsUpdateTreatmentModalOpen] = useState(false);
-  const [treatmentToEdit, setTreatmentToEdit] = useState<Treatment | undefined>(undefined);
+  const [isUpdateTreatmentModalOpen, setIsUpdateTreatmentModalOpen] =
+    useState(false);
+  const [treatmentToEdit, setTreatmentToEdit] = useState<Treatment | undefined>(
+    undefined
+  );
 
   const consultationForm = useMemo(() => {
-    return Object.values(questionnaires).find(q => q.centreId === user?.centreId);
+    return Object.values(questionnaires).find(
+      (q) => q.centreId === user?.centreId
+    );
   }, [questionnaires, user]);
-  
-  const centreTreatmentDefs = useMemo(() => Object.values(treatmentDefs).filter(t => t.centreId === user?.centreId), [treatmentDefs, user]);
-  
+
+  const centreTreatmentDefs = useMemo(
+    () =>
+      Object.values(treatmentDefs).filter((t) => t.centreId === user?.centreId),
+    [treatmentDefs, user]
+  );
+
   const patientTreatmentPlans = useMemo(() => {
     return Object.values(treatmentPlans)
       .filter((tp) => tp.patientId === patientId)
@@ -483,10 +547,12 @@ export default function PatientDetailPage() {
       patientTreatmentPlans.find((p) => p.id === activeTreatmentPlanId) || null
     );
   }, [patientTreatmentPlans, activeTreatmentPlanId]);
-  
+
   const sortedTreatments = useMemo(() => {
     if (!activeTreatmentPlan || !activeTreatmentPlan.treatments) return [];
-    return [...activeTreatmentPlan.treatments].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return [...activeTreatmentPlan.treatments].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   }, [activeTreatmentPlan]);
 
   const handleNewTreatmentPlan = (name: string) => {
@@ -494,13 +560,13 @@ export default function PatientDetailPage() {
 
     const updatedPlans: Record<string, TreatmentPlan> = {};
     Object.entries(treatmentPlans).forEach(([id, plan]) => {
-        if (plan.patientId === patientId) {
-            updatedPlans[id] = { ...plan, isActive: false };
-        } else {
-            updatedPlans[id] = plan;
-        }
+      if (plan.patientId === patientId) {
+        updatedPlans[id] = { ...plan, isActive: false };
+      } else {
+        updatedPlans[id] = plan;
+      }
     });
-    
+
     const newPlanId = generateId();
     const newPlan: TreatmentPlan = {
       id: newPlanId,
@@ -525,18 +591,24 @@ export default function PatientDetailPage() {
     toast({ title: "New treatment plan started." });
   };
 
-  const handleUpdateTreatment = (treatments: string[], charges: number, treatmentDate?: string) => {
+  const handleUpdateTreatment = (
+    treatments: string[],
+    charges: number,
+    treatmentDate?: string
+  ) => {
     if (!activeTreatmentPlan) return;
 
     const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
     let newTreatments: Treatment[];
 
-    if (treatmentDate) { // Editing existing treatment
-      newTreatments = (planToUpdate.treatments || []).map(t => 
+    if (treatmentDate) {
+      // Editing existing treatment
+      newTreatments = (planToUpdate.treatments || []).map((t) =>
         t.date === treatmentDate ? { ...t, treatments, charges } : t
       );
       toast({ title: "Treatment Updated" });
-    } else { // Adding new treatment
+    } else {
+      // Adding new treatment
       const newTreatment: Treatment = {
         date: new Date().toISOString(),
         treatments,
@@ -545,9 +617,12 @@ export default function PatientDetailPage() {
       newTreatments = [...(planToUpdate.treatments || []), newTreatment];
       toast({ title: "New Treatment Added" });
     }
-    
+
     const updatedPlan = { ...planToUpdate, treatments: newTreatments };
-    setTreatmentPlans({ ...treatmentPlans, [activeTreatmentPlan.id]: updatedPlan });
+    setTreatmentPlans({
+      ...treatmentPlans,
+      [activeTreatmentPlan.id]: updatedPlan,
+    });
     setIsUpdateTreatmentModalOpen(false);
     setTreatmentToEdit(undefined);
   };
@@ -564,19 +639,27 @@ export default function PatientDetailPage() {
   }, [sessions, patientId, activeTreatmentPlanId]);
 
   const todaysSession = useMemo(() => {
-    return patientSessions.find(s => isSameDay(new Date(s.date), new Date()));
+    return patientSessions.find((s) => isSameDay(new Date(s.date), new Date()));
   }, [patientSessions]);
-  
+
   const latestSessionForPlan = useMemo(() => {
-    if (todaysSession && (todaysSession.status === 'checked-in' || todaysSession.status === 'completed')) {
-        return todaysSession;
+    if (
+      todaysSession &&
+      (todaysSession.status === "checked-in" ||
+        todaysSession.status === "completed")
+    ) {
+      return todaysSession;
     }
 
-    const completedSessions = patientSessions.filter(s => s.status === 'completed');
+    const completedSessions = patientSessions.filter(
+      (s) => s.status === "completed"
+    );
     if (completedSessions.length > 0) {
-      return completedSessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      return completedSessions.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )[0];
     }
-    
+
     return null;
   }, [patientSessions, todaysSession]);
 
@@ -608,37 +691,64 @@ export default function PatientDetailPage() {
     setSessionToEdit(null);
   };
 
-  const handleUpdateConsultationNotes = (sessionId: string, healthNotes: string) => {
+  const handleUpdateConsultationNotes = (
+    sessionId: string,
+    healthNotes: string
+  ) => {
     const sessionToUpdate = sessions[sessionId];
     if (sessionToUpdate) {
-        setSessions({ ...sessions, [sessionId]: { ...sessionToUpdate, healthNotes } });
-        toast({ title: "Consultation notes saved." });
+      setSessions({
+        ...sessions,
+        [sessionId]: { ...sessionToUpdate, healthNotes },
+      });
+      toast({ title: "Consultation notes saved." });
     }
   };
-  
-  const handleUpdateSessionStatus = (sessionId: string, status: Session['status']) => {
+
+  const handleUpdateSessionStatus = (
+    sessionId: string,
+    status: Session["status"]
+  ) => {
     const sessionToUpdate = sessions[sessionId];
     if (sessionToUpdate) {
-        setSessions({ ...sessions, [sessionId]: { ...sessionToUpdate, status }});
-        toast({ title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}` });
+      setSessions({ ...sessions, [sessionId]: { ...sessionToUpdate, status } });
+      toast({
+        title: `Session ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      });
     }
   };
-  
-  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
+
+  const handleEndSessionSubmit = (
+    sessionId: string,
+    healthNotes: string,
+    treatment: Omit<Treatment, "date">
+  ) => {
     const session = sessions[sessionId];
     if (!session || !activeTreatmentPlan) return;
-    
+
     if (treatment.treatments.length > 0) {
-        const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
-        const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
-        const updatedPlan = { ...planToUpdate, treatments: [...(planToUpdate.treatments || []), newTreatment] };
-        setTreatmentPlans({ ...treatmentPlans, [activeTreatmentPlan.id]: updatedPlan });
+      const newTreatment: Treatment = {
+        ...treatment,
+        date: new Date().toISOString(),
+      };
+      const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
+      const updatedPlan = {
+        ...planToUpdate,
+        treatments: [...(planToUpdate.treatments || []), newTreatment],
+      };
+      setTreatmentPlans({
+        ...treatmentPlans,
+        [activeTreatmentPlan.id]: updatedPlan,
+      });
     }
 
-    setSessions({ ...sessions, [sessionId]: { ...session, status: 'completed', healthNotes } });
-    toast({ title: 'Session Completed' });
+    setSessions({
+      ...sessions,
+      [sessionId]: { ...session, status: "completed", healthNotes },
+    });
+    toast({ title: "Session Completed" });
     setSessionToEnd(null);
-  }
+  };
 
   if (!patient) {
     return (
@@ -658,16 +768,15 @@ export default function PatientDetailPage() {
   }
 
   const getTherapistName = (therapistId: string) => {
-    return (
-      therapists[therapistId]?.name || "Unknown Therapist"
-    );
+    return therapists[therapistId]?.name || "Unknown Therapist";
   };
-  
+
   const canManageSession = (session: Session) => {
-    if (user?.role === 'admin' || user?.role === 'receptionist') return true;
-    if (user?.role === 'therapist' && user.therapistId === session.therapistId) return true;
+    if (user?.role === "admin" || user?.role === "receptionist") return true;
+    if (user?.role === "therapist" && user.therapistId === session.therapistId)
+      return true;
     return false;
-  }
+  };
 
   return (
     <>
@@ -737,9 +846,11 @@ export default function PatientDetailPage() {
                   >
                     <Edit className="mr-2 h-4 w-4" /> Edit Details
                   </DropdownMenuItem>
-                   <DropdownMenuItem onSelect={() => setIsHistoryModalOpen(true)}>
-                        <History className="mr-2 h-4 w-4" /> View Session History
-                    </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => setIsHistoryModalOpen(true)}
+                  >
+                    <History className="mr-2 h-4 w-4" /> View Session History
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() =>
                       router.push(`/assign-package/${patient.id}`)
@@ -785,44 +896,53 @@ export default function PatientDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
           {/* Left Column: Patient Details, Medical History, Treatment */}
           <div className="lg:col-span-1 flex flex-col space-y-6">
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Info size={20}/>Patient Information</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="space-y-1">
-                            <Label className="text-muted-foreground">Age</Label>
-                            <p>{patient.age || "N/A"}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-muted-foreground">Gender</Label>
-                            <p className="capitalize">{patient.gender || "N/A"}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-muted-foreground">Contact</Label>
-                            <p>{patient.phone}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-muted-foreground">Email</Label>
-                            <p>{patient.email}</p>
-                        </div>
-                        <div className="space-y-1 col-span-2">
-                            <Label className="text-muted-foreground">Address</Label>
-                            <p>{patient.address || "N/A"}</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-            
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><HeartPulse size={20}/>Medical History</CardTitle>
-                <CardDescription>General medical history for the patient.</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Info size={20} />
+                  Patient Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground">Age</Label>
+                    <p>{patient.age || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground">Gender</Label>
+                    <p className="capitalize">{patient.gender || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground">Contact</Label>
+                    <p>{patient.phone}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground">Email</Label>
+                    <p>{patient.email}</p>
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-muted-foreground">Address</Label>
+                    <p>{patient.address || "N/A"}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HeartPulse size={20} />
+                  Medical History
+                </CardTitle>
+                <CardDescription>
+                  General medical history for the patient.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
-                    {patient.pastMedicalHistory || "No past medical history provided."}
+                  {patient.pastMedicalHistory ||
+                    "No past medical history provided."}
                 </p>
               </CardContent>
             </Card>
@@ -830,45 +950,71 @@ export default function PatientDetailPage() {
             <Card className="flex flex-col">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>Treatment History</CardTitle>
-                    <CardDescription>
-                    Plan: <span className="font-semibold">{activeTreatmentPlan?.name}</span>
-                    </CardDescription>
+                  <CardTitle>Treatment History</CardTitle>
+                  <CardDescription>
+                    Plan:{" "}
+                    <span className="font-semibold">
+                      {activeTreatmentPlan?.name}
+                    </span>
+                  </CardDescription>
                 </div>
-                 <Button variant="outline" size="sm" onClick={() => { setTreatmentToEdit(undefined); setIsUpdateTreatmentModalOpen(true); }}>
-                    <PlusCircle className="mr-2 h-4 w-4"/> New
-                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setTreatmentToEdit(undefined);
+                    setIsUpdateTreatmentModalOpen(true);
+                  }}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> New
+                </Button>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col min-h-0 pt-4 space-y-4">
-                 <div className="flex-1 overflow-y-auto -mr-4 pr-4">
-                    <div className="space-y-4">
-                        {sortedTreatments.length > 0 ? (
-                             sortedTreatments.map(treatment => (
-                                <Card key={treatment.date}>
-                                    <CardHeader className="p-4 flex-row items-start justify-between">
-                                        <div>
-                                            <CardTitle className="text-base">
-                                                Updated on {format(new Date(treatment.date), "MMM d, yyyy")}
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Total: ₹{treatment.charges}
-                                            </CardDescription>
-                                        </div>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setTreatmentToEdit(treatment); setIsUpdateTreatmentModalOpen(true); }}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                    </CardHeader>
-                                    <CardContent className="p-4 pt-0 text-sm">
-                                         <ul className="list-disc pl-5 space-y-1">
-                                            {treatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
-                                        </ul>
-                                    </CardContent>
-                                </Card>
-                            ))
-                        ) : (
-                            <p className="text-sm text-muted-foreground text-center py-8">No treatment prescribed for this plan yet.</p>
-                        )}
-                    </div>
+                <div className="flex-1 overflow-y-auto -mr-4 pr-4">
+                  <div className="space-y-4">
+                    {sortedTreatments.length > 0 ? (
+                      sortedTreatments.map((treatment) => (
+                        <Card key={treatment.date}>
+                          <CardHeader className="p-4 flex-row items-start justify-between">
+                            <div>
+                              <CardTitle className="text-base">
+                                Updated on{" "}
+                                {format(
+                                  new Date(treatment.date),
+                                  "MMM d, yyyy"
+                                )}
+                              </CardTitle>
+                              <CardDescription>
+                                Total: ₹{treatment.charges}
+                              </CardDescription>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                setTreatmentToEdit(treatment);
+                                setIsUpdateTreatmentModalOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0 text-sm">
+                            <ul className="list-disc pl-5 space-y-1">
+                              {treatment.treatments.map((t, i) => (
+                                <li key={i}>{t}</li>
+                              ))}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No treatment prescribed for this plan yet.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -883,49 +1029,72 @@ export default function PatientDetailPage() {
                     <Clock size={20} /> Today's Session
                   </CardTitle>
                   <CardDescription>
-                    {format(parse(todaysSession.startTime, "HH:mm", new Date()), "h:mm a")} - {format(parse(todaysSession.endTime, "HH:mm", new Date()), "h:mm a")} with {getTherapistName(todaysSession.therapistId)}
+                    {format(
+                      parse(todaysSession.startTime, "HH:mm", new Date()),
+                      "h:mm a"
+                    )}{" "}
+                    -{" "}
+                    {format(
+                      parse(todaysSession.endTime, "HH:mm", new Date()),
+                      "h:mm a"
+                    )}{" "}
+                    with {getTherapistName(todaysSession.therapistId)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between">
-                   <Badge variant="outline" className="capitalize">
-                      {todaysSession.status}
-                    </Badge>
-                   <div className="flex gap-2 items-center">
-                    {canManageSession(todaysSession) && todaysSession.status === 'scheduled' && (
-                      <Button size="sm" onClick={() => handleUpdateSessionStatus(todaysSession.id, 'checked-in')}>
-                        <Check className="mr-2 h-4 w-4" /> Check In
-                      </Button>
-                    )}
-                    {canManageSession(todaysSession) && (todaysSession.status === 'checked-in' || todaysSession.status === 'completed') && (
-                      <Button size="sm" variant="secondary" onClick={() => setSessionToEnd(todaysSession)}>
-                        <LogOut className="mr-2 h-4 w-4" /> Update
-                      </Button>
-                    )}
+                  <Badge variant="outline" className="capitalize">
+                    {todaysSession.status}
+                  </Badge>
+                  <div className="flex gap-2 items-center">
+                    {canManageSession(todaysSession) &&
+                      todaysSession.status === "scheduled" && (
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            handleUpdateSessionStatus(
+                              todaysSession.id,
+                              "checked-in"
+                            )
+                          }
+                        >
+                          <Check className="mr-2 h-4 w-4" /> Check In
+                        </Button>
+                      )}
+                    {canManageSession(todaysSession) &&
+                      (todaysSession.status === "checked-in" ||
+                        todaysSession.status === "completed") && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setSessionToEnd(todaysSession)}
+                        >
+                          <LogOut className="mr-2 h-4 w-4" /> Update
+                        </Button>
+                      )}
                   </div>
                 </CardContent>
               </Card>
             )}
 
             {consultationForm ? (
-                <ConsultationNotesForm 
-                    questionnaire={consultationForm}
-                    session={latestSessionForPlan}
-                    onUpdate={handleUpdateConsultationNotes}
-                />
+              <ConsultationNotesForm
+                questionnaire={consultationForm}
+                session={latestSessionForPlan}
+                onUpdate={handleUpdateConsultationNotes}
+              />
             ) : (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Consultation Notes</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground text-center py-8">
-                            No consultation form has been set up by the administrator.
-                        </p>
-                    </CardContent>
-                </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Consultation Notes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-center py-8">
+                    No consultation form has been set up by the administrator.
+                  </p>
+                </CardContent>
+              </Card>
             )}
           </div>
-
         </div>
       </div>
       {sessionToEdit && (
@@ -947,7 +1116,7 @@ export default function PatientDetailPage() {
         onOpenChange={setIsNewPlanModalOpen}
         onSubmit={handleNewTreatmentPlan}
       />
-      <UpdateTreatmentModal 
+      <UpdateTreatmentModal
         isOpen={isUpdateTreatmentModalOpen}
         onOpenChange={setIsUpdateTreatmentModalOpen}
         onSubmit={handleUpdateTreatment}
@@ -955,17 +1124,17 @@ export default function PatientDetailPage() {
         treatmentDefs={centreTreatmentDefs}
       />
       {activeTreatmentPlan && (
-        <SessionHistoryModal 
-            isOpen={isHistoryModalOpen}
-            onOpenChange={setIsHistoryModalOpen}
-            sessions={patientSessions}
-            setSessionToEdit={setSessionToEdit}
-            setSessionToView={setSessionToView}
-            getTherapistName={getTherapistName}
-            planName={activeTreatmentPlan.name}
+        <SessionHistoryModal
+          isOpen={isHistoryModalOpen}
+          onOpenChange={setIsHistoryModalOpen}
+          sessions={patientSessions}
+          setSessionToEdit={setSessionToEdit}
+          setSessionToView={setSessionToView}
+          getTherapistName={getTherapistName}
+          planName={activeTreatmentPlan.name}
         />
       )}
-       {sessionToEnd && patient && (
+      {sessionToEnd && patient && (
         <EndSessionForm
           session={sessionToEnd}
           patient={patient}
