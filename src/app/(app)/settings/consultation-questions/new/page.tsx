@@ -10,11 +10,24 @@ import type { Questionnaire } from '@/types/domain';
 import { useToast } from '@/hooks/use-toast';
 import { generateId } from '@/lib/ids';
 import { useRealtimeDb } from '@/hooks/use-realtime-db';
+import { useAuth } from '@/hooks/use-auth';
+import { useMemo, useEffect } from 'react';
 
 export default function NewConsultationQuestionsPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [questionnaires, setQuestionnaires] = useRealtimeDb<Record<string, Questionnaire>>('questionnaires', {});
+  
+  const centreConsultationForm = useMemo(() => Object.values(questionnaires).find(q => q.centreId === user?.centreId), [questionnaires, user]);
+
+  useEffect(() => {
+    // If a form already exists, redirect to edit it instead of creating a new one.
+    if (centreConsultationForm) {
+      router.replace(`/settings/consultation-questions/edit/${centreConsultationForm.id}`);
+    }
+  }, [centreConsultationForm, router]);
+
 
   const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
     const newQuestionnaireId = generateId();
@@ -25,13 +38,13 @@ export default function NewConsultationQuestionsPage() {
     };
     setQuestionnaires({ ...questionnaires, [newQuestionnaireId]: newQuestionnaire });
     toast({ title: "Form created" });
-    router.push('/settings/consultation-questions');
+    router.push('/settings');
   };
 
   return (
     <div className="flex flex-col gap-8">
        <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
+        <Button variant="outline" size="icon" onClick={() => router.push('/settings')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>

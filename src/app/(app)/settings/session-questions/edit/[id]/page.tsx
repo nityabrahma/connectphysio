@@ -27,14 +27,14 @@ export default function EditSessionQuestionPage() {
     const updatedForm = { ...formDef, ...values, updatedAt: new Date().toISOString() };
     setQuestionnaires({ ...questionnaires, [formId]: updatedForm });
     toast({ title: "Form updated" });
-    router.push('/settings/session-questions');
+    router.push('/settings');
   };
   
   const handleDelete = (id: string) => {
     const { [id]: _, ...remainingForms } = questionnaires;
     setQuestionnaires(remainingForms);
     toast({ title: "Form deleted", variant: "destructive" });
-    router.push('/settings/session-questions');
+    router.push('/settings');
   }
 
   if (!formDef) {
@@ -45,9 +45,9 @@ export default function EditSessionQuestionPage() {
           The form you are looking for does not exist.
         </p>
         <Button asChild>
-          <Link href="/settings/session-questions">
+          <Link href="/settings">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Forms
+            Back to Settings
           </Link>
         </Button>
       </div>
@@ -57,7 +57,7 @@ export default function EditSessionQuestionPage() {
   return (
     <div className="flex flex-col gap-8">
        <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
+        <Button variant="outline" size="icon" onClick={() => router.push('/settings')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
