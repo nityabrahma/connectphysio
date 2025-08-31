@@ -12,7 +12,6 @@ export const LS_KEYS = {
   CHECKINS: `${APP_NAMESPACE}:checkins`,
   ALERTS: `${APP_NAMESPACE}:alerts`,
   THEME: `${APP_NAMESPACE}:theme`,
-  SEEDED: `${APP_NAMESPACE}:seeded`,
   QUESTIONNAIRES: `${APP_NAMESPACE}:questionnaires`,
   SESSION_QUESTIONNAIRES: `${APP_NAMESPACE}:sessionQuestionnaires`,
   TREATMENT_PLANS: `${APP_NAMESPACE}:treatmentPlans`,

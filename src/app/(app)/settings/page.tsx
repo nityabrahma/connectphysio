@@ -2,8 +2,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LS_KEYS } from '@/lib/constants';
-import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import type { ExaminationDef, Questionnaire } from '@/types/domain';
@@ -20,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
     const { toast } = useToast();
@@ -38,16 +37,6 @@ export default function SettingsPage() {
     const [examinationDefs, setExaminationDefs] = useRealtimeDb<Record<string, ExaminationDef>>('examinationDefs', {});
     const centreExaminationDef = useMemo(() => Object.values(examinationDefs).find(d => d.centreId === user?.centreId), [examinationDefs, user]);
 
-    const handleResetData = () => {
-        // This functionality might need re-evaluation with a real DB.
-        // For now, it clears local flags but won't clear the remote DB.
-        localStorage.removeItem(LS_KEYS.SEEDED);
-        toast({
-            title: 'Seeding Flag Reset',
-            description: 'The data seeding flag has been cleared. Please reload to re-seed if the database is empty.',
-        });
-        setTimeout(() => window.location.reload(), 2000);
-    };
 
     const handleDeleteForm = (
       id: string,
@@ -153,7 +142,7 @@ export default function SettingsPage() {
                                 Manage the standard examination types for your clinic.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="flex gap-2">
                             {centreExaminationDef ? (
                                  <>
                                     <Button onClick={() => router.push(`/settings/examinations/edit/${centreExaminationDef.id}`)}>
@@ -184,21 +173,6 @@ export default function SettingsPage() {
                     </Card>
                 </div>
             )}
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Data Management</CardTitle>
-                    <CardDescription>
-                        Reset all demo data to its initial state. This action cannot be undone.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button variant="destructive" onClick={handleResetData}>
-                        Reset Demo Data
-                    </Button>
-                </CardContent>
-            </Card>
-
         </div>
     );
 }
