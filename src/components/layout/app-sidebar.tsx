@@ -46,6 +46,7 @@ const navItems = [
   },
   { href: "/billing", label: "Billing", icon: CreditCard, roles: ["admin"] },
   { href: "/users", label: "Users", icon: UserCog, roles: ["admin"] },
+  { href: "/profile", label: "Profile & Settings", icon: Settings, roles: ["admin", "receptionist", "therapist"] },
 ];
 
 const MobileSidebar = () => {

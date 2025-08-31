@@ -275,11 +275,11 @@ export default function ProfilePage() {
                                 <CardContent className="flex gap-2">
                                     {centreConsultationForm ? (
                                         <>
-                                            <Button onClick={() => router.push(`/settings/consultation-questions/edit/${centreConsultationForm.id}`)}>Manage Form</Button>
+                                            <Button onClick={() => router.push(`/consultation-questions/edit/${centreConsultationForm.id}`)}>Manage Form</Button>
                                             <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive">Delete</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your consultation form.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteForm(centreConsultationForm.id, consultationForms, setConsultationForms, 'Consultation Form')}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                                         </>
                                     ) : (
-                                        <Button onClick={() => router.push('/settings/consultation-questions/new')}>Create Form</Button>
+                                        <Button onClick={() => router.push('/consultation-questions/new')}>Create Form</Button>
                                     )}
                                 </CardContent>
                             </Card>
@@ -292,11 +292,11 @@ export default function ProfilePage() {
                                 <CardContent className="flex gap-2">
                                     {centreSessionForm ? (
                                         <>
-                                            <Button onClick={() => router.push(`/settings/session-questions/edit/${centreSessionForm.id}`)}>Manage Form</Button>
+                                            <Button onClick={() => router.push(`/session-questions/edit/${centreSessionForm.id}`)}>Manage Form</Button>
                                             <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive">Delete</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your session form.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteForm(centreSessionForm.id, sessionForms, setSessionForms, 'Session Form')}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                                         </>
                                     ) : (
-                                        <Button onClick={() => router.push('/settings/session-questions/new')}>Create Form</Button>
+                                        <Button onClick={() => router.push('/session-questions/new')}>Create Form</Button>
                                     )}
                                 </CardContent>
                             </Card>
@@ -309,11 +309,11 @@ export default function ProfilePage() {
                                 <CardContent className="flex gap-2">
                                     {centreExaminationDef ? (
                                         <>
-                                            <Button onClick={() => router.push(`/settings/examinations/edit/${centreExaminationDef.id}`)}>Manage Examinations</Button>
+                                            <Button onClick={() => router.push(`/examinations/edit/${centreExaminationDef.id}`)}>Manage Examinations</Button>
                                             <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive">Delete</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your examinations definition.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteForm(centreExaminationDef.id, examinationDefs, setExaminationDefs, 'Examinations Definition')}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                                         </>
                                     ) : (
-                                        <Button onClick={() => router.push('/settings/examinations/new')}>Create Examinations</Button>
+                                        <Button onClick={() => router.push('/examinations/new')}>Create Examinations</Button>
                                     )}
                                 </CardContent>
                             </Card>
