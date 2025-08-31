@@ -7,6 +7,7 @@ import { LS_KEYS } from '@/lib/constants';
 import { generateId } from '@/lib/ids';
 import type { User, AuthSession, Centre } from '@/types/domain';
 import { useRealtimeDb } from '@/hooks/use-realtime-db';
+import { storage } from '@/lib/storage';
 
 // Mock password hashing for demo purposes. DO NOT use in production.
 const mockHash = (password: string) => `hashed_${password}`;
@@ -31,45 +32,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const validateSession = () => {
-      const token = localStorage.getItem(LS_KEYS.AUTH_SESSION) || sessionStorage.getItem(LS_KEYS.AUTH_SESSION);
-      
-      if (token && Object.keys(users).length > 0) {
-        try {
-          const payloadString = atob(token.split('.')[1]);
-          const decoded: { userId: string } = JSON.parse(payloadString);
-          const currentUser = users[decoded.userId];
-          if (currentUser) {
-            setUser(currentUser);
-          } else {
-            console.warn("User from token not found, logging out.");
-            logout();
-          }
-        } catch (error) {
-            console.error("Failed to decode or validate token", error);
-            logout();
+      try {
+        const session = storage.getItem<AuthSession>(LS_KEYS.AUTH_SESSION);
+        
+        if (session && session.userId && users[session.userId]) {
+            setUser(users[session.userId]);
+        } else {
+            setUser(null);
         }
-      } else {
-        // If there's no token, we are not logged in.
+      } catch (error) {
+        console.error("Failed to validate session:", error);
         setUser(null);
+        storage.setItem(LS_KEYS.AUTH_SESSION, null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-
-    // Only run validation if users have loaded from DB
+    
+    // We need users to be loaded before we can validate a session.
     if (Object.keys(users).length > 0) {
-        validateSession();
-    }
-    // Handle the case where the DB might be empty or users haven't loaded yet
-    const timeout = setTimeout(() => {
+      validateSession();
+    } else {
+      // If there are no users in DB, we can't be logged in.
+      // Or if still waiting for DB, we will re-run when users are fetched.
+      // Set a timeout to avoid getting stuck in loading state forever if DB is empty.
+       const timer = setTimeout(() => {
         if (loading) {
             setLoading(false);
-            setUser(null); // Assume not logged in if DB check is slow
+            setUser(null);
         }
-    }, 3000); // 3-second timeout
-
-    return () => clearTimeout(timeout);
-
-  }, [users]); // Dependency on `users` ensures re-validation when user data changes
+       }, 2000); // Wait 2s for user data
+       return () => clearTimeout(timer);
+    }
+  }, [users]);
   
   const login = async (email: string, password: string, rememberMe = false): Promise<boolean> => {
     setLoading(true);
@@ -77,34 +72,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const foundUser = usersArray.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (foundUser && foundUser.passwordHash === mockHash(password)) {
-      const payload = { userId: foundUser.id, iat: Math.floor(Date.now() / 1000) };
-      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-      const encodedPayload = btoa(JSON.stringify(payload));
       
-      const sessionRecord = {
-        token: `${header}.${encodedPayload}.mock_signature`,
-        createdAt: new Date().toISOString(),
-        device: navigator.userAgent,
+      const session: AuthSession = {
+        userId: foundUser.id,
+        token: `${btoa(Math.random().toString())}.${btoa(Math.random().toString())}`, // Mock JWT
       };
 
-      // Add the session to the user's record in the database
-      const userSessions = foundUser.sessions || {};
-      const newSessionId = generateId();
-      userSessions[newSessionId] = sessionRecord;
+      storage.setItem(LS_KEYS.AUTH_SESSION, session);
       
-      const updatedUser = { ...foundUser, sessions: userSessions };
-      setUsers({ ...users, [foundUser.id]: updatedUser });
-      
-      // Store token in browser
-      if (rememberMe) {
-        localStorage.setItem(LS_KEYS.AUTH_SESSION, sessionRecord.token);
-        sessionStorage.removeItem(LS_KEYS.AUTH_SESSION);
-      } else {
-        sessionStorage.setItem(LS_KEYS.AUTH_SESSION, sessionRecord.token);
-        localStorage.removeItem(LS_KEYS.AUTH_SESSION);
-      }
-
-      setUser(updatedUser);
+      setUser(foundUser);
       setLoading(false);
       return true;
     }
@@ -113,20 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    const token = localStorage.getItem(LS_KEYS.AUTH_SESSION) || sessionStorage.getItem(LS_KEYS.AUTH_SESSION);
-    if (user && token && users[user.id]) {
-        const userToUpdate = users[user.id];
-        const userSessions = userToUpdate.sessions || {};
-        const sessionKey = Object.keys(userSessions).find(key => userSessions[key].token === token);
-        if (sessionKey) {
-            delete userSessions[sessionKey];
-            const updatedUser = { ...userToUpdate, sessions: userSessions };
-            setUsers({ ...users, [user.id]: updatedUser });
-        }
-    }
-
-    localStorage.removeItem(LS_KEYS.AUTH_SESSION);
-    sessionStorage.removeItem(LS_KEYS.AUTH_SESSION);
+    storage.setItem(LS_KEYS.AUTH_SESSION, null);
     setUser(null);
     router.push('/login');
   };
@@ -161,7 +124,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordHash: mockHash(userData.password),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      sessions: {},
     };
     
     // @ts-ignore
