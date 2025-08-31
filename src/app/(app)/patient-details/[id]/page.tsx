@@ -49,7 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePatients } from "@/hooks/use-patients";
 import { Button } from "@/components/ui/button";
@@ -94,7 +94,7 @@ import { ConsultationNotesForm } from "./consultation-notes-form";
 import { EndSessionForm } from "../../dashboard/end-session-form";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 
 
 const ViewSessionModal = ({
@@ -220,6 +220,7 @@ const UpdateTreatmentModal = ({
     const [inputValue, setInputValue] = useState('');
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const isEditing = !!treatmentToEdit;
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if(isOpen) {
@@ -261,6 +262,7 @@ const UpdateTreatmentModal = ({
         setSelectedTreatments(prev => [...prev, treatmentDef]);
         setInputValue('');
         setIsPopoverOpen(false);
+        inputRef.current?.focus();
     }
     
     const handleRemoveTreatment = (treatmentId: string) => {
@@ -277,16 +279,25 @@ const UpdateTreatmentModal = ({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
-                     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                         <PopoverTrigger asChild>
-                             <Input 
-                                placeholder="Search and add treatments..."
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                className="w-full"
-                            />
+                            {/* This is an invisible trigger that the Popover anchors to. The Input below controls its state. */}
+                            <div ref={inputRef} className="w-full" />
                         </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        
+                        <Input 
+                            ref={inputRef}
+                            placeholder="Search and add treatments..."
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            className="w-full"
+                        />
+                        
+                        <PopoverContent 
+                            className="w-[--radix-popover-trigger-width] p-0" 
+                            align="start"
+                            onOpenAutoFocus={(e) => e.preventDefault()} // Prevent focus stealing
+                        >
                             <Command>
                                 <CommandEmpty>No treatment found.</CommandEmpty>
                                 <CommandGroup>
