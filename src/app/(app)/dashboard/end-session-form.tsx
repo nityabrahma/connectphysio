@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import type { Patient, Session, TreatmentPlan, Questionnaire, Treatment } from "@/types/domain"
+import type { Patient, Session, TreatmentPlan, Questionnaire, Treatment, TreatmentDef } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -21,13 +21,17 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/hooks/use-auth"
 import { Slider } from "@/components/ui/slider"
 import Link from "next/link"
 import { useRealtimeDb } from "@/hooks/use-realtime-db"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command"
+import { Badge } from "@/components/ui/badge"
+import { X } from "lucide-react"
 
 const answerSchema = z.object({
   questionId: z.string(),
@@ -35,7 +39,6 @@ const answerSchema = z.object({
 });
 
 const formSchema = z.object({
-    treatmentDescription: z.string().optional(),
     answers: z.array(answerSchema),
 });
 
@@ -44,7 +47,7 @@ type EndSessionFormValues = z.infer<typeof formSchema>;
 interface EndSessionFormProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date' | 'treatments'> & { description: string }) => void;
+    onSubmit: (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => void;
     session: Session;
     patient?: Patient;
 }
@@ -53,21 +56,47 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
     const { user } = useAuth();
     const [treatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>('treatmentPlans', {});
     const [questionnaires] = useRealtimeDb<Record<string, Questionnaire>>('sessionQuestionnaires', {});
+    const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
+    
+    const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>([]);
+    const [inputValue, setInputValue] = useState('');
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     const sessionQuestionnaire = useMemo(() => {
         return Object.values(questionnaires).find(q => q.centreId === user?.centreId);
     }, [questionnaires, user]);
+
+    const centreTreatmentDefs = useMemo(() => Object.values(treatmentDefs).filter(t => t.centreId === user?.centreId), [treatmentDefs, user]);
     
     const activeTreatmentPlan = useMemo(() => {
         if (!patient) return null;
         const patientPlans = Object.values(treatmentPlans).filter(tp => tp.patientId === patient.id);
         return patientPlans.find(tp => tp.isActive) || patientPlans[0] || null;
     }, [treatmentPlans, patient]);
+    
+    const filteredTreatments = useMemo(() => {
+        if (!inputValue) return [];
+        return centreTreatmentDefs.filter(def => 
+            def.name.toLowerCase().includes(inputValue.toLowerCase()) &&
+            !selectedTreatments.find(t => t.id === def.id)
+        );
+    }, [inputValue, centreTreatmentDefs, selectedTreatments]);
+
+    useEffect(() => {
+        if (inputValue.length > 0 && filteredTreatments.length > 0) {
+            setIsPopoverOpen(true);
+        } else {
+            setIsPopoverOpen(false);
+        }
+    }, [inputValue, filteredTreatments]);
+    
+    const totalCharges = useMemo(() => {
+        return selectedTreatments.reduce((total, t) => total + t.price, 0);
+    }, [selectedTreatments]);
 
     const form = useForm<EndSessionFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            treatmentDescription: "",
             answers: [],
         }
     });
@@ -79,7 +108,6 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
 
     useEffect(() => {
         if (isOpen && sessionQuestionnaire) {
-            let defaultDescription = "";
             let defaultAnswers = sessionQuestionnaire.questions.map(q => ({
                  questionId: q.id, 
                  answer: q.type === 'slider' ? q.min || 0 : "" 
@@ -88,8 +116,9 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
             if (session.healthNotes) {
                 try {
                     const parsedNotes = JSON.parse(session.healthNotes);
-                    if (parsedNotes.treatment?.description) {
-                        defaultDescription = parsedNotes.treatment.description;
+                    if (parsedNotes.treatments && Array.isArray(parsedNotes.treatments)) {
+                         const matchingDefs = parsedNotes.treatments.map((name: string) => centreTreatmentDefs.find(def => def.name === name)).filter(Boolean) as TreatmentDef[];
+                        setSelectedTreatments(matchingDefs);
                     }
                     if (parsedNotes.answers && Array.isArray(parsedNotes.answers)) {
                         defaultAnswers = sessionQuestionnaire.questions.map(q => {
@@ -103,41 +132,40 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                 } catch (e) {
                     // Could be plain text from an older version, ignore parsing error
                 }
+            } else {
+                setSelectedTreatments([]);
             }
 
             form.reset({
-                treatmentDescription: defaultDescription,
                 answers: defaultAnswers,
             });
         }
-    }, [isOpen, form, sessionQuestionnaire, session]);
+    }, [isOpen, form, sessionQuestionnaire, session, centreTreatmentDefs]);
 
 
     const handleFormSubmit = (values: EndSessionFormValues) => {
-        let existingNotes = {};
-        try {
-            if (session.healthNotes) {
-                existingNotes = JSON.parse(session.healthNotes);
-            }
-        } catch (e) {
-            // It might be a plain string, we'll overwrite it with the new structured format.
-        }
-
         const healthNotes = JSON.stringify({
-            ...existingNotes,
-            treatment: {
-                description: values.treatmentDescription,
-            },
+            treatments: selectedTreatments.map(t => t.name),
             answers: values.answers,
             questionnaireId: sessionQuestionnaire?.id,
         });
         
         const newTreatment = {
-            description: values.treatmentDescription || "",
-            charges: 0,
+            treatments: selectedTreatments.map(t => t.name),
+            charges: totalCharges,
         };
 
         onSubmit(session.id, healthNotes, newTreatment);
+    }
+    
+    const handleSelectTreatment = (treatmentDef: TreatmentDef) => {
+        setSelectedTreatments(prev => [...prev, treatmentDef]);
+        setInputValue('');
+        setIsPopoverOpen(false);
+    }
+    
+    const handleRemoveTreatment = (treatmentId: string) => {
+        setSelectedTreatments(prev => prev.filter(t => t.id !== treatmentId));
     }
     
     return (
@@ -157,19 +185,60 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                                 <div className="pt-4 mt-4 border-t">
                                     <h3 className="text-lg font-semibold mb-2">Treatment Information</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="treatmentDescription"
-                                            render={({ field }) => (
-                                                <FormItem className="md:col-span-2">
-                                                    <FormLabel>Treatment Description (Optional)</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea placeholder="e.g., Ultrasound Therapy, IFT. Leave blank to follow current plan." {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                         <div className="space-y-4 md:col-span-2">
+                                            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                                                <PopoverTrigger asChild>
+                                                    <Input 
+                                                        placeholder="Search and add treatments..."
+                                                        value={inputValue}
+                                                        onChange={(e) => setInputValue(e.target.value)}
+                                                    />
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                    <Command>
+                                                        <CommandEmpty>No treatment found.</CommandEmpty>
+                                                        <CommandGroup>
+                                                        {filteredTreatments.map((def) => (
+                                                            <CommandItem
+                                                                key={def.id}
+                                                                onSelect={() => handleSelectTreatment(def)}
+                                                                value={def.name}
+                                                                className="flex justify-between"
+                                                            >
+                                                            <span>{def.name}</span>
+                                                            <span className="text-muted-foreground">₹{def.price}</span>
+                                                            </CommandItem>
+                                                        ))}
+                                                        </CommandGroup>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+
+                                            <div className="space-y-2">
+                                                <Label>Selected Treatments</Label>
+                                                {selectedTreatments.length > 0 ? (
+                                                    <div className="flex flex-col gap-2 pt-2">
+                                                        {selectedTreatments.map(t => (
+                                                            <Badge key={t.id} variant="secondary" className="flex items-center justify-between py-1.5 px-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <button onClick={() => handleRemoveTreatment(t.id)} className="rounded-full hover:bg-muted-foreground/20">
+                                                                        <X className="h-3 w-3" />
+                                                                    </button>
+                                                                    <span>{t.name}</span>
+                                                                </div>
+                                                                <span>₹{t.price}</span>
+                                                            </Badge>
+                                                        ))}
+                                                        <div className="flex justify-between items-center pt-2 mt-2 border-t font-semibold">
+                                                            <span>Total</span>
+                                                            <span>₹{totalCharges}</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm text-muted-foreground pt-2">No treatments selected yet.</p>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 

@@ -60,15 +60,15 @@ const TodaysAppointmentsList = () => {
     }
   };
   
-  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date' | 'treatments'> & { description: string }) => {
+  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
     const session = sessions[sessionId];
     if (!session) return;
     
     const patientTreatmentPlans = Object.values(treatmentPlans).filter(tp => tp.patientId === session.patientId);
     const activePlan = patientTreatmentPlans.find(tp => tp.isActive) || patientTreatmentPlans[0];
 
-    if (activePlan && treatment.description) {
-        const newTreatment: Treatment = { ...treatment, date: new Date().toISOString(), treatments: [treatment.description] };
+    if (activePlan && treatment.treatments.length > 0) {
+        const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
         const updatedPlan = {
             ...activePlan,
             treatments: [...(activePlan.treatments || []), newTreatment]

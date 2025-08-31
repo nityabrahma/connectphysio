@@ -94,7 +94,7 @@ import { ConsultationNotesForm } from "./consultation-notes-form";
 import { EndSessionForm } from "../../dashboard/end-session-form";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 
 
 const ViewSessionModal = ({
@@ -212,7 +212,7 @@ const UpdateTreatmentModal = ({
 } : {
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
-    onSubmit: (treatments: string[], treatmentDate?: string) => void,
+    onSubmit: (treatments: string[], charges: number, treatmentDate?: string) => void,
     treatmentToEdit?: Treatment,
     treatmentDefs: TreatmentDef[],
 }) => {
@@ -245,11 +245,15 @@ const UpdateTreatmentModal = ({
             setIsPopoverOpen(false);
         }
     }, [inputValue, filteredTreatments]);
+    
+    const totalCharges = useMemo(() => {
+        return selectedTreatments.reduce((total, t) => total + t.price, 0);
+    }, [selectedTreatments]);
 
     const handleSubmit = () => {
         const treatmentNames = selectedTreatments.map(t => t.name);
         if (treatmentNames.length > 0) {
-            onSubmit(treatmentNames, treatmentToEdit?.date);
+            onSubmit(treatmentNames, totalCharges, treatmentToEdit?.date);
         }
     }
     
@@ -290,8 +294,10 @@ const UpdateTreatmentModal = ({
                                         key={def.id}
                                         onSelect={() => handleSelectTreatment(def)}
                                         value={def.name}
+                                        className="flex justify-between"
                                     >
-                                     {def.name}
+                                     <span>{def.name}</span>
+                                     <span className="text-muted-foreground">₹{def.price}</span>
                                     </CommandItem>
                                 ))}
                                 </CommandGroup>
@@ -302,15 +308,22 @@ const UpdateTreatmentModal = ({
                     <div className="space-y-2">
                         <Label>Selected Treatments</Label>
                         {selectedTreatments.length > 0 ? (
-                             <div className="flex flex-wrap gap-2 pt-2">
+                             <div className="flex flex-col gap-2 pt-2">
                                 {selectedTreatments.map(t => (
-                                    <Badge key={t.id} variant="secondary" className="flex items-center gap-2">
-                                        {t.name}
-                                        <button onClick={() => handleRemoveTreatment(t.id)} className="rounded-full hover:bg-muted-foreground/20">
-                                            <X className="h-3 w-3" />
-                                        </button>
+                                    <Badge key={t.id} variant="secondary" className="flex items-center justify-between py-1.5 px-2">
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => handleRemoveTreatment(t.id)} className="rounded-full hover:bg-muted-foreground/20">
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                            <span>{t.name}</span>
+                                        </div>
+                                        <span>₹{t.price}</span>
                                     </Badge>
                                 ))}
+                                <div className="flex justify-between items-center pt-2 mt-2 border-t font-semibold">
+                                    <span>Total</span>
+                                    <span>₹{totalCharges}</span>
+                                </div>
                             </div>
                         ) : (
                             <p className="text-sm text-muted-foreground pt-2">No treatments selected yet.</p>
@@ -500,7 +513,7 @@ export default function PatientDetailPage() {
     toast({ title: "New treatment plan started." });
   };
 
-  const handleUpdateTreatment = (treatments: string[], treatmentDate?: string) => {
+  const handleUpdateTreatment = (treatments: string[], charges: number, treatmentDate?: string) => {
     if (!activeTreatmentPlan) return;
 
     const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
@@ -508,14 +521,14 @@ export default function PatientDetailPage() {
 
     if (treatmentDate) { // Editing existing treatment
       newTreatments = (planToUpdate.treatments || []).map(t => 
-        t.date === treatmentDate ? { ...t, treatments } : t
+        t.date === treatmentDate ? { ...t, treatments, charges } : t
       );
       toast({ title: "Treatment Updated" });
     } else { // Adding new treatment
       const newTreatment: Treatment = {
         date: new Date().toISOString(),
         treatments,
-        charges: 0,
+        charges,
       };
       newTreatments = [...(planToUpdate.treatments || []), newTreatment];
       toast({ title: "New Treatment Added" });
@@ -822,9 +835,14 @@ export default function PatientDetailPage() {
                              sortedTreatments.map(treatment => (
                                 <Card key={treatment.date}>
                                     <CardHeader className="p-4 flex-row items-start justify-between">
-                                        <CardTitle className="text-base">
-                                            Updated on {format(new Date(treatment.date), "MMM d, yyyy")}
-                                        </CardTitle>
+                                        <div>
+                                            <CardTitle className="text-base">
+                                                Updated on {format(new Date(treatment.date), "MMM d, yyyy")}
+                                            </CardTitle>
+                                            <CardDescription>
+                                                Total: ₹{treatment.charges}
+                                            </CardDescription>
+                                        </div>
                                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setTreatmentToEdit(treatment); setIsUpdateTreatmentModalOpen(true); }}>
                                             <Edit className="h-4 w-4" />
                                         </Button>
