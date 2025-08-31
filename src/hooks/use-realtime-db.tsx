@@ -1,7 +1,9 @@
+
 // src/hooks/use-realtime-db.tsx
-import { useState, useEffect, useContext, createContext, ReactNode, useMemo } from 'react';
+import { useState, useEffect, useContext, createContext, ReactNode, useMemo, useCallback } from 'react';
 import { ref, onValue, set, off } from 'firebase/database';
 import { db } from '@/lib/firebase';
+import { usePathname } from 'next/navigation';
 
 // This context will track the loading state of all db listeners
 const RealtimeDbContext = createContext<{ register: (id: string) => void, unregister: (id: string) => void, loaded: boolean }>({
@@ -12,27 +14,43 @@ const RealtimeDbContext = createContext<{ register: (id: string) => void, unregi
 
 // A provider to wrap the app and manage the global loading state
 export const RealtimeDbProvider = ({ children }: { children: ReactNode }) => {
+  const pathname = usePathname();
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
   const [isLoaded, setIsLoaded] = useState(false);
 
+  useEffect(() => {
+    // When the path changes, we are navigating. Reset loading state.
+    setLoadingIds(new Set());
+    setIsLoaded(false);
+  }, [pathname]);
+
+  const register = useCallback((id: string) => {
+    setLoadingIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(id);
+      return newSet;
+    });
+    setIsLoaded(false);
+  }, []);
+
+  const unregister = useCallback((id: string) => {
+    setLoadingIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      if (newSet.size === 0) {
+        // A small delay can make the transition feel smoother
+        setTimeout(() => setIsLoaded(true), 150);
+      }
+      return newSet;
+    });
+  }, []);
+
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
-    register: (id: string) => {
-      setLoadingIds(prev => new Set(prev).add(id));
-      setIsLoaded(false);
-    },
-    unregister: (id: string) => {
-      setLoadingIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        if (newSet.size === 0) {
-          setIsLoaded(true);
-        }
-        return newSet;
-      });
-    },
+    register,
+    unregister,
     loaded: isLoaded,
-  }), [isLoaded]);
+  }), [isLoaded, register, unregister]);
 
   return (
     <RealtimeDbContext.Provider value={contextValue}>
@@ -60,6 +78,7 @@ export function useRealtimeDb<T>(path: string, initialValue: T): [T, (value: T) 
     }
     
     register(id);
+    setLoading(true);
     const dbRef = ref(db, path);
 
     const unsubscribe = onValue(dbRef, (snapshot) => {
@@ -82,6 +101,7 @@ export function useRealtimeDb<T>(path: string, initialValue: T): [T, (value: T) 
       // Unregister when component unmounts, in case it was still loading
       unregister(id);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, id]);
 
   const setValue = (value: T) => {

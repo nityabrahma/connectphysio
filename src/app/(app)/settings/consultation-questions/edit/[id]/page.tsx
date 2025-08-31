@@ -18,7 +18,7 @@ export default function EditConsultationQuestionPage() {
   
   const formId = params.id as string;
 
-  const [questionnaires, setQuestionnaires] = useRealtimeDb<Record<string, Questionnaire>>('questionnaires', {});
+  const [questionnaires, setQuestionnaires, loading] = useRealtimeDb<Record<string, Questionnaire>>('questionnaires', {});
   const formDef = questionnaires[formId];
 
   const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
@@ -35,6 +35,10 @@ export default function EditConsultationQuestionPage() {
     setQuestionnaires(remainingForms);
     toast({ title: "Form deleted", variant: "destructive" });
     router.push('/settings');
+  }
+
+  if (loading) {
+    return null; // The global loader will be shown
   }
 
   if (!formDef) {

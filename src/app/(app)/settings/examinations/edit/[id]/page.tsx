@@ -18,7 +18,7 @@ export default function EditExaminationPage() {
   
   const formId = params.id as string;
 
-  const [examinationDefs, setExaminationDefs] = useRealtimeDb<Record<string, ExaminationDef>>('examinationDefs', {});
+  const [examinationDefs, setExaminationDefs, loading] = useRealtimeDb<Record<string, ExaminationDef>>('examinationDefs', {});
   const formDef = examinationDefs[formId];
 
   const handleFormSubmit = (values: Omit<ExaminationDef, 'id'>) => {
@@ -37,6 +37,10 @@ export default function EditExaminationPage() {
     router.push('/settings');
   }
 
+  if (loading) {
+    return null; // The global loader will be shown
+  }
+  
   if (!formDef) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">

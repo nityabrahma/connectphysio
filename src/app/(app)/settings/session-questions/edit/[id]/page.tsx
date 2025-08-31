@@ -18,7 +18,7 @@ export default function EditSessionQuestionPage() {
   
   const formId = params.id as string;
 
-  const [questionnaires, setQuestionnaires] = useRealtimeDb<Record<string, Questionnaire>>('sessionQuestionnaires', {});
+  const [questionnaires, setQuestionnaires, loading] = useRealtimeDb<Record<string, Questionnaire>>('sessionQuestionnaires', {});
   const formDef = questionnaires[formId];
 
   const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
@@ -37,6 +37,10 @@ export default function EditSessionQuestionPage() {
     router.push('/settings');
   }
 
+  if (loading) {
+    return null; // The global loader will be shown
+  }
+  
   if (!formDef) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
