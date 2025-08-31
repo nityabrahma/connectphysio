@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import type { Patient, Session, TreatmentPlan, Questionnaire } from "@/types/domain"
+import type { Patient, Session, TreatmentPlan, Questionnaire, Treatment } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -44,7 +44,7 @@ type EndSessionFormValues = z.infer<typeof formSchema>;
 interface EndSessionFormProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (sessionId: string, healthNotes: string, treatment: { description: string, charges: number }) => void;
+    onSubmit: (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date' | 'treatments'> & { description: string }) => void;
     session: Session;
     patient?: Patient;
 }

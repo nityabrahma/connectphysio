@@ -129,7 +129,7 @@ export type Questionnaire = {
 
 export type Treatment = {
     date: string; // ISO DateTime
-    description: string;
+    treatments: string[];
     charges: number;
 }
 

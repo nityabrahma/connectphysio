@@ -212,7 +212,7 @@ const UpdateTreatmentModal = ({
 } : {
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
-    onSubmit: (description: string, treatmentDate?: string) => void,
+    onSubmit: (treatments: string[], treatmentDate?: string) => void,
     treatmentToEdit?: Treatment,
     treatmentDefs: TreatmentDef[],
 }) => {
@@ -222,16 +222,16 @@ const UpdateTreatmentModal = ({
 
     useEffect(() => {
         if(isOpen) {
-            const currentTreatments = treatmentToEdit?.description.split(', ').filter(Boolean) || [];
+            const currentTreatments = treatmentToEdit?.treatments || [];
             const matchingDefs = currentTreatments.map(name => treatmentDefs.find(def => def.name === name)).filter(Boolean) as TreatmentDef[];
             setSelectedTreatments(matchingDefs);
         }
     }, [isOpen, treatmentToEdit, treatmentDefs]);
     
     const handleSubmit = () => {
-        const description = selectedTreatments.map(t => t.name).join(', ');
-        if (description.trim()) {
-            onSubmit(description, treatmentToEdit?.date);
+        const treatmentNames = selectedTreatments.map(t => t.name);
+        if (treatmentNames.length > 0) {
+            onSubmit(treatmentNames, treatmentToEdit?.date);
         }
     }
     
@@ -468,7 +468,7 @@ export default function PatientDetailPage() {
       treatments: [
         {
           date: new Date().toISOString(),
-          description: "Initial Treatment Plan - Please update.",
+          treatments: ["Initial Treatment Plan - Please update."],
           charges: 0,
         },
       ],
@@ -480,7 +480,7 @@ export default function PatientDetailPage() {
     toast({ title: "New treatment plan started." });
   };
 
-  const handleUpdateTreatment = (description: string, treatmentDate?: string) => {
+  const handleUpdateTreatment = (treatments: string[], treatmentDate?: string) => {
     if (!activeTreatmentPlan) return;
 
     const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
@@ -488,13 +488,13 @@ export default function PatientDetailPage() {
 
     if (treatmentDate) { // Editing existing treatment
       newTreatments = (planToUpdate.treatments || []).map(t => 
-        t.date === treatmentDate ? { ...t, description } : t
+        t.date === treatmentDate ? { ...t, treatments } : t
       );
       toast({ title: "Treatment Updated" });
     } else { // Adding new treatment
       const newTreatment: Treatment = {
         date: new Date().toISOString(),
-        description,
+        treatments,
         charges: 0,
       };
       newTreatments = [...(planToUpdate.treatments || []), newTreatment];
@@ -579,13 +579,13 @@ export default function PatientDetailPage() {
     }
   };
   
-  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
+  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date' | 'treatments'> & { description: string }) => {
     const session = sessions[sessionId];
     if (!session || !activeTreatmentPlan) return;
     
     // Add treatment from session to the plan if description is provided
     if (treatment.description) {
-        const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
+        const newTreatment: Treatment = { treatments: [treatment.description], ...treatment, date: new Date().toISOString() };
         const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
         const updatedPlan = { ...planToUpdate, treatments: [...(planToUpdate.treatments || []), newTreatment] };
         setTreatmentPlans({ ...treatmentPlans, [activeTreatmentPlan.id]: updatedPlan });
@@ -810,7 +810,9 @@ export default function PatientDetailPage() {
                                         </Button>
                                     </CardHeader>
                                     <CardContent className="p-4 pt-0 text-sm">
-                                        <p className="whitespace-pre-wrap">{treatment.description}</p>
+                                         <ul className="list-disc pl-5 space-y-1">
+                                            {treatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
+                                        </ul>
                                     </CardContent>
                                 </Card>
                             ))
