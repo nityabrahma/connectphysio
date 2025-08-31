@@ -279,7 +279,7 @@ const UpdateTreatmentModal = ({
                 <div className="py-4 space-y-4">
                      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                         <PopoverTrigger asChild>
-                            <Input 
+                             <Input 
                                 placeholder="Search and add treatments..."
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
