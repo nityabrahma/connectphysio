@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -26,17 +26,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
-  email: z.string().email("Invalid email address."),
+  email: z.string().email("Invalid email address.").optional().or(z.literal('')),
   phone: z.string().min(10, "Phone number must be at least 10 digits."),
   age: z.coerce.number().int().positive().optional().or(z.literal("")),
   gender: z.enum(["male", "female", "other"]).optional(),
   address: z.string().optional(),
+  hasPastMedicalHistory: z.boolean().default(false),
   pastMedicalHistory: z.string().optional(),
   notes: z.string().optional(),
-  initialTreatmentPlanName: z.string().optional(),
+  initialTreatmentPlanName: z.string(),
 });
 
 export type PatientFormValues = z.infer<typeof formSchema>;
@@ -48,8 +50,17 @@ interface PatientFormProps {
 
 export function PatientForm({ onSubmit, patient }: PatientFormProps) {
   const { user: currentUser } = useAuth();
+  const isEditing = !!patient;
+  
+  const [showPastMedicalHistory, setShowPastMedicalHistory] = useState(false);
+
+  const dynamicSchema = isEditing
+    ? formSchema.extend({ initialTreatmentPlanName: z.string().optional() })
+    : formSchema.extend({ initialTreatmentPlanName: z.string().min(1, "Initial treatment plan name is required.") });
+
+
   const form = useForm<PatientFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(dynamicSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -57,26 +68,44 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
       age: "",
       gender: undefined,
       address: "",
+      hasPastMedicalHistory: false,
       pastMedicalHistory: "",
       notes: "",
       initialTreatmentPlanName: ""
     },
   });
+  
+  const hasHistory = form.watch('hasPastMedicalHistory');
+
+  useEffect(() => {
+    setShowPastMedicalHistory(hasHistory);
+    if(!hasHistory) {
+        form.setValue('pastMedicalHistory', '');
+    }
+  }, [hasHistory, form]);
 
   useEffect(() => {
     if (patient) {
+      const hasHistory = !!patient.pastMedicalHistory;
       form.reset({
         ...patient,
         age: patient.age || "",
+        email: patient.email || "",
+        hasPastMedicalHistory: hasHistory,
       });
+      setShowPastMedicalHistory(hasHistory);
     }
   }, [patient, form]);
 
-  const isEditing = !!patient;
-
   const handleFormSubmit = (values: PatientFormValues) => {
     if (!currentUser) return;
-    onSubmit({ ...values, centreId: currentUser.centreId, initialTreatmentPlanName: values.initialTreatmentPlanName || "" });
+
+    const submissionValues = {
+        ...values,
+        pastMedicalHistory: values.hasPastMedicalHistory ? values.pastMedicalHistory : "No past medical history.",
+    };
+    
+    onSubmit({ ...submissionValues, centreId: currentUser.centreId, initialTreatmentPlanName: values.initialTreatmentPlanName || "" });
   };
 
   return (
@@ -144,7 +173,7 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Email (Optional)</FormLabel>
                 <FormControl>
                   <Input placeholder="john.doe@example.com" {...field} />
                 </FormControl>
@@ -171,7 +200,7 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address</FormLabel>
+              <FormLabel>Address (Optional)</FormLabel>
               <FormControl>
                 <Textarea placeholder="123 Main St, Anytown..." {...field} />
               </FormControl>
@@ -179,19 +208,67 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
             </FormItem>
           )}
         />
+        
+        {!isEditing && (
+            <>
+             <FormField
+                control={form.control}
+                name="initialTreatmentPlanName"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Initial Treatment Plan Name</FormLabel>
+                    <FormControl>
+                    <Input placeholder="e.g., Post-Surgery Knee Rehab" {...field} />
+                    </FormControl>
+                     <p className="text-sm text-muted-foreground">
+                        Create an initial treatment plan for this patient. You can add more details later.
+                    </p>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            </>
+        )}
+        
         <FormField
-          control={form.control}
-          name="pastMedicalHistory"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Past Medical History</FormLabel>
-              <FormControl>
-                <Textarea placeholder="E.g., Diabetes, BP..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+            control={form.control}
+            name="hasPastMedicalHistory"
+            render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                    <FormLabel className="text-base">
+                    Past Medical History
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                        Does the patient have any relevant past medical history?
+                    </p>
+                </div>
+                <FormControl>
+                    <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    />
+                </FormControl>
+                </FormItem>
+            )}
         />
+
+        {showPastMedicalHistory && (
+            <FormField
+                control={form.control}
+                name="pastMedicalHistory"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Details of Past Medical History</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="E.g., Diabetes, BP..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        )}
+        
         <FormField
           control={form.control}
           name="notes"
@@ -208,28 +285,6 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
             </FormItem>
           )}
         />
-        
-        {!isEditing && (
-            <>
-            <Separator />
-             <FormField
-                control={form.control}
-                name="initialTreatmentPlanName"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Initial Treatment Plan Name (Optional)</FormLabel>
-                    <FormControl>
-                    <Input placeholder="e.g., Post-Surgery Knee Rehab" {...field} />
-                    </FormControl>
-                     <p className="text-sm text-muted-foreground">
-                        Create an initial treatment plan for this patient. You can add more details later.
-                    </p>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            </>
-        )}
         
         <div className="flex justify-end">
           <Button type="submit">
