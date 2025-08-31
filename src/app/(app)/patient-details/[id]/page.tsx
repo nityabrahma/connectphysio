@@ -9,6 +9,7 @@ import {
   TreatmentPlan,
   Treatment,
   Questionnaire,
+  TreatmentDef,
 } from "@/types/domain";
 import {
   Card,
@@ -39,6 +40,7 @@ import {
   Clock,
   Check,
   LogOut,
+  X,
 } from "lucide-react";
 import {
   Select,
@@ -91,6 +93,8 @@ import { FormattedHealthNotes } from "@/components/formatted-health-notes";
 import { ConsultationNotesForm } from "./consultation-notes-form";
 import { EndSessionForm } from "../../dashboard/end-session-form";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 
 
 const ViewSessionModal = ({
@@ -204,25 +208,42 @@ const UpdateTreatmentModal = ({
     onOpenChange,
     onSubmit,
     treatmentToEdit,
+    treatmentDefs,
 } : {
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
     onSubmit: (description: string, treatmentDate?: string) => void,
     treatmentToEdit?: Treatment,
+    treatmentDefs: TreatmentDef[],
 }) => {
-    const [description, setDescription] = useState("");
+    const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>([]);
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const isEditing = !!treatmentToEdit;
 
     useEffect(() => {
         if(isOpen) {
-            setDescription(treatmentToEdit?.description || "");
+            const currentTreatments = treatmentToEdit?.description.split(', ').filter(Boolean) || [];
+            const matchingDefs = currentTreatments.map(name => treatmentDefs.find(def => def.name === name)).filter(Boolean) as TreatmentDef[];
+            setSelectedTreatments(matchingDefs);
         }
-    }, [isOpen, treatmentToEdit]);
+    }, [isOpen, treatmentToEdit, treatmentDefs]);
     
     const handleSubmit = () => {
+        const description = selectedTreatments.map(t => t.name).join(', ');
         if (description.trim()) {
-            onSubmit(description.trim(), treatmentToEdit?.date);
+            onSubmit(description, treatmentToEdit?.date);
         }
+    }
+    
+    const handleSelectTreatment = (treatmentDef: TreatmentDef) => {
+        if (!selectedTreatments.find(t => t.id === treatmentDef.id)) {
+            setSelectedTreatments(prev => [...prev, treatmentDef]);
+        }
+        setIsPopoverOpen(false);
+    }
+    
+    const handleRemoveTreatment = (treatmentId: string) => {
+        setSelectedTreatments(prev => prev.filter(t => t.id !== treatmentId));
     }
 
     return (
@@ -231,22 +252,54 @@ const UpdateTreatmentModal = ({
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Treatment' : 'Add New Treatment'}</DialogTitle>
                     <DialogDescription>
-                       {isEditing ? 'Update the details for this treatment entry.' : 'Add a new set of prescribed exercises for this treatment plan. This will become the new active treatment.'}
+                       {isEditing ? 'Update the details for this treatment entry.' : 'Select the treatments performed. This will become the new active treatment description.'}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                    <Label htmlFor="treatment-description">Treatment Description</Label>
-                    <Textarea 
-                        id="treatment-description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Enter the group of exercises..."
-                        rows={5}
-                    />
+                <div className="py-4 space-y-4">
+                    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                        <PopoverTrigger asChild>
+                           <Input placeholder="Search and add treatments..."/>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search treatments..." />
+                                <CommandEmpty>No treatment found.</CommandEmpty>
+                                <CommandGroup>
+                                {treatmentDefs.map((def) => (
+                                    <CommandItem
+                                        key={def.id}
+                                        onSelect={() => handleSelectTreatment(def)}
+                                        value={def.name}
+                                    >
+                                     {def.name}
+                                    </CommandItem>
+                                ))}
+                                </CommandGroup>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+
+                    <div className="space-y-2">
+                        <Label>Selected Treatments</Label>
+                        {selectedTreatments.length > 0 ? (
+                             <div className="flex flex-wrap gap-2 pt-2">
+                                {selectedTreatments.map(t => (
+                                    <Badge key={t.id} variant="secondary" className="flex items-center gap-2">
+                                        {t.name}
+                                        <button onClick={() => handleRemoveTreatment(t.id)} className="rounded-full hover:bg-muted-foreground/20">
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </Badge>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground pt-2">No treatments selected yet.</p>
+                        )}
+                    </div>
                 </div>
                  <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSubmit} disabled={!description.trim()}>Save Treatment</Button>
+                    <Button onClick={handleSubmit} disabled={selectedTreatments.length === 0}>Save Treatment</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -342,6 +395,7 @@ export default function PatientDetailPage() {
   const [therapists] = useRealtimeDb<Record<string, Therapist>>("therapists", {});
   const [treatmentPlans, setTreatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>("treatmentPlans", {});
   const [questionnaires] = useRealtimeDb<Record<string, Questionnaire>>("questionnaires", {});
+  const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
 
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
@@ -354,6 +408,8 @@ export default function PatientDetailPage() {
   const consultationForm = useMemo(() => {
     return Object.values(questionnaires).find(q => q.centreId === user?.centreId);
   }, [questionnaires, user]);
+  
+  const centreTreatmentDefs = useMemo(() => Object.values(treatmentDefs).filter(t => t.centreId === user?.centreId), [treatmentDefs, user]);
   
   const patientTreatmentPlans = useMemo(() => {
     return Object.values(treatmentPlans)
@@ -845,6 +901,7 @@ export default function PatientDetailPage() {
         onOpenChange={setIsUpdateTreatmentModalOpen}
         onSubmit={handleUpdateTreatment}
         treatmentToEdit={treatmentToEdit}
+        treatmentDefs={centreTreatmentDefs}
       />
       {activeTreatmentPlan && (
         <SessionHistoryModal 
