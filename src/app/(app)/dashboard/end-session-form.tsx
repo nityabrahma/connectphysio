@@ -32,6 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
+import { Label } from "@/components/ui/label"
 
 const answerSchema = z.object({
   questionId: z.string(),
@@ -194,7 +195,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                                                         onChange={(e) => setInputValue(e.target.value)}
                                                     />
                                                 </PopoverTrigger>
-                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                                                     <Command>
                                                         <CommandEmpty>No treatment found.</CommandEmpty>
                                                         <CommandGroup>
