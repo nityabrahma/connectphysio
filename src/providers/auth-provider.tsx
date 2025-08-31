@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { LS_KEYS } from '@/lib/constants';
 import { generateId } from '@/lib/ids';
 import type { User, AuthSession, Centre } from '@/types/domain';
-import { useRealtimeDb } from '@/hooks/use-realtime-db';
 import { storage } from '@/lib/storage';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
 
 // Mock password hashing for demo purposes. DO NOT use in production.
 const mockHash = (password: string) => `hashed_${password}`;
