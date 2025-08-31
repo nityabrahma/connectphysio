@@ -234,7 +234,7 @@ const UpdateTreatmentModal = ({
         if (!inputValue) return [];
         return treatmentDefs.filter(def => 
             def.name.toLowerCase().includes(inputValue.toLowerCase()) &&
-            !selectedTreatments.find(t => t.id === def.id) // Exclude already selected
+            !selectedTreatments.find(t => t.id === def.id)
         );
     }, [inputValue, treatmentDefs, selectedTreatments]);
 
@@ -283,6 +283,7 @@ const UpdateTreatmentModal = ({
                                 placeholder="Search and add treatments..."
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
+                                className="w-full"
                             />
                         </PopoverTrigger>
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
@@ -612,13 +613,12 @@ export default function PatientDetailPage() {
     }
   };
   
-  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date' | 'treatments'> & { description: string }) => {
+  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
     const session = sessions[sessionId];
     if (!session || !activeTreatmentPlan) return;
     
-    // Add treatment from session to the plan if description is provided
-    if (treatment.description) {
-        const newTreatment: Treatment = { treatments: [treatment.description], ...treatment, date: new Date().toISOString() };
+    if (treatment.treatments.length > 0) {
+        const newTreatment: Treatment = { ...treatment, date: new Date().toISOString() };
         const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
         const updatedPlan = { ...planToUpdate, treatments: [...(planToUpdate.treatments || []), newTreatment] };
         setTreatmentPlans({ ...treatmentPlans, [activeTreatmentPlan.id]: updatedPlan });
