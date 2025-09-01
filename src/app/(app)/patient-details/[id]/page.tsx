@@ -41,6 +41,7 @@ import {
   Check,
   LogOut,
   X,
+  Printer,
 } from "lucide-react";
 import {
   Select,
@@ -247,26 +248,22 @@ const UpdateTreatmentModal = ({
     }
   }, [isOpen, treatmentToEdit, treatmentDefs]);
 
-  // Modified the filtering logic to match only the starting characters of treatment names
-  // This ensures that typing "te" matches "TENS Therapy" but not words containing "t" or "s" elsewhere
   const filteredTreatments = useMemo(() => {
     if (!inputValue) return [];
     return treatmentDefs.filter(
       (def) =>
-        def.name.toLowerCase().startsWith(inputValue.toLowerCase()) &&
+        def.name.toLowerCase().includes(inputValue.toLowerCase()) &&
         !selectedTreatments.find((t) => t.id === def.id)
     );
   }, [inputValue, treatmentDefs, selectedTreatments]);
 
-  // Modified to keep popover open when input is non-empty, even if no matches are found
-  // This allows displaying the "No treatment listed" message consistently
   useEffect(() => {
-    if (inputValue.length > 0) {
+    if (inputValue.length > 0 && filteredTreatments.length > 0) {
       setIsPopoverOpen(true);
     } else {
       setIsPopoverOpen(false);
     }
-  }, [inputValue]);
+  }, [inputValue, filteredTreatments]);
 
   const totalCharges = useMemo(() => {
     return selectedTreatments.reduce((total, t) => total + t.price, 0);
@@ -302,26 +299,22 @@ const UpdateTreatmentModal = ({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
-          <Input
-            ref={inputRef}
-            placeholder="Search and add treatments..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            className="w-full"
-          />
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
             <PopoverTrigger asChild>
-              {/* This is an invisible trigger that the Popover anchors to. The Input below controls its state. */}
-              <div ref={inputRef} className="w-full" />
+              <Input
+                ref={inputRef}
+                placeholder="Search and add treatments..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+              />
             </PopoverTrigger>
             <PopoverContent
               className="w-[--radix-popover-trigger-width] p-0"
               align="start"
-              onOpenAutoFocus={(e) => e.preventDefault()} // Prevent focus stealing
+              onOpenAutoFocus={(e) => e.preventDefault()}
             >
               <Command>
-                {/* Updated message to "No treatment listed" for clarity when no matches are found */}
-                <CommandEmpty>No treatment listed.</CommandEmpty>
+                <CommandEmpty>No treatment found.</CommandEmpty>
                 <CommandGroup>
                   {filteredTreatments.map((def) => (
                     <CommandItem
@@ -378,11 +371,7 @@ const UpdateTreatmentModal = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-          >
-            Save Treatment
-          </Button>
+          <Button onClick={handleSubmit}>Save Treatment</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -544,10 +533,13 @@ export default function PatientDetailPage() {
   }, [patientTreatmentPlans, activeTreatmentPlanId]);
 
   const latestTreatment = useMemo(() => {
-    if (!activeTreatmentPlan || !activeTreatmentPlan.treatments || activeTreatmentPlan.treatments.length === 0) {
+    if (
+      !activeTreatmentPlan ||
+      !activeTreatmentPlan.treatments ||
+      activeTreatmentPlan.treatments.length === 0
+    ) {
       return null;
     }
-    // With single-entry logic, we just take the first one.
     return activeTreatmentPlan.treatments[0];
   }, [activeTreatmentPlan]);
 
@@ -572,7 +564,7 @@ export default function PatientDetailPage() {
       isActive: true,
       history: "Initial consultation.",
       examination: "Initial examination.",
-      treatments: [], // Start with an empty treatment
+      treatments: [],
     };
 
     setTreatmentPlans({ ...updatedPlans, [newPlanId]: newPlan });
@@ -581,32 +573,27 @@ export default function PatientDetailPage() {
     toast({ title: "New treatment plan started." });
   };
 
-  const handleUpdateTreatment = (
-    treatments: string[],
-    charges: number
-  ) => {
+  const handleUpdateTreatment = (treatments: string[], charges: number) => {
     if (!activeTreatmentPlan) return;
 
     const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
-    
+
     const newTreatment: Treatment = {
       date: new Date().toISOString(),
       treatments,
       charges,
     };
 
-    // Overwrite the treatments array with the new single entry
     const updatedPlan = { ...planToUpdate, treatments: [newTreatment] };
-    
+
     setTreatmentPlans({
       ...treatmentPlans,
       [activeTreatmentPlan.id]: updatedPlan,
     });
-    
+
     setIsUpdateTreatmentModalOpen(false);
     toast({ title: "Treatment Updated" });
   };
-
 
   const patientSessions = useMemo(() => {
     if (!activeTreatmentPlanId) return [];
@@ -715,7 +702,6 @@ export default function PatientDetailPage() {
       const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
       const updatedPlan = {
         ...planToUpdate,
-        // Replace the existing treatment entry
         treatments: [newTreatment],
       };
       setTreatmentPlans({
@@ -827,6 +813,11 @@ export default function PatientDetailPage() {
                     onSelect={() => router.push(`/patients/edit/${patient.id}`)}
                   >
                     <Edit className="mr-2 h-4 w-4" /> Edit Details
+                  </DropdownMenuItem>
+                   <DropdownMenuItem
+                    onSelect={() => router.push(`/patient-details/${patient.id}/print`)}
+                  >
+                    <Printer className="mr-2 h-4 w-4" /> Print Prescription
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => setIsHistoryModalOpen(true)}
@@ -947,36 +938,45 @@ export default function PatientDetailPage() {
                     setIsUpdateTreatmentModalOpen(true);
                   }}
                 >
-                   {latestTreatment ? <><Edit className="mr-2 h-4 w-4" /> Edit</> : <><PlusCircle className="mr-2 h-4 w-4" /> Add</>}
+                  {latestTreatment ? (
+                    <>
+                      <Edit className="mr-2 h-4 w-4" /> Edit
+                    </>
+                  ) : (
+                    <>
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add
+                    </>
+                  )}
                 </Button>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col min-h-0 pt-4 space-y-4">
                 <div className="flex-1 overflow-y-auto -mr-4 pr-4">
                   <div className="space-y-4">
                     {latestTreatment ? (
-                        <Card>
-                          <CardHeader className="p-4 flex-row items-start justify-between">
-                            <div>
-                              <CardTitle className="text-base">
-                                Updated on{" "}
-                                {format(
-                                  new Date(latestTreatment.date),
-                                  "MMM d, yyyy"
-                                )}
-                              </CardTitle>
-                              <CardDescription>
-                                Total: ₹{latestTreatment.charges}
-                              </CardDescription>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="p-4 pt-0 text-sm">
-                            <ul className="list-disc pl-5 space-y-1">
-                              {Array.isArray(latestTreatment.treatments) && latestTreatment.treatments.map((t, i) => (
+                      <Card>
+                        <CardHeader className="p-4 flex-row items-start justify-between">
+                          <div>
+                            <CardTitle className="text-base">
+                              Updated on{" "}
+                              {format(
+                                new Date(latestTreatment.date),
+                                "MMM d, yyyy"
+                              )}
+                            </CardTitle>
+                            <CardDescription>
+                              Total: ₹{latestTreatment.charges}
+                            </CardDescription>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0 text-sm">
+                          <ul className="list-disc pl-5 space-y-1">
+                            {Array.isArray(latestTreatment.treatments) &&
+                              latestTreatment.treatments.map((t, i) => (
                                 <li key={i}>{t}</li>
                               ))}
-                            </ul>
-                          </CardContent>
-                        </Card>
+                          </ul>
+                        </CardContent>
+                      </Card>
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-8">
                         No treatment done yet for this plan.
