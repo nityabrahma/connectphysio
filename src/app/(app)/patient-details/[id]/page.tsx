@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRealtimeDb } from "@/hooks/use-realtime-db";
@@ -1002,7 +1003,7 @@ export default function PatientDetailPage() {
                           </CardHeader>
                           <CardContent className="p-4 pt-0 text-sm">
                             <ul className="list-disc pl-5 space-y-1">
-                              {treatment.treatments.map((t, i) => (
+                              {Array.isArray(treatment.treatments) && treatment.treatments.map((t, i) => (
                                 <li key={i}>{t}</li>
                               ))}
                             </ul>
