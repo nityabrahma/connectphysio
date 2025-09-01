@@ -274,9 +274,7 @@ const UpdateTreatmentModal = ({
 
   const handleSubmit = () => {
     const treatmentNames = selectedTreatments.map((t) => t.name);
-    if (treatmentNames.length > 0) {
-      onSubmit(treatmentNames, totalCharges, treatmentToEdit?.date);
-    }
+    onSubmit(treatmentNames, totalCharges, treatmentToEdit?.date);
   };
 
   const handleSelectTreatment = (treatmentDef: TreatmentDef) => {
@@ -382,7 +380,6 @@ const UpdateTreatmentModal = ({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={selectedTreatments.length === 0}
           >
             Save Treatment
           </Button>
@@ -505,9 +502,6 @@ export default function PatientDetailPage() {
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   const [isUpdateTreatmentModalOpen, setIsUpdateTreatmentModalOpen] =
     useState(false);
-  const [treatmentToEdit, setTreatmentToEdit] = useState<Treatment | undefined>(
-    undefined
-  );
 
   const consultationForm = useMemo(() => {
     return Object.values(questionnaires).find(
@@ -549,11 +543,12 @@ export default function PatientDetailPage() {
     );
   }, [patientTreatmentPlans, activeTreatmentPlanId]);
 
-  const sortedTreatments = useMemo(() => {
-    if (!activeTreatmentPlan || !activeTreatmentPlan.treatments) return [];
-    return [...activeTreatmentPlan.treatments].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+  const latestTreatment = useMemo(() => {
+    if (!activeTreatmentPlan || !activeTreatmentPlan.treatments || activeTreatmentPlan.treatments.length === 0) {
+      return null;
+    }
+    // With single-entry logic, we just take the first one.
+    return activeTreatmentPlan.treatments[0];
   }, [activeTreatmentPlan]);
 
   const handleNewTreatmentPlan = (name: string) => {
@@ -577,13 +572,7 @@ export default function PatientDetailPage() {
       isActive: true,
       history: "Initial consultation.",
       examination: "Initial examination.",
-      treatments: [
-        {
-          date: new Date().toISOString(),
-          treatments: ["Initial Treatment Plan - Please update."],
-          charges: 0,
-        },
-      ],
+      treatments: [], // Start with an empty treatment
     };
 
     setTreatmentPlans({ ...updatedPlans, [newPlanId]: newPlan });
@@ -594,39 +583,30 @@ export default function PatientDetailPage() {
 
   const handleUpdateTreatment = (
     treatments: string[],
-    charges: number,
-    treatmentDate?: string
+    charges: number
   ) => {
     if (!activeTreatmentPlan) return;
 
     const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
-    let newTreatments: Treatment[];
+    
+    const newTreatment: Treatment = {
+      date: new Date().toISOString(),
+      treatments,
+      charges,
+    };
 
-    if (treatmentDate) {
-      // Editing existing treatment
-      newTreatments = (planToUpdate.treatments || []).map((t) =>
-        t.date === treatmentDate ? { ...t, treatments, charges } : t
-      );
-      toast({ title: "Treatment Updated" });
-    } else {
-      // Adding new treatment
-      const newTreatment: Treatment = {
-        date: new Date().toISOString(),
-        treatments,
-        charges,
-      };
-      newTreatments = [...(planToUpdate.treatments || []), newTreatment];
-      toast({ title: "New Treatment Added" });
-    }
-
-    const updatedPlan = { ...planToUpdate, treatments: newTreatments };
+    // Overwrite the treatments array with the new single entry
+    const updatedPlan = { ...planToUpdate, treatments: [newTreatment] };
+    
     setTreatmentPlans({
       ...treatmentPlans,
       [activeTreatmentPlan.id]: updatedPlan,
     });
+    
     setIsUpdateTreatmentModalOpen(false);
-    setTreatmentToEdit(undefined);
+    toast({ title: "Treatment Updated" });
   };
+
 
   const patientSessions = useMemo(() => {
     if (!activeTreatmentPlanId) return [];
@@ -735,7 +715,8 @@ export default function PatientDetailPage() {
       const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
       const updatedPlan = {
         ...planToUpdate,
-        treatments: [...(planToUpdate.treatments || []), newTreatment],
+        // Replace the existing treatment entry
+        treatments: [newTreatment],
       };
       setTreatmentPlans({
         ...treatmentPlans,
@@ -963,56 +944,42 @@ export default function PatientDetailPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setTreatmentToEdit(undefined);
                     setIsUpdateTreatmentModalOpen(true);
                   }}
                 >
-                  <PlusCircle className="mr-2 h-4 w-4" /> New
+                   {latestTreatment ? <><Edit className="mr-2 h-4 w-4" /> Edit</> : <><PlusCircle className="mr-2 h-4 w-4" /> Add</>}
                 </Button>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col min-h-0 pt-4 space-y-4">
                 <div className="flex-1 overflow-y-auto -mr-4 pr-4">
                   <div className="space-y-4">
-                    {sortedTreatments.length > 0 ? (
-                      sortedTreatments.map((treatment) => (
-                        <Card key={treatment.date}>
+                    {latestTreatment ? (
+                        <Card>
                           <CardHeader className="p-4 flex-row items-start justify-between">
                             <div>
                               <CardTitle className="text-base">
                                 Updated on{" "}
                                 {format(
-                                  new Date(treatment.date),
+                                  new Date(latestTreatment.date),
                                   "MMM d, yyyy"
                                 )}
                               </CardTitle>
                               <CardDescription>
-                                Total: ₹{treatment.charges}
+                                Total: ₹{latestTreatment.charges}
                               </CardDescription>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => {
-                                setTreatmentToEdit(treatment);
-                                setIsUpdateTreatmentModalOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
                           </CardHeader>
                           <CardContent className="p-4 pt-0 text-sm">
                             <ul className="list-disc pl-5 space-y-1">
-                              {Array.isArray(treatment.treatments) && treatment.treatments.map((t, i) => (
+                              {Array.isArray(latestTreatment.treatments) && latestTreatment.treatments.map((t, i) => (
                                 <li key={i}>{t}</li>
                               ))}
                             </ul>
                           </CardContent>
                         </Card>
-                      ))
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-8">
-                        No treatment prescribed for this plan yet.
+                        No treatment done yet for this plan.
                       </p>
                     )}
                   </div>
@@ -1121,7 +1088,7 @@ export default function PatientDetailPage() {
         isOpen={isUpdateTreatmentModalOpen}
         onOpenChange={setIsUpdateTreatmentModalOpen}
         onSubmit={handleUpdateTreatment}
-        treatmentToEdit={treatmentToEdit}
+        treatmentToEdit={latestTreatment || undefined}
         treatmentDefs={centreTreatmentDefs}
       />
       {activeTreatmentPlan && (
