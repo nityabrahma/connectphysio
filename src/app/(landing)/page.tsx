@@ -126,7 +126,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AnimatePresence>
-        {(loading || user) && (
+        {loading && (
           <motion.div
             key="loader"
             initial={{ opacity: 0 }}
