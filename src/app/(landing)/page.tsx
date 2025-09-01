@@ -12,11 +12,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Calendar, Users, BarChart, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AppLoader } from "@/components/app-loader";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -123,22 +123,23 @@ export default function LandingPage() {
     },
   ];
 
-  if (loading || user) {
-    return (
-       <div className="flex h-screen w-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-           <Skeleton className="h-12 w-12 rounded-full" />
-           <div className="space-y-2">
-             <Skeleton className="h-4 w-[250px]" />
-             <Skeleton className="h-4 w-[200px]" />
-           </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col min-h-screen bg-background">
+       <AnimatePresence>
+        {(loading || user) && (
+          <motion.div
+            key="loader"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          >
+            <AppLoader />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <main className="flex-1">
         {/* Hero Section */}
         <section className="w-full py-20 md:py-32 lg:py-40 bg-secondary/50">
