@@ -152,7 +152,7 @@ export default function PrintPrescriptionPage() {
           <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
             Treatment Protocol
           </h3>
-           {latestTreatment ? (
+           {latestTreatment && Array.isArray(latestTreatment.treatments) ? (
                 <div className="text-sm">
                     <ul className="list-disc pl-8 space-y-1">
                         {latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
