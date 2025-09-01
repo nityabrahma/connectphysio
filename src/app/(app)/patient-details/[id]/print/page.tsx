@@ -48,7 +48,7 @@ export default function PrintPrescriptionPage() {
     }
     return activeTreatmentPlan.treatments[0];
   }, [activeTreatmentPlan]);
-  
+
   const patientSessions = useMemo(() => {
     if (!activeTreatmentPlan) return [];
     return Object.values(sessions)
@@ -59,45 +59,56 @@ export default function PrintPrescriptionPage() {
   const handlePrint = () => {
     const printableElement = document.getElementById('printable-area');
     if (!printableElement) return;
-    
+
     setIsPrinting(true);
 
     html2canvas(printableElement, {
-        scale: 2, // Improve resolution
-        useCORS: true,
-        windowWidth: A4_WIDTH_PX,
+      scale: 2, // Improve resolution
+      useCORS: true,
+      windowWidth: A4_WIDTH_PX,
     }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'px',
-            format: [A4_WIDTH_PX, A4_HEIGHT_PX],
-        });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [A4_WIDTH_PX, A4_HEIGHT_PX],
+      });
 
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        
-        const ratio = canvasWidth / pdfWidth;
-        const scaledCanvasHeight = canvasHeight / ratio;
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        let heightLeft = scaledCanvasHeight;
-        let position = 0;
+      const ratio = canvasWidth / pdfWidth;
+      const scaledCanvasHeight = canvasHeight / ratio;
 
+      let heightLeft = scaledCanvasHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledCanvasHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - scaledCanvasHeight;
+        pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledCanvasHeight);
         heightLeft -= pdfHeight;
+      }
 
-        while (heightLeft > 0) {
-            position = heightLeft - scaledCanvasHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledCanvasHeight);
-            heightLeft -= pdfHeight;
-        }
+      pdf.autoPrint();
+      const pdfBlob = pdf.output("blob");
+      const blobUrl = URL.createObjectURL(new Blob([pdfBlob], { type: "application/pdf" }));
 
-        pdf.autoPrint();
-        window.open(pdf.output('bloburl'), '_blank');
-        setIsPrinting(false);
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+        iframe.contentWindow?.print();
+      };
+
+      setIsPrinting(false);
     });
   };
 
@@ -185,16 +196,16 @@ export default function PrintPrescriptionPage() {
                 </p>
               </div>
               {activeTreatmentPlan && (
-                  <>
-                      <div>
-                          <h4 className="font-semibold text-gray-700">Chief Complaint:</h4>
-                          <p className="pl-4 text-gray-600 whitespace-pre-wrap">{activeTreatmentPlan.history || "Not recorded."}</p>
-                      </div>
-                      <div>
-                          <h4 className="font-semibold text-gray-700">Examination Findings:</h4>
-                          <p className="pl-4 text-gray-600 whitespace-pre-wrap">{activeTreatmentPlan.examination || "Not recorded."}</p>
-                      </div>
-                  </>
+                <>
+                  <div>
+                    <h4 className="font-semibold text-gray-700">Chief Complaint:</h4>
+                    <p className="pl-4 text-gray-600 whitespace-pre-wrap">{activeTreatmentPlan.history || "Not recorded."}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-700">Examination Findings:</h4>
+                    <p className="pl-4 text-gray-600 whitespace-pre-wrap">{activeTreatmentPlan.examination || "Not recorded."}</p>
+                  </div>
+                </>
               )}
             </div>
           </section>
@@ -204,42 +215,42 @@ export default function PrintPrescriptionPage() {
               Treatment Protocol
             </h3>
             {latestTreatment && Array.isArray(latestTreatment.treatments) ? (
-                  <div className="text-sm">
-                      <ul className="list-disc pl-8 space-y-1">
-                          {latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
-                      </ul>
-                  </div>
-              ) : (
-                  <p className="text-sm text-gray-500">No specific treatment protocol defined yet.</p>
-              )}
+              <div className="text-sm">
+                <ul className="list-disc pl-8 space-y-1">
+                  {latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No specific treatment protocol defined yet.</p>
+            )}
           </section>
 
           <section className="mt-8">
-              <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">Session Summary</h3>
-              {patientSessions.length > 0 ? (
-                  <table className="w-full text-sm text-left">
-                      <thead className="border-b">
-                          <tr>
-                              <th className="py-2">Date</th>
-                              <th className="py-2">Therapist</th>
-                          </tr>
-                      </thead>
-                      <tbody>
-                          {patientSessions.slice(0, 5).map(session => (
-                              <tr key={session.id} className="border-b">
-                                  <td className="py-2">{format(new Date(session.date), "MMM d, yyyy")}</td>
-                                  <td className="py-2">{therapists[session.therapistId]?.name || 'Unknown'}</td>
-                              </tr>
-                          ))}
-                      </tbody>
-                  </table>
-              ) : (
-                  <p className="text-sm text-gray-500">No completed sessions for this treatment plan yet.</p>
-              )}
+            <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">Session Summary</h3>
+            {patientSessions.length > 0 ? (
+              <table className="w-full text-sm text-left">
+                <thead className="border-b">
+                  <tr>
+                    <th className="py-2">Date</th>
+                    <th className="py-2">Therapist</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {patientSessions.slice(0, 5).map(session => (
+                    <tr key={session.id} className="border-b">
+                      <td className="py-2">{format(new Date(session.date), "MMM d, yyyy")}</td>
+                      <td className="py-2">{therapists[session.therapistId]?.name || 'Unknown'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-sm text-gray-500">No completed sessions for this treatment plan yet.</p>
+            )}
           </section>
 
           <footer className="mt-16 pt-8 border-t-2 border-gray-800 text-right">
-              <div className="text-lg font-bold">Signature</div>
+            <div className="text-lg font-bold">Signature</div>
           </footer>
         </div>
       </div>
