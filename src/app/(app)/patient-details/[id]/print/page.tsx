@@ -8,13 +8,15 @@ import { usePatients } from "@/hooks/use-patients";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // A4 size in pixels at 96 DPI: 794px x 1123px
-const A4_WIDTH = "210mm";
-const A4_HEIGHT = "297mm";
+const A4_WIDTH_PX = 794;
+const A4_HEIGHT_PX = 1123;
 
 export default function PrintPrescriptionPage() {
   const params = useParams();
@@ -22,6 +24,7 @@ export default function PrintPrescriptionPage() {
   const { user } = useAuth();
   const { getPatient } = usePatients();
   const patient = getPatient(patientId);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const [sessions] = useRealtimeDb<Record<string, Session>>("sessions", {});
   const [treatmentPlans] = useRealtimeDb<Record<string, TreatmentPlan>>("treatmentPlans", {});
@@ -52,6 +55,51 @@ export default function PrintPrescriptionPage() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [sessions, activeTreatmentPlan]);
 
+  const handlePrint = () => {
+    const printableElement = document.getElementById('printable-area');
+    if (!printableElement) return;
+    
+    setIsPrinting(true);
+
+    html2canvas(printableElement, {
+        scale: 2, // Improve resolution
+        useCORS: true,
+        windowWidth: A4_WIDTH_PX,
+    }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'px',
+            format: [A4_WIDTH_PX, A4_HEIGHT_PX],
+        });
+
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        const ratio = canvasWidth / pdfWidth;
+        const scaledCanvasHeight = canvasHeight / ratio;
+
+        let heightLeft = scaledCanvasHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledCanvasHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - scaledCanvasHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledCanvasHeight);
+            heightLeft -= pdfHeight;
+        }
+
+        pdf.autoPrint();
+        window.open(pdf.output('bloburl'), '_blank');
+        setIsPrinting(false);
+    });
+  };
+
   if (!patient) {
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-8 bg-gray-50">
@@ -70,36 +118,11 @@ export default function PrintPrescriptionPage() {
 
   return (
     <>
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-area,
-          #printable-area * {
-            visibility: visible;
-          }
-          #printable-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: auto;
-            margin: 0;
-            padding: 0;
-            border: none;
-            box-shadow: none;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
       <div className="bg-gray-100 min-h-screen p-4 sm:p-8 flex flex-col items-center">
         <div className="w-full max-w-4xl flex justify-end mb-4 no-print">
-          <Button onClick={() => window.print()}>
+          <Button onClick={handlePrint} disabled={isPrinting}>
             <Printer className="mr-2 h-4 w-4" />
-            Print Prescription
+            {isPrinting ? 'Generating PDF...' : 'Print Prescription'}
           </Button>
         </div>
 
@@ -107,7 +130,7 @@ export default function PrintPrescriptionPage() {
         <div
           id="printable-area"
           className="bg-white shadow-lg p-12 text-black"
-          style={{ width: A4_WIDTH, minHeight: A4_HEIGHT }}
+          style={{ width: `${A4_WIDTH_PX}px`, minHeight: `${A4_HEIGHT_PX}px` }}
         >
           <header className="flex justify-between items-start border-b-2 border-gray-800 pb-4">
             <div>
