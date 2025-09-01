@@ -4,12 +4,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppProvider } from "@/providers/app-provider";
-import { AuthProvider } from "@/providers/auth-provider";
+import { AuthProvider, useAuth } from "@/providers/auth-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { useRealtimeDbListener } from "@/hooks/use-realtime-db";
 import { AnimatePresence, motion } from "framer-motion";
 import { AppLoader } from "@/components/app-loader";
+import { usePathname } from "next/navigation";
 
 // Note: We can't export metadata from a client component.
 // This should be moved to a server component if static metadata is needed.
@@ -21,13 +22,19 @@ function RootLayoutContent({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { loading: authLoading } = useAuth();
   const isDataLoaded = useRealtimeDbListener();
+  const pathname = usePathname();
+
+  // Show loader if auth is loading OR if it's an app route and data is not loaded yet.
+  const isAppRoute = !['/', '/login', '/register-admin', '/forgot-password'].includes(pathname);
+  const isLoading = authLoading || (isAppRoute && !isDataLoaded);
 
   return (
     <>
       {children}
       <AnimatePresence>
-        {!isDataLoaded && (
+        {isLoading && (
           <motion.div
             key="loader"
             initial={{ opacity: 0 }}

@@ -16,7 +16,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { AppLoader } from "@/components/app-loader";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -122,24 +121,15 @@ export default function LandingPage() {
         "Yes, ConnectPhysio is fully responsive, allowing you and your staff to manage the clinic from a desktop, tablet, or smartphone, ensuring you're always connected.",
     },
   ];
+  
+  // The global loader in RootLayout handles the initial loading state.
+  // We only prevent rendering the page content if the user is authenticated and is about to be redirected.
+  if (loading || user) {
+    return null; // Return null to prevent flash of content during auth check or redirect
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <AnimatePresence>
-        {loading && (
-          <motion.div
-            key="loader"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm"
-          >
-            <AppLoader />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="w-full py-20 md:py-32 lg:py-40 bg-secondary/50">

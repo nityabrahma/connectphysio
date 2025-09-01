@@ -4,7 +4,6 @@
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { AppLoader } from './app-loader';
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -18,7 +17,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, [user, loading, router, pathname]);
 
   if (loading || !user) {
-    return <AppLoader />;
+    // The global loader in RootLayout now handles this.
+    // Returning null prevents a flash of content before redirect.
+    return null;
   }
 
   return <>{children}</>;
