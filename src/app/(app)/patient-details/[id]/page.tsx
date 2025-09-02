@@ -250,15 +250,18 @@ const UpdateTreatmentModal = ({
 
   const filteredTreatments = useMemo(() => {
     if (!inputValue) return [];
-    return treatmentDefs.filter(
-      (def) =>
-        def.name.toLowerCase().includes(inputValue.toLowerCase()) &&
-        !selectedTreatments.find((t) => t.id === def.id)
-    );
+    const query = inputValue.toLowerCase();
+
+    return treatmentDefs.filter((def) => {
+      const matches = def.name.toLowerCase().startsWith(query);
+      return (
+        matches && !selectedTreatments.find((t) => t.id === def.id)
+      );
+    });
   }, [inputValue, treatmentDefs, selectedTreatments]);
 
   useEffect(() => {
-    if (inputValue.length > 0 && filteredTreatments.length > 0) {
+    if (inputValue.length > 0) {
       setIsPopoverOpen(true);
     } else {
       setIsPopoverOpen(false);
@@ -299,14 +302,15 @@ const UpdateTreatmentModal = ({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
+          <Input
+            ref={inputRef}
+            placeholder="Search and add treatments..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+          />
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
             <PopoverTrigger asChild>
-              <Input
-                ref={inputRef}
-                placeholder="Search and add treatments..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-              />
+              <div className="w-full" />
             </PopoverTrigger>
             <PopoverContent
               className="w-[--radix-popover-trigger-width] p-0"
@@ -314,21 +318,24 @@ const UpdateTreatmentModal = ({
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
               <Command>
-                <CommandEmpty>No treatment found.</CommandEmpty>
                 <CommandGroup>
-                  {filteredTreatments.map((def) => (
-                    <CommandItem
-                      key={def.id}
-                      onSelect={() => handleSelectTreatment(def)}
-                      value={def.name}
-                      className="flex justify-between"
-                    >
-                      <span>{def.name}</span>
-                      <span className="text-muted-foreground">
-                        ₹{def.price}
-                      </span>
-                    </CommandItem>
-                  ))}
+                  {filteredTreatments.length > 0 ? (
+                    filteredTreatments.map((def) => (
+                      <CommandItem
+                        key={def.id}
+                        onSelect={() => handleSelectTreatment(def)}
+                        value={def.name}
+                        className="flex justify-between"
+                      >
+                        <span>{def.name}</span>
+                        <span className="text-muted-foreground">₹{def.price}</span>
+                      </CommandItem>
+                    ))
+                  ) : inputValue ? (
+                    <div className="p-2 text-sm text-muted-foreground">
+                      No treatment found.
+                    </div>
+                  ) : null}
                 </CommandGroup>
               </Command>
             </PopoverContent>
@@ -814,7 +821,7 @@ export default function PatientDetailPage() {
                   >
                     <Edit className="mr-2 h-4 w-4" /> Edit Details
                   </DropdownMenuItem>
-                   <DropdownMenuItem
+                  <DropdownMenuItem
                     onSelect={() => router.push(`/patient-details/${patient.id}/print`)}
                   >
                     <Printer className="mr-2 h-4 w-4" /> Print Prescription
