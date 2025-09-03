@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { TreatmentDef } from '@/types/domain';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,14 @@ export function TreatmentSelector({ availableTreatments, selectedTreatments, onS
             !selectedTreatments.find(t => t.id === def.id)
         );
     }, [inputValue, availableTreatments, selectedTreatments]);
+    
+    useEffect(() => {
+        if (inputValue.length > 0 && filteredTreatments.length > 0) {
+            setIsPopoverOpen(true);
+        } else {
+            setIsPopoverOpen(false);
+        }
+    }, [inputValue, filteredTreatments]);
 
     const totalCharges = useMemo(() => {
         return selectedTreatments.reduce((total, t) => total + t.price, 0);
@@ -57,11 +65,7 @@ export function TreatmentSelector({ availableTreatments, selectedTreatments, onS
                             ref={inputRef}
                             placeholder="Search and add treatments..."
                             value={inputValue}
-                            onChange={(e) => {
-                                setInputValue(e.target.value);
-                                if (e.target.value) setIsPopoverOpen(true);
-                                else setIsPopoverOpen(false);
-                            }}
+                            onChange={(e) => setInputValue(e.target.value)}
                         />
                     </PopoverTrigger>
                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
