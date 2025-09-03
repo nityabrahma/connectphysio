@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Plus, Minus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TreatmentSelectorProps {
@@ -31,6 +31,7 @@ export function TreatmentSelector({
 }: TreatmentSelectorProps) {
     
     const [selectedPackageId, setSelectedPackageId] = useState<string>('none');
+    const [numberOfSessions, setNumberOfSessions] = useState(1);
 
     useEffect(() => {
         if (patientPackage) {
@@ -39,6 +40,19 @@ export function TreatmentSelector({
             setSelectedPackageId('none');
         }
     }, [patientPackage]);
+    
+    const selectedPackage = useMemo(() => {
+        if (selectedPackageId === 'none') return null;
+        return availablePackages.find(p => p.id === selectedPackageId) || null;
+    }, [availablePackages, selectedPackageId]);
+
+    useEffect(() => {
+        if (selectedPackage) {
+            setNumberOfSessions(selectedPackage.sessions);
+        } else {
+            setNumberOfSessions(1);
+        }
+    }, [selectedPackage]);
 
     const treatmentOptions = useMemo(() => {
         const selectedIds = new Set(selectedTreatments.map(t => t.id));
@@ -60,19 +74,16 @@ export function TreatmentSelector({
         return selectedTreatments.reduce((total, t) => total + t.price, 0);
     }, [selectedTreatments]);
 
-    const selectedPackage = useMemo(() => {
-        if (selectedPackageId === 'none') return null;
-        return availablePackages.find(p => p.id === selectedPackageId) || null;
-    }, [availablePackages, selectedPackageId]);
+    const totalBeforeDiscount = useMemo(() => subtotal * numberOfSessions, [subtotal, numberOfSessions]);
 
     const discountAmount = useMemo(() => {
         if (selectedPackage) {
-            return (subtotal * selectedPackage.discountPercentage) / 100;
+            return (totalBeforeDiscount * selectedPackage.discountPercentage) / 100;
         }
         return 0;
-    }, [subtotal, selectedPackage]);
+    }, [totalBeforeDiscount, selectedPackage]);
 
-    const grandTotal = useMemo(() => subtotal - discountAmount, [subtotal, discountAmount]);
+    const grandTotal = useMemo(() => totalBeforeDiscount - discountAmount, [totalBeforeDiscount, discountAmount]);
 
     const handleRemoveTreatment = (treatmentId: string) => {
         onSelectTreatments(selectedTreatments.filter(t => t.id !== treatmentId));
@@ -88,7 +99,7 @@ export function TreatmentSelector({
         <Card>
             <CardHeader>
                 <CardTitle>Treatments & Billing</CardTitle>
-                <CardDescription>Add treatments and apply package discounts if available.</CardDescription>
+                <CardDescription>Add treatments, adjust sessions, and apply package discounts if available.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                  <SelectComponent
@@ -132,8 +143,26 @@ export function TreatmentSelector({
 
                 <div className="space-y-4">
                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="text-muted-foreground">Subtotal per Session</span>
                         <span className="font-medium">₹{subtotal.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="sessions-count">No of sessions</Label>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setNumberOfSessions(Math.max(1, numberOfSessions - 1))}>
+                                <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="font-bold text-lg w-10 text-center">{numberOfSessions}</span>
+                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setNumberOfSessions(numberOfSessions + 1)}>
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Total Before Discount</span>
+                        <span className="font-medium">₹{totalBeforeDiscount.toFixed(2)}</span>
                     </div>
 
                     <div className="flex items-center justify-between">
