@@ -9,6 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Trash2 } from 'lucide-react';
 
 interface TreatmentSelectorProps {
     availableTreatments: TreatmentDef[];
@@ -29,12 +31,16 @@ export function TreatmentSelector({
     const [applyDiscount, setApplyDiscount] = useState(false);
 
     const treatmentOptions = useMemo(() => {
-        return availableTreatments.map(t => ({
-            value: t.id,
-            label: `${t.name} - ₹${t.price}`,
-            treatment: t,
-        }));
-    }, [availableTreatments]);
+        // Filter out already selected treatments from the dropdown
+        const selectedIds = new Set(selectedTreatments.map(t => t.id));
+        return availableTreatments
+            .filter(t => !selectedIds.has(t.id))
+            .map(t => ({
+                value: t.id,
+                label: `${t.name} - ₹${t.price}`,
+                treatment: t,
+            }));
+    }, [availableTreatments, selectedTreatments]);
 
     const selectedOptions = useMemo(() => {
         return selectedTreatments.map(t => ({
@@ -57,10 +63,14 @@ export function TreatmentSelector({
 
     const grandTotal = useMemo(() => subtotal - discountAmount, [subtotal, discountAmount]);
 
+    const handleSelectChange = (selectedOption: any) => {
+        if (selectedOption) {
+            onSelectTreatments([...selectedTreatments, selectedOption.treatment]);
+        }
+    }
 
-    const handleSelectChange = (selectedOptions: any) => {
-        const selected = selectedOptions ? selectedOptions.map((opt: any) => opt.treatment) : [];
-        onSelectTreatments(selected);
+    const handleRemoveTreatment = (treatmentId: string) => {
+        onSelectTreatments(selectedTreatments.filter(t => t.id !== treatmentId));
     }
 
     return (
@@ -71,14 +81,41 @@ export function TreatmentSelector({
             </CardHeader>
             <CardContent className="space-y-6">
                  <Select
-                    isMulti
                     options={treatmentOptions}
-                    value={selectedOptions}
+                    value={null} // Controlled externally, reset after each selection
                     onChange={handleSelectChange}
-                    className="basic-multi-select"
-                    classNamePrefix="select"
                     placeholder="Search and add treatments..."
+                    className="basic-single"
+                    classNamePrefix="select"
                  />
+
+                {selectedTreatments.length > 0 && (
+                    <div className="rounded-md border mt-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Treatment</TableHead>
+                                    <TableHead className="text-right">Price</TableHead>
+                                    <TableHead className="w-[50px]"></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {selectedTreatments.map(t => (
+                                    <TableRow key={t.id}>
+                                        <TableCell className="font-medium">{t.name}</TableCell>
+                                        <TableCell className="text-right">₹{t.price.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveTreatment(t.id)}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+
 
                 <Separator />
 
