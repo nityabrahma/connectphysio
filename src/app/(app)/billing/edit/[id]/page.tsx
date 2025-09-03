@@ -1,20 +1,20 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Patient, TreatmentDef, PackageDef, Bill } from '@/types/domain';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, User, Calendar as CalendarIcon, Pencil } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { Label } from '@/components/ui/label';
-import { format } from 'date-fns';
 import { useRealtimeDb } from '@/hooks/use-realtime-db';
 import { TreatmentSelector, type BillableTreatment } from '../../new/treatment-selector';
 import { useAuth } from '@/hooks/use-auth';
 import { useBills } from '@/hooks/use-bills';
 import { usePatients } from '@/hooks/use-patients';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 export default function EditBillPage() {
   const router = useRouter();
@@ -24,32 +24,25 @@ export default function EditBillPage() {
   const { user } = useAuth();
   const { getBill, updateBill } = useBills();
   const { getPatient } = usePatients();
+  const { toast } = useToast();
 
-  const [bill, setBill] = useState<Bill | null>(null);
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [selectedTreatments, setSelectedTreatments] = useState<BillableTreatment[]>([]);
-  
   const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
   const [packages] = useRealtimeDb<Record<string, PackageDef>>('packages', {});
 
-  useEffect(() => {
-    const billData = getBill(billId);
-    if (billData) {
-      setBill(billData);
-      const patientData = getPatient(billData.patientId);
-      if (patientData) setPatient(patientData);
-
-      const treatments = billData.treatments.map(t => ({
+  const bill = useMemo(() => getBill(billId), [billId, getBill]);
+  const patient = useMemo(() => bill ? getPatient(bill.patientId) : null, [bill, getPatient]);
+  
+  // Initialize state once, preventing re-render loops
+  const [selectedTreatments, setSelectedTreatments] = useState<BillableTreatment[]>(() => {
+      if (!bill) return [];
+      return bill.treatments.map(t => ({
         id: t.treatmentDefId,
         name: t.name,
         price: t.price,
         customPrice: t.price,
         centreId: user?.centreId || '',
       }));
-      setSelectedTreatments(treatments);
-    }
-  }, [billId, getBill, getPatient, user]);
-
+  });
 
   const availableTreatments = useMemo(() => 
     Object.values(treatmentDefs).filter(t => t.centreId === user?.centreId), 
@@ -59,12 +52,12 @@ export default function EditBillPage() {
     Object.values(packages).filter(p => p.centreId === user?.centreId),
   [packages, user]);
 
-  const handleUpdateBill = (billData: Omit<Bill, 'id' | 'billNumber' | 'patientId' | 'centreId' | 'createdAt'>) => {
+  const handleUpdateBill = useCallback((billData: Omit<Bill, 'id' | 'billNumber' | 'patientId' | 'centreId' | 'createdAt'>) => {
     if (!bill) return;
     
     updateBill(bill.id, billData);
     router.push('/billing');
-  }
+  }, [bill, updateBill, router]);
   
   if (!bill || !patient) {
      return (
