@@ -69,11 +69,7 @@ export default function NewBillPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Billing Details</CardTitle>
-            <CardDescription>Start by selecting a patient and then a session, or enter session details manually.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
               {/* Patient Selection */}
               <div className="space-y-2">
