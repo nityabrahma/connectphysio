@@ -10,7 +10,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { useRealtimeDb } from '@/hooks/use-realtime-db';
-import { TreatmentSelector, type BillableTreatment } from '../new/treatment-selector';
+import { TreatmentSelector, type BillableTreatment } from '../../new/treatment-selector';
 import { useAuth } from '@/hooks/use-auth';
 import { useBills } from '@/hooks/use-bills';
 import { usePatients } from '@/hooks/use-patients';
