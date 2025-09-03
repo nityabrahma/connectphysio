@@ -98,7 +98,7 @@ export function TreatmentSelector({
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Treatments & Billing</CardTitle>
+                <CardTitle>Treatments and Package Discounts</CardTitle>
                 <CardDescription>Add treatments, adjust sessions, and apply package discounts if available.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
