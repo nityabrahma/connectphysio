@@ -108,7 +108,7 @@ export default function NewBillPage() {
                             Select Session
                         </Button>
                          <Button variant="outline" className="w-full" onClick={() => setIsManualSessionDialogOpen(true)} disabled={!selectedPatient}>
-                            Enter Manually
+                            select date/time
                         </Button>
                     </div>
                 )}
