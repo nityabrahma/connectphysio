@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { ManualSessionDialog, type ManualSessionFormValues } from './manual-session-dialog';
 import { useRealtimeDb } from '@/hooks/use-realtime-db';
-import { TreatmentSelector } from './treatment-selector';
+import { TreatmentSelector, type BillableTreatment } from './treatment-selector';
 import { useAuth } from '@/hooks/use-auth';
 
 type DisplaySession = {
@@ -28,7 +28,7 @@ export default function NewBillPage() {
   const { user } = useAuth();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [displaySession, setDisplaySession] = useState<DisplaySession | null>(null);
-  const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>([]);
+  const [selectedTreatments, setSelectedTreatments] = useState<BillableTreatment[]>([]);
 
   const [isPatientDialogOpen, setIsPatientDialogOpen] = useState(false);
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);

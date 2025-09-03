@@ -11,11 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+
+export type BillableTreatment = TreatmentDef & { customPrice: number };
 
 interface TreatmentSelectorProps {
     availableTreatments: TreatmentDef[];
-    selectedTreatments: TreatmentDef[];
-    onSelectTreatments: (treatments: TreatmentDef[]) => void;
+    selectedTreatments: BillableTreatment[];
+    onSelectTreatments: (treatments: BillableTreatment[]) => void;
     patientPackage: PackageDef | null;
     availablePackages: PackageDef[];
     onGenerateBill: () => void;
@@ -66,12 +69,15 @@ export function TreatmentSelector({
     }, [availableTreatments, selectedTreatments]);
 
     const handleSelectChange = (selectedOptions: any) => {
-        const newTreatments = selectedOptions ? selectedOptions.map((option: any) => option.treatment) : [];
+        const newTreatments = selectedOptions ? selectedOptions.map((option: any) => ({
+            ...option.treatment,
+            customPrice: option.treatment.price,
+        })) : [];
         onSelectTreatments(newTreatments);
     }
 
     const subtotal = useMemo(() => {
-        return selectedTreatments.reduce((total, t) => total + t.price, 0);
+        return selectedTreatments.reduce((total, t) => total + t.customPrice, 0);
     }, [selectedTreatments]);
 
     const totalBeforeDiscount = useMemo(() => subtotal * numberOfSessions, [subtotal, numberOfSessions]);
@@ -87,6 +93,12 @@ export function TreatmentSelector({
 
     const handleRemoveTreatment = (treatmentId: string) => {
         onSelectTreatments(selectedTreatments.filter(t => t.id !== treatmentId));
+    }
+
+    const handlePriceChange = (treatmentId: string, newPrice: number) => {
+        onSelectTreatments(selectedTreatments.map(t => 
+            t.id === treatmentId ? { ...t, customPrice: newPrice } : t
+        ));
     }
 
     const selectedOptions = selectedTreatments.map(t => ({
@@ -118,7 +130,7 @@ export function TreatmentSelector({
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Treatment</TableHead>
-                                    <TableHead className="text-right">Price</TableHead>
+                                    <TableHead className="text-right w-[150px]">Price</TableHead>
                                     <TableHead className="w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -126,7 +138,14 @@ export function TreatmentSelector({
                                 {selectedTreatments.map(t => (
                                     <TableRow key={t.id}>
                                         <TableCell className="font-medium">{t.name}</TableCell>
-                                        <TableCell className="text-right">₹{t.price.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">
+                                             <Input 
+                                                type="number"
+                                                value={t.customPrice}
+                                                onChange={(e) => handlePriceChange(t.id, parseFloat(e.target.value) || 0)}
+                                                className="h-8 text-right"
+                                            />
+                                        </TableCell>
                                         <TableCell>
                                             <Button variant="ghost" size="icon" onClick={() => handleRemoveTreatment(t.id)}>
                                                 <Trash2 className="h-4 w-4 text-destructive" />
