@@ -34,7 +34,8 @@ export default function NewBillPage() {
 
   const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
   
-  const availableTreatments = useMemo(() => Object.values(treatmentDefs), [treatmentDefs]);
+  const availableTreatments = Object.values(treatmentDefs);
+  console.log("availableTreatments", availableTreatments);
 
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);

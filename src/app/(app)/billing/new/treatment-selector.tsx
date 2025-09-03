@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
 
 interface TreatmentSelectorProps {
     availableTreatments: TreatmentDef[];
@@ -51,6 +51,12 @@ export function TreatmentSelector({ availableTreatments, selectedTreatments, onS
     const handleRemoveTreatment = (treatmentId: string) => {
         onSelectTreatments(selectedTreatments.filter(t => t.id !== treatmentId));
     }
+    
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Backspace" && inputValue === "" && selectedTreatments.length > 0) {
+          handleRemoveTreatment(selectedTreatments[selectedTreatments.length - 1].id);
+        }
+    };
 
     return (
         <Card>
@@ -61,12 +67,27 @@ export function TreatmentSelector({ availableTreatments, selectedTreatments, onS
             <CardContent className="space-y-4">
                 <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                     <PopoverTrigger asChild>
-                        <Input 
-                            ref={inputRef}
-                            placeholder="Search and add treatments..."
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                        />
+                         <div className="flex flex-wrap gap-2 items-center p-2 border rounded-md min-h-10">
+                            {selectedTreatments.map(t => (
+                                <Badge key={t.id} variant="secondary" className="gap-1.5">
+                                    {t.name}
+                                    <button
+                                        className="rounded-full hover:bg-muted-foreground/20"
+                                        onClick={() => handleRemoveTreatment(t.id)}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                            <Input 
+                                ref={inputRef}
+                                placeholder={selectedTreatments.length === 0 ? "Search and add treatments..." : ""}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                className="border-0 shadow-none focus-visible:ring-0 h-auto p-0 flex-1 min-w-[120px]"
+                            />
+                        </div>
                     </PopoverTrigger>
                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                         <Command>
@@ -88,44 +109,9 @@ export function TreatmentSelector({ availableTreatments, selectedTreatments, onS
                     </PopoverContent>
                 </Popover>
 
-                <div className="border rounded-lg overflow-hidden">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Treatment</TableHead>
-                                <TableHead className="text-right">Price (₹)</TableHead>
-                                <TableHead className="w-[50px]"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {selectedTreatments.length > 0 ? (
-                                selectedTreatments.map(t => (
-                                    <TableRow key={t.id}>
-                                        <TableCell className="font-medium">{t.name}</TableCell>
-                                        <TableCell className="text-right">{t.price.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveTreatment(t.id)}>
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
-                                        No treatments added yet.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                        <TableFooter>
-                            <TableRow>
-                                <TableCell className="font-semibold">Total</TableCell>
-                                <TableCell className="text-right font-semibold">₹{totalCharges.toFixed(2)}</TableCell>
-                                <TableCell></TableCell>
-                            </TableRow>
-                        </TableFooter>
-                    </Table>
+                <div className="flex justify-end items-center pt-4 border-t">
+                    <span className="text-lg font-semibold">Total:</span>
+                    <span className="text-lg font-bold ml-2">₹{totalCharges.toFixed(2)}</span>
                 </div>
             </CardContent>
         </Card>
