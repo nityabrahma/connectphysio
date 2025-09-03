@@ -21,6 +21,8 @@ interface TreatmentSelectorProps {
     onSelectTreatments: (treatments: BillableTreatment[]) => void;
     availablePackages: PackageDef[];
     onGenerateBill: (billData: Omit<Bill, 'id' | 'billNumber' | 'patientId' | 'centreId' | 'createdAt'>) => void;
+    isEditing?: boolean;
+    initialBillData?: Bill | null;
 }
 
 export function TreatmentSelector({ 
@@ -28,12 +30,21 @@ export function TreatmentSelector({
     selectedTreatments, 
     onSelectTreatments, 
     availablePackages,
-    onGenerateBill
+    onGenerateBill,
+    isEditing = false,
+    initialBillData = null
 }: TreatmentSelectorProps) {
     
     const [selectedPackageId, setSelectedPackageId] = useState<string>('none');
     const [numberOfSessions, setNumberOfSessions] = useState(1);
     
+    useEffect(() => {
+        if (isEditing && initialBillData) {
+            setSelectedPackageId(initialBillData.discount?.packageId || 'none');
+            setNumberOfSessions(initialBillData.numberOfSessions);
+        }
+    }, [isEditing, initialBillData]);
+
     const selectedPackage = useMemo(() => {
         if (selectedPackageId === 'none') return null;
         return availablePackages.find(p => p.id === selectedPackageId) || null;
@@ -42,10 +53,10 @@ export function TreatmentSelector({
     useEffect(() => {
         if (selectedPackage) {
             setNumberOfSessions(selectedPackage.sessions);
-        } else {
+        } else if (!isEditing) {
             setNumberOfSessions(1);
         }
-    }, [selectedPackage]);
+    }, [selectedPackage, isEditing]);
 
     const treatmentOptions = useMemo(() => {
         const selectedIds = new Set(selectedTreatments.map(t => t.id));
@@ -229,7 +240,7 @@ export function TreatmentSelector({
             </CardContent>
              <CardFooter className="flex justify-end">
                 <Button onClick={handleGenerateClick} disabled={selectedTreatments.length === 0}>
-                    Generate Bill
+                    {isEditing ? 'Update Bill' : 'Generate Bill'}
                 </Button>
             </CardFooter>
         </Card>
