@@ -21,8 +21,13 @@ export function SelectPatientDialog({ isOpen, onOpenChange, onSelect }: SelectPa
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredPatients = useMemo(() => {
+    const lowercasedSearchTerm = searchTerm.toLowerCase();
+    if (!lowercasedSearchTerm) return patients;
+    
     return patients.filter(patient =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase())
+      patient.name.toLowerCase().includes(lowercasedSearchTerm) ||
+      patient.email?.toLowerCase().includes(lowercasedSearchTerm) ||
+      patient.phone.includes(lowercasedSearchTerm)
     );
   }, [patients, searchTerm]);
 
@@ -38,7 +43,7 @@ export function SelectPatientDialog({ isOpen, onOpenChange, onSelect }: SelectPa
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name..."
+            placeholder="Search by name, email, or phone..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -60,7 +65,9 @@ export function SelectPatientDialog({ isOpen, onOpenChange, onSelect }: SelectPa
                   </Avatar>
                   <div>
                     <p className="font-semibold">{patient.name}</p>
-                    <p className="text-sm text-muted-foreground">{patient.email}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {patient.email} {patient.age && `· ${patient.age} years`}
+                    </p>
                   </div>
                 </div>
               ))
