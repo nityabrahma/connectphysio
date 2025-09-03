@@ -179,3 +179,32 @@ export type MedicalCondition = {
     condition: string;
     notes: string;
 }
+
+// Billing Types
+export type BillStatus = 'draft' | 'unpaid' | 'paid' | 'cancelled';
+
+export type BillableTreatmentItem = {
+  treatmentDefId: string;
+  name: string;
+  price: number;
+};
+
+export type Bill = {
+  id: string;
+  billNumber: string;
+  patientId: string;
+  centreId: string;
+  createdAt: string;
+  status: BillStatus;
+  treatments: BillableTreatmentItem[];
+  numberOfSessions: number;
+  subtotal: number;
+  discount?: {
+    packageId?: string;
+    packageName: string;
+    percentage: number;
+    amount: number;
+  };
+  grandTotal: number;
+  notes?: string;
+};

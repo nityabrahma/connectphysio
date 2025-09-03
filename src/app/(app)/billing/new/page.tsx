@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Patient, Session, TreatmentDef, PackageSale, PackageDef } from '@/types/domain';
+import type { Patient, Session, TreatmentDef, PackageSale, PackageDef, Bill } from '@/types/domain';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, User, Calendar as CalendarIcon, Pencil } from 'lucide-react';
@@ -15,6 +15,7 @@ import { ManualSessionDialog, type ManualSessionFormValues } from './manual-sess
 import { useRealtimeDb } from '@/hooks/use-realtime-db';
 import { TreatmentSelector, type BillableTreatment } from './treatment-selector';
 import { useAuth } from '@/hooks/use-auth';
+import { useBills } from '@/hooks/use-bills';
 
 type DisplaySession = {
     date: string | Date;
@@ -26,6 +27,7 @@ type DisplaySession = {
 export default function NewBillPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { addBill } = useBills();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [displaySession, setDisplaySession] = useState<DisplaySession | null>(null);
   const [selectedTreatments, setSelectedTreatments] = useState<BillableTreatment[]>([]);
@@ -35,7 +37,6 @@ export default function NewBillPage() {
   const [isManualSessionDialogOpen, setIsManualSessionDialogOpen] = useState(false);
 
   const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
-  const [packageSales] = useRealtimeDb<Record<string, PackageSale>>('packageSales', {});
   const [packages] = useRealtimeDb<Record<string, PackageDef>>('packages', {});
 
   const availableTreatments = useMemo(() => 
@@ -45,13 +46,6 @@ export default function NewBillPage() {
   const availablePackages = useMemo(() =>
     Object.values(packages).filter(p => p.centreId === user?.centreId),
   [packages, user]);
-
-  const patientPackage = useMemo(() => {
-    if (!selectedPatient || !selectedPatient.packageSaleId) return null;
-    const sale = packageSales[selectedPatient.packageSaleId];
-    if (!sale || sale.status !== 'active') return null;
-    return packages[sale.packageId] || null;
-  }, [selectedPatient, packageSales, packages]);
 
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
@@ -91,15 +85,15 @@ export default function NewBillPage() {
     setSelectedTreatments([]);
   }
 
-  const handleGenerateBill = () => {
-    // Logic to generate the bill will be implemented here.
-    // For now, it can just log the data to the console.
-    console.log({
-      patient: selectedPatient,
-      session: displaySession,
-      treatments: selectedTreatments,
-      package: patientPackage,
+  const handleGenerateBill = (billData: Omit<Bill, 'id' | 'billNumber' | 'patientId' | 'centreId' | 'createdAt'>) => {
+    if (!selectedPatient || !user) return;
+    
+    addBill({
+      ...billData,
+      patientId: selectedPatient.id,
+      centreId: user.centreId,
     });
+    
     router.push('/billing');
   }
 
@@ -204,7 +198,6 @@ export default function NewBillPage() {
                     availableTreatments={availableTreatments}
                     selectedTreatments={selectedTreatments}
                     onSelectTreatments={setSelectedTreatments}
-                    patientPackage={patientPackage}
                     availablePackages={availablePackages}
                     onGenerateBill={handleGenerateBill}
                 />

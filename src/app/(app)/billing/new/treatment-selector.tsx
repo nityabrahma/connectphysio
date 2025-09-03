@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import type { TreatmentDef, PackageDef } from '@/types/domain';
+import type { TreatmentDef, PackageDef, Bill } from '@/types/domain';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import SelectComponent from 'react-select';
 import { Separator } from '@/components/ui/separator';
@@ -19,30 +19,20 @@ interface TreatmentSelectorProps {
     availableTreatments: TreatmentDef[];
     selectedTreatments: BillableTreatment[];
     onSelectTreatments: (treatments: BillableTreatment[]) => void;
-    patientPackage: PackageDef | null;
     availablePackages: PackageDef[];
-    onGenerateBill: () => void;
+    onGenerateBill: (billData: Omit<Bill, 'id' | 'billNumber' | 'patientId' | 'centreId' | 'createdAt'>) => void;
 }
 
 export function TreatmentSelector({ 
     availableTreatments, 
     selectedTreatments, 
     onSelectTreatments, 
-    patientPackage,
     availablePackages,
     onGenerateBill
 }: TreatmentSelectorProps) {
     
     const [selectedPackageId, setSelectedPackageId] = useState<string>('none');
     const [numberOfSessions, setNumberOfSessions] = useState(1);
-
-    useEffect(() => {
-        if (patientPackage) {
-            setSelectedPackageId(patientPackage.id);
-        } else {
-            setSelectedPackageId('none');
-        }
-    }, [patientPackage]);
     
     const selectedPackage = useMemo(() => {
         if (selectedPackageId === 'none') return null;
@@ -100,6 +90,31 @@ export function TreatmentSelector({
             t.id === treatmentId ? { ...t, customPrice: newPrice } : t
         ));
     }
+
+    const handleGenerateClick = () => {
+        const billData: Omit<Bill, 'id' | 'billNumber' | 'patientId' | 'centreId' | 'createdAt'> = {
+            status: 'unpaid',
+            treatments: selectedTreatments.map(t => ({
+                treatmentDefId: t.id,
+                name: t.name,
+                price: t.customPrice,
+            })),
+            numberOfSessions,
+            subtotal: totalBeforeDiscount,
+            grandTotal,
+        };
+
+        if (selectedPackage) {
+            billData.discount = {
+                packageId: selectedPackage.id,
+                packageName: selectedPackage.name,
+                percentage: selectedPackage.discountPercentage,
+                amount: discountAmount,
+            };
+        }
+        
+        onGenerateBill(billData);
+    };
 
     const selectedOptions = selectedTreatments.map(t => ({
         value: t.id,
@@ -213,7 +228,7 @@ export function TreatmentSelector({
                 </div>
             </CardContent>
              <CardFooter className="flex justify-end">
-                <Button onClick={onGenerateBill} disabled={selectedTreatments.length === 0}>
+                <Button onClick={handleGenerateClick} disabled={selectedTreatments.length === 0}>
                     Generate Bill
                 </Button>
             </CardFooter>
