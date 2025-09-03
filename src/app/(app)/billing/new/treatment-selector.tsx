@@ -1,22 +1,23 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { TreatmentDef, PackageDef } from '@/types/domain';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import Select from 'react-select';
+import SelectComponent from 'react-select';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TreatmentSelectorProps {
     availableTreatments: TreatmentDef[];
     selectedTreatments: TreatmentDef[];
     onSelectTreatments: (treatments: TreatmentDef[]) => void;
     patientPackage: PackageDef | null;
+    availablePackages: PackageDef[];
     onGenerateBill: () => void;
 }
 
@@ -25,13 +26,21 @@ export function TreatmentSelector({
     selectedTreatments, 
     onSelectTreatments, 
     patientPackage,
+    availablePackages,
     onGenerateBill
 }: TreatmentSelectorProps) {
     
-    const [applyDiscount, setApplyDiscount] = useState(false);
+    const [selectedPackageId, setSelectedPackageId] = useState<string>('');
+
+    useEffect(() => {
+        if (patientPackage) {
+            setSelectedPackageId(patientPackage.id);
+        } else {
+            setSelectedPackageId('');
+        }
+    }, [patientPackage]);
 
     const treatmentOptions = useMemo(() => {
-        // Filter out already selected treatments from the dropdown
         const selectedIds = new Set(selectedTreatments.map(t => t.id));
         return availableTreatments
             .filter(t => !selectedIds.has(t.id))
@@ -51,12 +60,16 @@ export function TreatmentSelector({
         return selectedTreatments.reduce((total, t) => total + t.price, 0);
     }, [selectedTreatments]);
 
+    const selectedPackage = useMemo(() => {
+        return availablePackages.find(p => p.id === selectedPackageId) || null;
+    }, [availablePackages, selectedPackageId]);
+
     const discountAmount = useMemo(() => {
-        if (applyDiscount && patientPackage) {
-            return (subtotal * patientPackage.discountPercentage) / 100;
+        if (selectedPackage) {
+            return (subtotal * selectedPackage.discountPercentage) / 100;
         }
         return 0;
-    }, [subtotal, applyDiscount, patientPackage]);
+    }, [subtotal, selectedPackage]);
 
     const grandTotal = useMemo(() => subtotal - discountAmount, [subtotal, discountAmount]);
 
@@ -77,7 +90,7 @@ export function TreatmentSelector({
                 <CardDescription>Add treatments and apply package discounts if available.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                 <Select
+                 <SelectComponent
                     options={treatmentOptions}
                     isMulti
                     value={selectedOptions}
@@ -114,7 +127,6 @@ export function TreatmentSelector({
                     </div>
                 )}
 
-
                 <Separator />
 
                 <div className="space-y-4">
@@ -124,19 +136,21 @@ export function TreatmentSelector({
                     </div>
 
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Switch 
-                                id="apply-discount" 
-                                checked={applyDiscount} 
-                                onCheckedChange={setApplyDiscount} 
-                                disabled={selectedTreatments.length === 0 || !patientPackage}
-                            />
-                            <Label htmlFor="apply-discount" className={!patientPackage ? 'text-muted-foreground' : ''}>
-                                {patientPackage 
-                                    ? `Apply Package Discount (${patientPackage.discountPercentage}%)`
-                                    : 'Apply Package Discount (No active package)'
-                                }
-                            </Label>
+                         <div className="w-1/2">
+                            <Label htmlFor="package-discount">Package Discount</Label>
+                            <Select value={selectedPackageId} onValueChange={setSelectedPackageId}>
+                                <SelectTrigger id="package-discount">
+                                    <SelectValue placeholder="No Discount" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="">No Discount</SelectItem>
+                                    {availablePackages.map(p => (
+                                        <SelectItem key={p.id} value={p.id}>
+                                            {p.name} ({p.discountPercentage}%)
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <span className="font-medium text-destructive">- ₹{discountAmount.toFixed(2)}</span>
                     </div>

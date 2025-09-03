@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { ManualSessionDialog, type ManualSessionFormValues } from './manual-session-dialog';
 import { useRealtimeDb } from '@/hooks/use-realtime-db';
 import { TreatmentSelector } from './treatment-selector';
+import { useAuth } from '@/hooks/use-auth';
 
 type DisplaySession = {
     date: string | Date;
@@ -24,6 +25,7 @@ type DisplaySession = {
 
 export default function NewBillPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [displaySession, setDisplaySession] = useState<DisplaySession | null>(null);
   const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>([]);
@@ -36,7 +38,13 @@ export default function NewBillPage() {
   const [packageSales] = useRealtimeDb<Record<string, PackageSale>>('packageSales', {});
   const [packages] = useRealtimeDb<Record<string, PackageDef>>('packages', {});
 
-  const availableTreatments = Object.values(treatmentDefs);
+  const availableTreatments = useMemo(() => 
+    Object.values(treatmentDefs).filter(t => t.centreId === user?.centreId), 
+  [treatmentDefs, user]);
+
+  const availablePackages = useMemo(() =>
+    Object.values(packages).filter(p => p.centreId === user?.centreId),
+  [packages, user]);
 
   const patientPackage = useMemo(() => {
     if (!selectedPatient || !selectedPatient.packageSaleId) return null;
@@ -190,6 +198,7 @@ export default function NewBillPage() {
                     selectedTreatments={selectedTreatments}
                     onSelectTreatments={setSelectedTreatments}
                     patientPackage={patientPackage}
+                    availablePackages={availablePackages}
                     onGenerateBill={handleGenerateBill}
                 />
             )}
