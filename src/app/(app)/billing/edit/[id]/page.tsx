@@ -48,9 +48,14 @@ export default function EditBillPage() {
       }));
       setSelectedTreatments(initialTreatments);
       
-      // Fix: Parse the date string correctly to avoid timezone issues.
-      const parsedDate = parse(bill.sessionDate, 'yyyy-MM-dd', new Date());
-      setSessionDate(parsedDate);
+      if (bill.sessionDate) {
+        // Fix: Parse the date string correctly to avoid timezone issues.
+        const parsedDate = parse(bill.sessionDate, 'yyyy-MM-dd', new Date());
+        setSessionDate(parsedDate);
+      } else {
+        // Fallback for older bills without a sessionDate
+        setSessionDate(new Date(bill.createdAt));
+      }
     }
   }, [bill, user]);
 
