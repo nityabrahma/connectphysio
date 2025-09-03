@@ -43,14 +43,13 @@ const questionSchema = z.object({
 });
 
 const formSchema = z.object({
-  title: z.string().min(2, "Title must be at least 2 characters."),
   questions: z.array(questionSchema),
 })
 
 export type ConsultationQuestionsFormValues = z.infer<typeof formSchema>
 
 interface ConsultationQuestionsFormProps {
-    onSubmit: (values: Omit<Questionnaire, 'id' | 'createdAt'>) => void;
+    onSubmit: (values: Omit<Questionnaire, 'id' | 'createdAt' | 'name'>) => void;
     onDelete?: (id: string) => void;
     formDef?: Questionnaire | null;
 }
@@ -69,7 +68,6 @@ export function ConsultationQuestionsForm({ onSubmit, onDelete, formDef }: Consu
     const form = useForm<ConsultationQuestionsFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            title: "",
             questions: [],
         }
     });
@@ -84,7 +82,6 @@ export function ConsultationQuestionsForm({ onSubmit, onDelete, formDef }: Consu
             form.reset(formDef);
         } else {
             form.reset({
-                title: "Default Follow-up Form",
                 questions: defaultQuestions.map(q => ({...q, id: generateId()})),
             });
         }
@@ -98,19 +95,7 @@ export function ConsultationQuestionsForm({ onSubmit, onDelete, formDef }: Consu
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Form Title</FormLabel>
-                            <FormControl><Input placeholder="E.g., Post-Session Follow-up" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                
-                <div className="space-y-4 pt-4 border-t">
+                <div className="space-y-4 pt-4">
                     <FormLabel>Questions</FormLabel>
                     {fields.map((field, index) => (
                         <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">

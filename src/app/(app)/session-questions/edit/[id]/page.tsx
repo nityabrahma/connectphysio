@@ -21,7 +21,7 @@ export default function EditSessionQuestionPage() {
   const [questionnaires, setQuestionnaires, loading] = useRealtimeDb<Record<string, Questionnaire>>('sessionQuestionnaires', {});
   const formDef = questionnaires[formId];
 
-  const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
+  const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt' | 'name'>) => {
     if (!formDef) return;
 
     const updatedForm = { ...formDef, ...values, updatedAt: new Date().toISOString() };
@@ -65,8 +65,8 @@ export default function EditSessionQuestionPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">Edit Form</h1>
-            <p className="text-muted-foreground">Update the details for "{formDef.title}".</p>
+            <h1 className="text-3xl font-bold tracking-tight">Edit Session Form</h1>
+            <p className="text-muted-foreground">Update the questions for your clinic's session form.</p>
         </div>
       </div>
       <Card>

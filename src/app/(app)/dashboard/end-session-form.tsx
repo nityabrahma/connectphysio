@@ -245,7 +245,7 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
 
                                 {sessionQuestionnaire ? (
                                     <div className="space-y-4 pt-4 border-t">
-                                        <h3 className="text-lg font-semibold">{sessionQuestionnaire.title}</h3>
+                                        <h3 className="text-lg font-semibold">{sessionQuestionnaire.name}</h3>
                                         {fields.map((field, index) => {
                                             const question = sessionQuestionnaire.questions.find(q => q.id === field.questionId);
                                             if (!question) return null;

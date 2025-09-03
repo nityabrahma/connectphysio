@@ -28,11 +28,12 @@ export default function NewSessionQuestionsPage() {
     }
   }, [centreSessionForm, router]);
 
-  const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
+  const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt' | 'name'>) => {
     const newQuestionnaireId = generateId();
     const newQuestionnaire: Questionnaire = {
       ...values,
       id: newQuestionnaireId,
+      name: "Session Form",
       createdAt: new Date().toISOString(),
     };
     setQuestionnaires({ ...questionnaires, [newQuestionnaireId]: newQuestionnaire });

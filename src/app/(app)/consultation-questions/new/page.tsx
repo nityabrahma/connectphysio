@@ -29,11 +29,12 @@ export default function NewConsultationQuestionsPage() {
   }, [centreConsultationForm, router]);
 
 
-  const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt'>) => {
+  const handleFormSubmit = (values: Omit<Questionnaire, 'id' | 'createdAt' | 'name'>) => {
     const newQuestionnaireId = generateId();
     const newQuestionnaire: Questionnaire = {
       ...values,
       id: newQuestionnaireId,
+      name: "Consultation Form",
       createdAt: new Date().toISOString(),
     };
     setQuestionnaires({ ...questionnaires, [newQuestionnaireId]: newQuestionnaire });

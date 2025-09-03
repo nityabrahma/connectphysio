@@ -117,7 +117,7 @@ export type Question = {
 
 export type Questionnaire = {
   id: ID;
-  title: string;
+  name: string;
   centreId: ID;
   questions: Question[];
   createdAt: string;
