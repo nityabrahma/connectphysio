@@ -138,11 +138,18 @@ export default function NewBillPage() {
                     <CardContent className="p-6 space-y-6">
                         {/* Patient Info Display */}
                         <div className="p-4 border rounded-lg bg-muted/50">
-                            <div className="flex items-center justify-between">
+                             <div className="flex items-start justify-between">
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Patient</Label>
                                     <p className="font-semibold text-lg">{selectedPatient.name}</p>
-                                    <p className="text-sm text-muted-foreground">{selectedPatient.email}</p>
+                                    <div className="text-sm text-muted-foreground mt-2 space-y-1">
+                                      <p>{selectedPatient.email}</p>
+                                      <p className="capitalize">
+                                        {selectedPatient.age && `${selectedPatient.age} years`}
+                                        {selectedPatient.age && selectedPatient.gender && " · "}
+                                        {selectedPatient.gender}
+                                      </p>
+                                    </div>
                                 </div>
                                 <Button variant="outline" size="sm" onClick={resetPatient}>
                                     <Pencil className="mr-2 h-4 w-4"/>
