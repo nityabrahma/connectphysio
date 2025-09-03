@@ -9,7 +9,7 @@ import { ArrowLeft, CalendarIcon } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { useRealtimeDb } from '@/hooks/use-realtime-db';
-import { TreatmentSelector, type BillableTreatment } from '../../new/treatment-selector';
+import { TreatmentSelector, type BillableTreatment } from '@/app/(app)/billing/new/treatment-selector';
 import { useAuth } from '@/hooks/use-auth';
 import { useBills } from '@/hooks/use-bills';
 import { usePatients } from '@/hooks/use-patients';
@@ -17,7 +17,7 @@ import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 export default function EditBillPage() {
   const router = useRouter();
@@ -47,7 +47,10 @@ export default function EditBillPage() {
         centreId: user?.centreId || '',
       }));
       setSelectedTreatments(initialTreatments);
-      setSessionDate(new Date(bill.sessionDate));
+      
+      // Fix: Parse the date string correctly to avoid timezone issues.
+      const parsedDate = parse(bill.sessionDate, 'yyyy-MM-dd', new Date());
+      setSessionDate(parsedDate);
     }
   }, [bill, user]);
 
