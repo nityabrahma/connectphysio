@@ -85,13 +85,14 @@ export default function NewBillPage() {
     setSelectedTreatments([]);
   }
 
-  const handleGenerateBill = (billData: Omit<Bill, 'id' | 'billNumber' | 'patientId' | 'centreId' | 'createdAt'>) => {
-    if (!selectedPatient || !user) return;
+  const handleGenerateBill = (billData: Omit<Bill, 'id' | 'billNumber' | 'patientId' | 'centreId' | 'createdAt' | 'sessionDate'>) => {
+    if (!selectedPatient || !user || !displaySession) return;
     
     addBill({
       ...billData,
       patientId: selectedPatient.id,
       centreId: user.centreId,
+      sessionDate: format(new Date(displaySession.date), 'yyyy-MM-dd'),
     });
     
     router.push('/billing');

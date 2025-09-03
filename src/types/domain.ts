@@ -195,6 +195,7 @@ export type Bill = {
   patientId: string;
   centreId: string;
   createdAt: string;
+  sessionDate: string; // Date of the session being billed
   status: BillStatus;
   treatments: BillableTreatmentItem[];
   numberOfSessions: number;
