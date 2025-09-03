@@ -30,13 +30,13 @@ export function TreatmentSelector({
     onGenerateBill
 }: TreatmentSelectorProps) {
     
-    const [selectedPackageId, setSelectedPackageId] = useState<string>('');
+    const [selectedPackageId, setSelectedPackageId] = useState<string>('none');
 
     useEffect(() => {
         if (patientPackage) {
             setSelectedPackageId(patientPackage.id);
         } else {
-            setSelectedPackageId('');
+            setSelectedPackageId('none');
         }
     }, [patientPackage]);
 
@@ -61,6 +61,7 @@ export function TreatmentSelector({
     }, [selectedTreatments]);
 
     const selectedPackage = useMemo(() => {
+        if (selectedPackageId === 'none') return null;
         return availablePackages.find(p => p.id === selectedPackageId) || null;
     }, [availablePackages, selectedPackageId]);
 
@@ -143,7 +144,7 @@ export function TreatmentSelector({
                                     <SelectValue placeholder="No Discount" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">No Discount</SelectItem>
+                                    <SelectItem value="none">No Discount</SelectItem>
                                     {availablePackages.map(p => (
                                         <SelectItem key={p.id} value={p.id}>
                                             {p.name} ({p.discountPercentage}%)
