@@ -2,7 +2,7 @@
 "use client";
 
 import { AuthGate } from "@/components/auth-gate";
-import { FeedbackForm } from "@/components/feedback-form";
+import { FeedbackDialog, FeedbackProvider } from "@/components/feedback-form";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthGate>
+      <FeedbackProvider>
         <SidebarProvider>
           <div className="flex flex-col size-full h-screen bg-secondary/50 overflow-hidden">
             <Topbar />
@@ -35,7 +36,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </SidebarProvider>
-      <FeedbackForm />
+        <FeedbackDialog />
+      </FeedbackProvider>
     </AuthGate>
   );
 }

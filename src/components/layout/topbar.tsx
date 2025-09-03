@@ -30,6 +30,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
 import { SidebarTrigger } from "../ui/sidebar";
+import { FeedbackButton } from "../feedback-form";
 
 const navItems = [
   {
@@ -78,7 +79,8 @@ export function Topbar() {
         <SidebarTrigger />
       </div>
 
-      <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
+      <div className="flex w-full items-center justify-end gap-2 md:ml-auto">
+        <FeedbackButton />
         <UserNav />
       </div>
     </header>

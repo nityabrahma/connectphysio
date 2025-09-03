@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useContext, createContext } from "react";
 import { usePathname } from "next/navigation";
 import { MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -21,11 +20,52 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { sendFeedbackEmail } from "@/actions/send-feedback";
 
-export function FeedbackForm() {
+
+interface FeedbackContextType {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}
+
+const FeedbackContext = createContext<FeedbackContextType | undefined>(undefined);
+
+export const FeedbackProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <FeedbackContext.Provider value={{ isOpen, setIsOpen }}>
+      {children}
+    </FeedbackContext.Provider>
+  );
+};
+
+export const useFeedback = () => {
+  const context = useContext(FeedbackContext);
+  if (!context) {
+    throw new Error("useFeedback must be used within a FeedbackProvider");
+  }
+  return context;
+};
+
+
+export const FeedbackButton = () => {
+    const { setIsOpen } = useFeedback();
+    return (
+         <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(true)}
+            aria-label="Provide Feedback"
+        >
+            <MessageSquarePlus className="h-5 w-5" />
+        </Button>
+    )
+}
+
+
+export function FeedbackDialog() {
   const pathname = usePathname();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, setIsOpen } = useFeedback();
   const [feedback, setFeedback] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -64,18 +104,18 @@ export function FeedbackForm() {
     }
     setIsLoading(false);
   };
+  
+  // Reset feedback text when dialog is closed
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+        setFeedback("");
+        setIsLoading(false);
+    }
+    setIsOpen(open);
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          className="fixed bottom-6 right-6 z-50 rounded-full h-14 w-14 shadow-lg"
-          size="icon"
-        >
-          <MessageSquarePlus className="h-6 w-6" />
-          <span className="sr-only">Provide Feedback</span>
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Provide Feedback</DialogTitle>
