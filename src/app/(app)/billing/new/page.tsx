@@ -1,17 +1,19 @@
 
 'use client';
 
-import { useState } from 'react';
-import type { Patient, Session } from '@/types/domain';
+import { useState, useMemo } from 'react';
+import type { Patient, Session, TreatmentDef } from '@/types/domain';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Calendar as CalendarIcon, Mail, Phone, Pencil, CheckCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, User, Calendar as CalendarIcon, Pencil } from 'lucide-react';
 import { SelectPatientDialog } from './select-patient-dialog';
 import { SelectSessionDialog } from './select-session-dialog';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { ManualSessionDialog, type ManualSessionFormValues } from './manual-session-dialog';
+import { useRealtimeDb } from '@/hooks/use-realtime-db';
+import { TreatmentSelector } from './treatment-selector';
 
 type DisplaySession = {
     date: string | Date;
@@ -24,14 +26,20 @@ export default function NewBillPage() {
   const router = useRouter();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [displaySession, setDisplaySession] = useState<DisplaySession | null>(null);
+  const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>([]);
 
   const [isPatientDialogOpen, setIsPatientDialogOpen] = useState(false);
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   const [isManualSessionDialogOpen, setIsManualSessionDialogOpen] = useState(false);
 
+  const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
+  
+  const availableTreatments = useMemo(() => Object.values(treatmentDefs), [treatmentDefs]);
+
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
-    setDisplaySession(null); // Reset session when patient changes
+    setDisplaySession(null); 
+    setSelectedTreatments([]);
     setIsPatientDialogOpen(false);
   };
 
@@ -58,10 +66,12 @@ export default function NewBillPage() {
   const resetPatient = () => {
     setSelectedPatient(null);
     setDisplaySession(null);
+    setSelectedTreatments([]);
   }
 
   const resetSession = () => {
     setDisplaySession(null);
+    setSelectedTreatments([]);
   }
 
   return (
@@ -77,78 +87,90 @@ export default function NewBillPage() {
           </div>
         </div>
 
-        <Card>
-          <CardContent className="p-6 space-y-6">
+        <div className="space-y-6">
             {/* Step 1: Patient Selection */}
             {!selectedPatient && (
-                 <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg">
-                    <h3 className="text-lg font-semibold mb-2">Step 1: Select a Patient</h3>
-                    <p className="text-muted-foreground mb-4">Start by choosing a patient to bill.</p>
-                    <Button onClick={() => setIsPatientDialogOpen(true)}>
-                        <User className="mr-2 h-4 w-4" /> Select Patient
-                    </Button>
-                </div>
+                <Card>
+                    <CardContent className="p-6">
+                        <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg">
+                            <h3 className="text-lg font-semibold mb-2">Step 1: Select a Patient</h3>
+                            <p className="text-muted-foreground mb-4">Start by choosing a patient to bill.</p>
+                            <Button onClick={() => setIsPatientDialogOpen(true)}>
+                                <User className="mr-2 h-4 w-4" /> Select Patient
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
             )}
             
             {/* Step 2 & 3: Show Patient Info and then Session Info */}
             {selectedPatient && (
-                <div className="space-y-6">
-                    {/* Patient Info Display */}
-                    <div className="p-4 border rounded-lg bg-muted/50">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <Label className="text-xs text-muted-foreground">Patient</Label>
-                                <p className="font-semibold text-lg">{selectedPatient.name}</p>
-                                <p className="text-sm text-muted-foreground">{selectedPatient.email}</p>
-                            </div>
-                            <Button variant="outline" size="sm" onClick={resetPatient}>
-                                <Pencil className="mr-2 h-4 w-4"/>
-                                Change Patient
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Step 2: Session Selection */}
-                    {!displaySession && (
-                         <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg">
-                            <h3 className="text-lg font-semibold mb-2">Step 2: Choose Session</h3>
-                            <p className="text-muted-foreground mb-4">Select a past session or enter one manually.</p>
-                            <div className="flex gap-4">
-                                <Button onClick={() => setIsSessionDialogOpen(true)}>
-                                    <CalendarIcon className="mr-2 h-4 w-4" /> Select from History
-                                </Button>
-                                <Button variant="secondary" onClick={() => setIsManualSessionDialogOpen(true)}>
-                                    select date/time
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Step 3: Session Info Display */}
-                    {displaySession && (
-                         <div className="p-4 border rounded-lg bg-muted/50">
+                <Card>
+                    <CardContent className="p-6 space-y-6">
+                        {/* Patient Info Display */}
+                        <div className="p-4 border rounded-lg bg-muted/50">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Session</Label>
-                                    <p className="font-semibold">
-                                        {format(new Date(displaySession.date), "PPP")}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {displaySession.startTime} - {displaySession.endTime}
-                                        <span className="capitalize ml-2 text-xs p-1 bg-background rounded-md">{displaySession.status}</span>
-                                    </p>
+                                    <Label className="text-xs text-muted-foreground">Patient</Label>
+                                    <p className="font-semibold text-lg">{selectedPatient.name}</p>
+                                    <p className="text-sm text-muted-foreground">{selectedPatient.email}</p>
                                 </div>
-                                <Button variant="outline" size="sm" onClick={resetSession}>
+                                <Button variant="outline" size="sm" onClick={resetPatient}>
                                     <Pencil className="mr-2 h-4 w-4"/>
-                                    Change Session
+                                    Change Patient
                                 </Button>
                             </div>
                         </div>
-                    )}
-                </div>
+
+                        {/* Step 2: Session Selection */}
+                        {!displaySession && (
+                            <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg">
+                                <h3 className="text-lg font-semibold mb-2">Step 2: Choose Session</h3>
+                                <p className="text-muted-foreground mb-4">Select a past session or enter one manually.</p>
+                                <div className="flex gap-4">
+                                    <Button onClick={() => setIsSessionDialogOpen(true)}>
+                                        <CalendarIcon className="mr-2 h-4 w-4" /> Select from History
+                                    </Button>
+                                    <Button variant="secondary" onClick={() => setIsManualSessionDialogOpen(true)}>
+                                        select date/time
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 3: Session Info Display */}
+                        {displaySession && (
+                            <div className="p-4 border rounded-lg bg-muted/50">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Session</Label>
+                                        <p className="font-semibold">
+                                            {format(new Date(displaySession.date), "PPP")}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {displaySession.startTime} - {displaySession.endTime}
+                                            <span className="capitalize ml-2 text-xs p-1 bg-background rounded-md">{displaySession.status}</span>
+                                        </p>
+                                    </div>
+                                    <Button variant="outline" size="sm" onClick={resetSession}>
+                                        <Pencil className="mr-2 h-4 w-4"/>
+                                        Change Session
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             )}
-          </CardContent>
-        </Card>
+
+            {selectedPatient && displaySession && (
+                 <TreatmentSelector 
+                    availableTreatments={availableTreatments}
+                    selectedTreatments={selectedTreatments}
+                    onSelectTreatments={setSelectedTreatments}
+                />
+            )}
+        </div>
       </div>
 
       <SelectPatientDialog
