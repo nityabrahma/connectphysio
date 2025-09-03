@@ -42,13 +42,10 @@ export function TreatmentSelector({
             }));
     }, [availableTreatments, selectedTreatments]);
 
-    const selectedOptions = useMemo(() => {
-        return selectedTreatments.map(t => ({
-             value: t.id,
-            label: `${t.name} - ₹${t.price}`,
-            treatment: t,
-        }));
-    }, [selectedTreatments]);
+    const handleSelectChange = (selectedOptions: any) => {
+        const newTreatments = selectedOptions ? selectedOptions.map((option: any) => option.treatment) : [];
+        onSelectTreatments(newTreatments);
+    }
 
     const subtotal = useMemo(() => {
         return selectedTreatments.reduce((total, t) => total + t.price, 0);
@@ -63,15 +60,15 @@ export function TreatmentSelector({
 
     const grandTotal = useMemo(() => subtotal - discountAmount, [subtotal, discountAmount]);
 
-    const handleSelectChange = (selectedOption: any) => {
-        if (selectedOption) {
-            onSelectTreatments([...selectedTreatments, selectedOption.treatment]);
-        }
-    }
-
     const handleRemoveTreatment = (treatmentId: string) => {
         onSelectTreatments(selectedTreatments.filter(t => t.id !== treatmentId));
     }
+
+    const selectedOptions = selectedTreatments.map(t => ({
+        value: t.id,
+        label: `${t.name} - ₹${t.price}`,
+        treatment: t,
+    }));
 
     return (
         <Card>
@@ -82,10 +79,11 @@ export function TreatmentSelector({
             <CardContent className="space-y-6">
                  <Select
                     options={treatmentOptions}
-                    value={null} // Controlled externally, reset after each selection
+                    isMulti
+                    value={selectedOptions}
                     onChange={handleSelectChange}
                     placeholder="Search and add treatments..."
-                    className="basic-single"
+                    className="basic-multi-select"
                     classNamePrefix="select"
                  />
 
@@ -125,23 +123,24 @@ export function TreatmentSelector({
                         <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                     </div>
 
-                    {patientPackage && (
-                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Switch 
-                                    id="apply-discount" 
-                                    checked={applyDiscount} 
-                                    onCheckedChange={setApplyDiscount} 
-                                    disabled={selectedTreatments.length === 0}
-                                />
-                                <Label htmlFor="apply-discount">
-                                    Apply Package Discount ({patientPackage.discountPercentage}%)
-                                </Label>
-                            </div>
-                            <span className="font-medium text-destructive">- ₹{discountAmount.toFixed(2)}</span>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Switch 
+                                id="apply-discount" 
+                                checked={applyDiscount} 
+                                onCheckedChange={setApplyDiscount} 
+                                disabled={selectedTreatments.length === 0 || !patientPackage}
+                            />
+                            <Label htmlFor="apply-discount" className={!patientPackage ? 'text-muted-foreground' : ''}>
+                                {patientPackage 
+                                    ? `Apply Package Discount (${patientPackage.discountPercentage}%)`
+                                    : 'Apply Package Discount (No active package)'
+                                }
+                            </Label>
                         </div>
-                    )}
-
+                        <span className="font-medium text-destructive">- ₹{discountAmount.toFixed(2)}</span>
+                    </div>
+                    
                     <Separator />
 
                     <div className="flex justify-between items-center text-lg font-bold">
