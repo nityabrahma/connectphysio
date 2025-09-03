@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Patient, Session, TreatmentDef } from '@/types/domain';
+import type { Patient, Session, TreatmentDef, PackageSale, PackageDef } from '@/types/domain';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, User, Calendar as CalendarIcon, Pencil } from 'lucide-react';
@@ -33,9 +33,17 @@ export default function NewBillPage() {
   const [isManualSessionDialogOpen, setIsManualSessionDialogOpen] = useState(false);
 
   const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
-  
+  const [packageSales] = useRealtimeDb<Record<string, PackageSale>>('packageSales', {});
+  const [packages] = useRealtimeDb<Record<string, PackageDef>>('packages', {});
+
   const availableTreatments = Object.values(treatmentDefs);
-  console.log("availableTreatments", availableTreatments);
+
+  const patientPackage = useMemo(() => {
+    if (!selectedPatient || !selectedPatient.packageSaleId) return null;
+    const sale = packageSales[selectedPatient.packageSaleId];
+    if (!sale || sale.status !== 'active') return null;
+    return packages[sale.packageId] || null;
+  }, [selectedPatient, packageSales, packages]);
 
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
@@ -73,6 +81,18 @@ export default function NewBillPage() {
   const resetSession = () => {
     setDisplaySession(null);
     setSelectedTreatments([]);
+  }
+
+  const handleGenerateBill = () => {
+    // Logic to generate the bill will be implemented here.
+    // For now, it can just log the data to the console.
+    console.log({
+      patient: selectedPatient,
+      session: displaySession,
+      treatments: selectedTreatments,
+      package: patientPackage,
+    });
+    router.push('/billing');
   }
 
   return (
@@ -169,6 +189,8 @@ export default function NewBillPage() {
                     availableTreatments={availableTreatments}
                     selectedTreatments={selectedTreatments}
                     onSelectTreatments={setSelectedTreatments}
+                    patientPackage={patientPackage}
+                    onGenerateBill={handleGenerateBill}
                 />
             )}
         </div>
