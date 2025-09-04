@@ -467,7 +467,7 @@ export default function PatientDetailPage() {
   const params = useParams();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { getPatient, deletePatient } = usePatients();
+  const { getPatient, deletePatient, updatePatient } = usePatients();
   const patientId = params.id as string;
   const patient = getPatient(patientId);
 
@@ -498,6 +498,14 @@ export default function PatientDetailPage() {
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   const [isUpdateTreatmentModalOpen, setIsUpdateTreatmentModalOpen] =
     useState(false);
+  const [medicalHistory, setMedicalHistory] = useState('');
+
+  useEffect(() => {
+    if (patient) {
+        setMedicalHistory(patient.pastMedicalHistory || '');
+    }
+  }, [patient]);
+
 
   const consultationForm = useMemo(() => {
     return Object.values(questionnaires).find(
@@ -601,6 +609,12 @@ export default function PatientDetailPage() {
     setIsUpdateTreatmentModalOpen(false);
     toast({ title: "Treatment Updated" });
   };
+  
+   const handleUpdateMedicalHistory = () => {
+        if (!patient) return;
+        updatePatient(patient.id, { pastMedicalHistory: medicalHistory });
+   };
+
 
   const patientSessions = useMemo(() => {
     if (!activeTreatmentPlanId) return [];
@@ -909,24 +923,6 @@ export default function PatientDetailPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <HeartPulse size={20} />
-                  Medical History
-                </CardTitle>
-                <CardDescription>
-                  General medical history for the patient.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm p-2 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">
-                  {patient.pastMedicalHistory ||
-                    "No past medical history provided."}
-                </p>
-              </CardContent>
-            </Card>
-
             <Card className="flex flex-col">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -1050,6 +1046,29 @@ export default function PatientDetailPage() {
                 </CardContent>
               </Card>
             )}
+
+             <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HeartPulse size={20} />
+                  Medical History
+                </CardTitle>
+                <CardDescription>
+                  General medical history for the patient.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea 
+                    placeholder="E.g., Diabetes, BP..."
+                    value={medicalHistory}
+                    onChange={(e) => setMedicalHistory(e.target.value)}
+                    rows={4}
+                />
+              </CardContent>
+              <CardFooter className="flex justify-end">
+                <Button onClick={handleUpdateMedicalHistory} size="sm">Save Medical History</Button>
+              </CardFooter>
+            </Card>
 
             {consultationForm ? (
               <ConsultationNotesForm
