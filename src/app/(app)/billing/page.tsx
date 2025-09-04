@@ -57,6 +57,10 @@ export default function BillingPage() {
     router.push(`/billing/edit/${billId}`);
   };
 
+  const handleViewBill = (billId: string) => {
+    router.push(`/billing/view/${billId}`);
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
@@ -111,7 +115,7 @@ export default function BillingPage() {
         </CardHeader>
         <CardContent>
           {bills.length > 0 ? (
-            <DataTable columns={columns({ onEdit: handleEditBill })} data={filteredBills} />
+            <DataTable columns={columns({ onEdit: handleEditBill, onView: handleViewBill })} data={filteredBills} />
           ) : (
             <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
                 <DollarSign className="h-16 w-16 mb-4" />

@@ -5,17 +5,18 @@ import { ColumnDef } from "@tanstack/react-table"
 import type { Bill } from "@/types/domain"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
-import { MoreHorizontal, Edit } from "lucide-react"
+import { MoreHorizontal, Edit, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 export type BillWithPatientName = Bill & { patientName: string };
 
 type ColumnsProps = {
   onEdit: (billId: string) => void;
+  onView: (billId: string) => void;
 };
 
-export const columns = ({ onEdit }: ColumnsProps): ColumnDef<BillWithPatientName>[] => [
+export const columns = ({ onEdit, onView }: ColumnsProps): ColumnDef<BillWithPatientName>[] => [
   {
     accessorKey: "billNumber",
     header: "Bill #",
@@ -71,6 +72,12 @@ export const columns = ({ onEdit }: ColumnsProps): ColumnDef<BillWithPatientName
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onView(bill.id)}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Bill
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(bill.id)}>
               <Edit className="mr-2 h-4 w-4" />
               Edit Bill
