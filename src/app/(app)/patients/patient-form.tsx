@@ -216,12 +216,12 @@ export function PatientForm({ onSubmit, patient }: PatientFormProps) {
                 name="initialTreatmentPlanName"
                 render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Initial Treatment Plan Name</FormLabel>
+                    <FormLabel>Describe the Patient's Problems</FormLabel>
                     <FormControl>
-                    <Input placeholder="e.g., Post-Surgery Knee Rehab" {...field} />
+                    <Input placeholder="e.g., Lower back pain after fall" {...field} />
                     </FormControl>
                      <p className="text-sm text-muted-foreground">
-                        Create an initial treatment plan for this patient. You can add more details later.
+                        This will be used as the name for the patient's initial treatment plan.
                     </p>
                     <FormMessage />
                 </FormItem>
