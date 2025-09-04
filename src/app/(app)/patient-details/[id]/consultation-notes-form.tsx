@@ -137,47 +137,44 @@ export function ConsultationNotesForm({ questionnaire, session, initialMedicalHi
 
                         <Separator />
 
-                        <div>
-                            <h3 className="text-base font-semibold mb-4">Session Follow-up</h3>
-                             <div className="space-y-6">
-                                {fields.map((field, index) => {
-                                    const question = questionnaire.questions.find(q => q.id === field.questionId);
-                                    if (!question) return null;
-                                    
-                                    return (
-                                        <FormField
-                                            key={field.id}
-                                            control={form.control}
-                                            name={`answers.${index}.answer`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>{question.label}</FormLabel>
-                                                    <FormControl>
-                                                        {question.type === 'slider' ? (
-                                                            <div className="flex items-center gap-4">
-                                                                <Slider
-                                                                    min={question.min || 0}
-                                                                    max={question.max || 10}
-                                                                    step={question.step || 1}
-                                                                    value={[field.value || 0]}
-                                                                    onValueChange={(value) => field.onChange(value[0])}
-                                                                />
-                                                                <span className="font-semibold w-12 text-center">{field.value || 0}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <Textarea
-                                                                placeholder={question.placeholder || ''}
-                                                                {...field}
+                        <div className="space-y-6">
+                            {fields.map((field, index) => {
+                                const question = questionnaire.questions.find(q => q.id === field.questionId);
+                                if (!question) return null;
+                                
+                                return (
+                                    <FormField
+                                        key={field.id}
+                                        control={form.control}
+                                        name={`answers.${index}.answer`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{question.label}</FormLabel>
+                                                <FormControl>
+                                                    {question.type === 'slider' ? (
+                                                        <div className="flex items-center gap-4">
+                                                            <Slider
+                                                                min={question.min || 0}
+                                                                max={question.max || 10}
+                                                                step={question.step || 1}
+                                                                value={[field.value || 0]}
+                                                                onValueChange={(value) => field.onChange(value[0])}
                                                             />
-                                                        )}
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    )
-                                })}
-                            </div>
+                                                            <span className="font-semibold w-12 text-center">{field.value || 0}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <Textarea
+                                                            placeholder={question.placeholder || ''}
+                                                            {...field}
+                                                        />
+                                                    )}
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )
+                            })}
                         </div>
 
                         <div className="flex justify-end pt-4">
