@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Slider } from "@/components/ui/slider"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Stethoscope } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
 
 const answerSchema = z.object({
   questionId: z.string(),
@@ -27,6 +27,7 @@ const answerSchema = z.object({
 });
 
 const formSchema = z.object({
+  medicalHistory: z.string().optional(),
   answers: z.array(answerSchema),
 })
 
@@ -35,14 +36,15 @@ export type ConsultationNotesFormValues = z.infer<typeof formSchema>
 interface ConsultationNotesFormProps {
     questionnaire: Questionnaire;
     session: Session | null;
-    onUpdate: (sessionId: string, healthNotes: string) => void;
+    initialMedicalHistory: string;
+    onUpdate: (sessionId: string, healthNotes: string, medicalHistory: string) => void;
 }
 
-export function ConsultationNotesForm({ questionnaire, session, onUpdate }: ConsultationNotesFormProps) {
+export function ConsultationNotesForm({ questionnaire, session, initialMedicalHistory, onUpdate }: ConsultationNotesFormProps) {
     
     const defaultValues = useMemo(() => {
         const answers = questionnaire.questions.map(q => {
-            let existingAnswer = "";
+            let existingAnswer = q.type === 'slider' ? q.min || 0 : "";
             if (session?.healthNotes) {
                 try {
                     const parsedNotes = JSON.parse(session.healthNotes);
@@ -58,8 +60,8 @@ export function ConsultationNotesForm({ questionnaire, session, onUpdate }: Cons
             }
             return { questionId: q.id, answer: existingAnswer };
         });
-        return { answers };
-    }, [questionnaire, session]);
+        return { answers, medicalHistory: initialMedicalHistory };
+    }, [questionnaire, session, initialMedicalHistory]);
 
     const form = useForm<ConsultationNotesFormValues>({
         resolver: zodResolver(formSchema),
@@ -82,7 +84,7 @@ export function ConsultationNotesForm({ questionnaire, session, onUpdate }: Cons
        } catch (e) {}
 
        const newHealthNotes = JSON.stringify({ ...existingNotes, answers: values.answers });
-       onUpdate(session.id, newHealthNotes);
+       onUpdate(session.id, newHealthNotes, values.medicalHistory || "");
     }
     
     const { fields } = useFieldArray({
@@ -94,9 +96,9 @@ export function ConsultationNotesForm({ questionnaire, session, onUpdate }: Cons
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Stethoscope size={20}/>Consultation Notes</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Stethoscope size={20}/>Clinical Notes</CardTitle>
                     <CardDescription>
-                        Clinical notes for the most recent session.
+                        Medical history and notes for the most recent session.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -111,54 +113,75 @@ export function ConsultationNotesForm({ questionnaire, session, onUpdate }: Cons
     return (
         <Card className="flex-1 flex flex-col">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Stethoscope size={20}/>Consultation Notes</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Stethoscope size={20}/>Clinical Notes</CardTitle>
                 <CardDescription>
-                    Fill out and update the clinical notes for the latest session.
+                    Update the patient's medical history and the clinical notes for the latest session.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-                        {fields.map((field, index) => {
-                            const question = questionnaire.questions.find(q => q.id === field.questionId);
-                            if (!question) return null;
-                            
-                            return (
-                                <FormField
-                                    key={field.id}
-                                    control={form.control}
-                                    name={`answers.${index}.answer`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{question.label}</FormLabel>
-                                            <FormControl>
-                                                {question.type === 'slider' ? (
-                                                    <div className="flex items-center gap-4">
-                                                        <Slider
-                                                            min={question.min || 0}
-                                                            max={question.max || 10}
-                                                            step={question.step || 1}
-                                                            value={[field.value || 0]}
-                                                            onValueChange={(value) => field.onChange(value[0])}
-                                                        />
-                                                        <span className="font-semibold w-12 text-center">{field.value || 0}</span>
-                                                    </div>
-                                                ) : (
-                                                    <Textarea
-                                                        placeholder={question.placeholder || ''}
-                                                        {...field}
-                                                    />
-                                                )}
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            )
-                        })}
+                        <FormField
+                            control={form.control}
+                            name="medicalHistory"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-base font-semibold">Past Medical History</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="E.g., Diabetes, Hypertension, previous surgeries..." {...field} rows={4} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <Separator />
+
+                        <div>
+                            <h3 className="text-base font-semibold mb-4">Session Follow-up</h3>
+                             <div className="space-y-6">
+                                {fields.map((field, index) => {
+                                    const question = questionnaire.questions.find(q => q.id === field.questionId);
+                                    if (!question) return null;
+                                    
+                                    return (
+                                        <FormField
+                                            key={field.id}
+                                            control={form.control}
+                                            name={`answers.${index}.answer`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{question.label}</FormLabel>
+                                                    <FormControl>
+                                                        {question.type === 'slider' ? (
+                                                            <div className="flex items-center gap-4">
+                                                                <Slider
+                                                                    min={question.min || 0}
+                                                                    max={question.max || 10}
+                                                                    step={question.step || 1}
+                                                                    value={[field.value || 0]}
+                                                                    onValueChange={(value) => field.onChange(value[0])}
+                                                                />
+                                                                <span className="font-semibold w-12 text-center">{field.value || 0}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <Textarea
+                                                                placeholder={question.placeholder || ''}
+                                                                {...field}
+                                                            />
+                                                        )}
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )
+                                })}
+                            </div>
+                        </div>
 
                         <div className="flex justify-end pt-4">
-                            <Button type="submit">Save Notes</Button>
+                            <Button type="submit">Save Clinical Notes</Button>
                         </div>
                     </form>
                 </Form>

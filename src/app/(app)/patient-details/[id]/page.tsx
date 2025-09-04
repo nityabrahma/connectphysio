@@ -498,15 +498,7 @@ export default function PatientDetailPage() {
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   const [isUpdateTreatmentModalOpen, setIsUpdateTreatmentModalOpen] =
     useState(false);
-  const [medicalHistory, setMedicalHistory] = useState('');
-
-  useEffect(() => {
-    if (patient) {
-        setMedicalHistory(patient.pastMedicalHistory || '');
-    }
-  }, [patient]);
-
-
+  
   const consultationForm = useMemo(() => {
     return Object.values(questionnaires).find(
       (q) => q.centreId === user?.centreId
@@ -610,12 +602,6 @@ export default function PatientDetailPage() {
     toast({ title: "Treatment Updated" });
   };
   
-   const handleUpdateMedicalHistory = () => {
-        if (!patient) return;
-        updatePatient(patient.id, { pastMedicalHistory: medicalHistory });
-   };
-
-
   const patientSessions = useMemo(() => {
     if (!activeTreatmentPlanId) return [];
     return Object.values(sessions)
@@ -680,18 +666,21 @@ export default function PatientDetailPage() {
     setSessionToEdit(null);
   };
 
-  const handleUpdateConsultationNotes = (
-    sessionId: string,
-    healthNotes: string
-  ) => {
+  const handleClinicalNotesUpdate = (sessionId: string, healthNotes: string, medicalHistory: string) => {
+    if (!patient) return;
+
+    // Update session health notes
     const sessionToUpdate = sessions[sessionId];
     if (sessionToUpdate) {
-      setSessions({
-        ...sessions,
-        [sessionId]: { ...sessionToUpdate, healthNotes },
-      });
-      toast({ title: "Consultation notes saved." });
+        setSessions({ ...sessions, [sessionId]: { ...sessionToUpdate, healthNotes } });
     }
+
+    // Update patient medical history
+    if (patient.pastMedicalHistory !== medicalHistory) {
+        updatePatient(patient.id, { pastMedicalHistory: medicalHistory });
+    }
+
+    toast({ title: "Clinical notes saved." });
   };
 
   const handleUpdateSessionStatus = (
@@ -1047,34 +1036,12 @@ export default function PatientDetailPage() {
               </Card>
             )}
 
-             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <HeartPulse size={20} />
-                  Medical History
-                </CardTitle>
-                <CardDescription>
-                  General medical history for the patient.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Textarea 
-                    placeholder="E.g., Diabetes, BP..."
-                    value={medicalHistory}
-                    onChange={(e) => setMedicalHistory(e.target.value)}
-                    rows={4}
-                />
-              </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button onClick={handleUpdateMedicalHistory} size="sm">Save Medical History</Button>
-              </CardFooter>
-            </Card>
-
             {consultationForm ? (
               <ConsultationNotesForm
                 questionnaire={consultationForm}
                 session={latestSessionForPlan}
-                onUpdate={handleUpdateConsultationNotes}
+                initialMedicalHistory={patient.pastMedicalHistory || ''}
+                onUpdate={handleClinicalNotesUpdate}
               />
             ) : (
               <Card>
