@@ -70,14 +70,41 @@ export default function ViewBillPage() {
                         <CardTitle className="text-2xl">Invoice</CardTitle>
                         <CardDescription>Bill Number: {bill.billNumber}</CardDescription>
                     </div>
-                    <div className="text-left sm:text-right">
-                        <p className="font-semibold">{patient.name}</p>
-                        <p className="text-sm text-muted-foreground">{patient.email}</p>
-                        <p className="text-sm text-muted-foreground">{patient.phone}</p>
-                    </div>
                 </div>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
+                 <div className="space-y-4">
+                    <h3 className="font-semibold text-lg border-b pb-2">Patient Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                        <div>
+                            <Label className="text-muted-foreground">Name</Label>
+                            <p className="font-medium">{patient.name}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label className="text-muted-foreground">Age</Label>
+                                <p>{patient.age || "N/A"}</p>
+                            </div>
+                            <div>
+                                <Label className="text-muted-foreground">Gender</Label>
+                                <p className="capitalize">{patient.gender || "N/A"}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <Label className="text-muted-foreground">Email</Label>
+                            <p>{patient.email}</p>
+                        </div>
+                         <div>
+                            <Label className="text-muted-foreground">Phone</Label>
+                            <p>{patient.phone}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                            <Label className="text-muted-foreground">Address</Label>
+                            <p>{patient.address || "N/A"}</p>
+                        </div>
+                    </div>
+                </div>
+                <Separator />
                  <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                         <Label className="text-muted-foreground">Bill Date</Label>
@@ -85,7 +112,7 @@ export default function ViewBillPage() {
                     </div>
                      <div>
                         <Label className="text-muted-foreground">Session Date</Label>
-                        <p>{format(new Date(bill.sessionDate), "PPP")}</p>
+                        <p>{bill.sessionDate ? format(new Date(bill.sessionDate), "PPP") : 'N/A'}</p>
                     </div>
                     <div>
                         <Label className="text-muted-foreground">Status</Label>
