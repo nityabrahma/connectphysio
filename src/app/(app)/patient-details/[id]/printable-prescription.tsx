@@ -36,7 +36,6 @@ export const PrintablePrescription = forwardRef(
     const [sessions] = useRealtimeDb<Record<string, Session>>("sessions", {});
     const [therapists] = useRealtimeDb<Record<string, Therapist>>("therapists", {});
     
-    // State to hold the props to ensure the iframe content updates
     const [printData, setPrintData] = useState({ patient, activeTreatmentPlan, latestTreatment, clinicalNotes });
 
     useEffect(() => {
@@ -110,6 +109,7 @@ export const PrintablePrescription = forwardRef(
                 .text-gray-900 { color: #111827; }
                 .text-2xl { font-size: 1.5rem; line-height: 2rem; }
                 .text-gray-800 { color: #1F2937; }
+                .divider { border-top: 1px solid #e5e7eb; margin: 2rem 0; }
             `}</style>
           <header className="flex justify-between items-start border-b-2 border-gray-800 pb-4">
             <div>
@@ -128,6 +128,7 @@ export const PrintablePrescription = forwardRef(
             </div>
           </header>
 
+          {/* Section 1: Patient Information */}
           <section className="mt-8">
             <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
               Patient Details
@@ -145,86 +146,81 @@ export const PrintablePrescription = forwardRef(
               <div>
                 <strong>Phone:</strong> {printData.patient.phone}
               </div>
-              <div className="col-span-2">
-                <strong>Address:</strong> {printData.patient.address || "N/A"}
-              </div>
+              {printData.patient.address && (
+                <div className="col-span-2">
+                  <strong>Address:</strong> {printData.patient.address}
+                </div>
+              )}
             </div>
           </section>
 
-          <section className="mt-8">
+          <div className="divider"></div>
+
+          {/* Section 2: Clinical Information */}
+          <section>
             <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
               Clinical Information
             </h3>
             <div className="space-y-4 text-sm">
-              <div>
-                <h4 className="font-semibold text-gray-700">Medical History:</h4>
-                <p className="pl-4 text-gray-600 whitespace-pre-wrap">
-                  {printData.patient.pastMedicalHistory || "None provided."}
-                </p>
-              </div>
-              {printData.activeTreatmentPlan && (
-                <>
-                  <div>
-                    <h4 className="font-semibold text-gray-700">Chief Complaint:</h4>
-                    <p className="pl-4 text-gray-600 whitespace-pre-wrap">{printData.activeTreatmentPlan.history || "Not recorded."}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-700">Examination Findings:</h4>
-                    <p className="pl-4 text-gray-600 whitespace-pre-wrap">{printData.activeTreatmentPlan.examination || "Not recorded."}</p>
-                  </div>
-                </>
+              {printData.patient.pastMedicalHistory && (
+                <div>
+                  <h4 className="font-semibold text-gray-700">Past Medical History:</h4>
+                  <p className="pl-4 text-gray-600 whitespace-pre-wrap">
+                    {printData.patient.pastMedicalHistory}
+                  </p>
+                </div>
+              )}
+              {printData.clinicalNotes && (
+                 <div>
+                    <h4 className="font-semibold text-gray-700">Clinical Notes (Latest Session):</h4>
+                    <div className="pl-4 text-gray-600">
+                        <FormattedHealthNotes notes={printData.clinicalNotes} />
+                    </div>
+                </div>
               )}
             </div>
           </section>
           
-          <section className="mt-8">
-            <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
-              Clinical Notes (Latest Session)
-            </h3>
-            <div className="text-sm">
-               <FormattedHealthNotes notes={printData.clinicalNotes} />
-            </div>
-          </section>
-
-          <section className="mt-8">
-            <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
+          <div className="divider"></div>
+          
+          {/* Section 3: Treatment Protocol */}
+          <section>
+             <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
               Treatment Protocol
             </h3>
-            {printData.latestTreatment && Array.isArray(printData.latestTreatment.treatments) ? (
+            {printData.latestTreatment && Array.isArray(printData.latestTreatment.treatments) && printData.latestTreatment.treatments.length > 0 ? (
               <div className="text-sm">
                 <ul className="list-disc pl-8 space-y-1">
                   {printData.latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
                 </ul>
               </div>
-            ) : (
-              <p className="text-sm text-gray-500">No specific treatment protocol defined yet.</p>
-            )}
+            ) : null }
           </section>
 
-          <section className="mt-8">
-            <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">Session Summary</h3>
-            {patientSessions.length > 0 ? (
+          {/* Section 4: Session Summary */}
+          {patientSessions.length > 0 && (
+            <section className="mt-8">
+              <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">Session Summary</h3>
               <table className="w-full text-sm text-left">
-                <thead className="border-b">
-                  <tr>
-                    <th className="py-2">Date</th>
-                    <th className="py-2">Therapist</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {patientSessions.slice(0, 5).map(session => (
-                    <tr key={session.id} className="border-b">
-                      <td className="py-2">{format(new Date(session.date), "MMM d, yyyy")}</td>
-                      <td className="py-2">{therapists[session.therapistId]?.name || 'Unknown'}</td>
+                  <thead className="border-b">
+                    <tr>
+                      <th className="py-2">Date</th>
+                      <th className="py-2">Therapist</th>
                     </tr>
-                  ))}
-                </tbody>
+                  </thead>
+                  <tbody>
+                    {patientSessions.slice(0, 5).map(session => (
+                      <tr key={session.id} className="border-b">
+                        <td className="py-2">{format(new Date(session.date), "MMM d, yyyy")}</td>
+                        <td className="py-2">{therapists[session.therapistId]?.name || 'Unknown'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
               </table>
-            ) : (
-              <p className="text-sm text-gray-500">No completed sessions for this treatment plan yet.</p>
-            )}
-          </section>
+            </section>
+          )}
 
+          {/* Section 5: Signature */}
           <footer className="mt-16 pt-8 border-t-2 border-gray-800 text-right">
             <div className="text-lg font-bold">Signature</div>
           </footer>
