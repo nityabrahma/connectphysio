@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeDb } from "@/hooks/use-realtime-db";
 import { createPortal } from "react-dom";
+import { FormattedHealthNotes } from "@/components/formatted-health-notes";
 
 // A4 size in pixels at 96 DPI: 794px x 1123px
 const A4_WIDTH_PX = 794;
@@ -23,10 +24,11 @@ interface PrintablePrescriptionProps {
   patient: Patient;
   activeTreatmentPlan: TreatmentPlan;
   latestTreatment: Treatment | null;
+  clinicalNotes?: string;
 }
 
 export const PrintablePrescription = forwardRef(
-  function PrintablePrescription({ patient, activeTreatmentPlan, latestTreatment }: PrintablePrescriptionProps, ref) {
+  function PrintablePrescription({ patient, activeTreatmentPlan, latestTreatment, clinicalNotes }: PrintablePrescriptionProps, ref) {
     const { user } = useAuth();
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [iframeBody, setIframeBody] = useState<HTMLElement | null>(null);
@@ -35,11 +37,11 @@ export const PrintablePrescription = forwardRef(
     const [therapists] = useRealtimeDb<Record<string, Therapist>>("therapists", {});
     
     // State to hold the props to ensure the iframe content updates
-    const [printData, setPrintData] = useState({ patient, activeTreatmentPlan, latestTreatment });
+    const [printData, setPrintData] = useState({ patient, activeTreatmentPlan, latestTreatment, clinicalNotes });
 
     useEffect(() => {
-        setPrintData({ patient, activeTreatmentPlan, latestTreatment });
-    }, [patient, activeTreatmentPlan, latestTreatment]);
+        setPrintData({ patient, activeTreatmentPlan, latestTreatment, clinicalNotes });
+    }, [patient, activeTreatmentPlan, latestTreatment, clinicalNotes]);
 
     useEffect(() => {
         const iframe = iframeRef.current;
@@ -172,6 +174,15 @@ export const PrintablePrescription = forwardRef(
                   </div>
                 </>
               )}
+            </div>
+          </section>
+          
+          <section className="mt-8">
+            <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
+              Clinical Notes (Latest Session)
+            </h3>
+            <div className="text-sm">
+               <FormattedHealthNotes notes={printData.clinicalNotes} />
             </div>
           </section>
 

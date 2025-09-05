@@ -1083,6 +1083,7 @@ export default function PatientDetailPage() {
                 patient={patient}
                 activeTreatmentPlan={activeTreatmentPlan}
                 latestTreatment={latestTreatment}
+                clinicalNotes={latestSessionForPlan?.healthNotes}
               />
           )}
       </div>
