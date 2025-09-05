@@ -1,5 +1,4 @@
 
-
 export type ID = string;
 
 export type Role = "admin" | "receptionist" | "therapist";

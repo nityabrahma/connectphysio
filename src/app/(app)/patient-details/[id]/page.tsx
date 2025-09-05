@@ -94,17 +94,8 @@ import { FormattedHealthNotes } from "@/components/formatted-health-notes";
 import { ConsultationNotesForm } from "./consultation-notes-form";
 import { EndSessionForm } from "../../dashboard/end-session-form";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@/components/ui/command";
+import SelectComponent from "react-select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const ViewSessionModal = ({
   session,
@@ -232,10 +223,7 @@ const UpdateTreatmentModal = ({
   const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>(
     []
   );
-  const [inputValue, setInputValue] = useState("");
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const isEditing = !!treatmentToEdit;
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -244,29 +232,22 @@ const UpdateTreatmentModal = ({
         .map((name) => treatmentDefs.find((def) => def.name === name))
         .filter(Boolean) as TreatmentDef[];
       setSelectedTreatments(matchingDefs);
-      setInputValue("");
     }
   }, [isOpen, treatmentToEdit, treatmentDefs]);
 
-  const filteredTreatments = useMemo(() => {
-    if (!inputValue) return [];
-    const query = inputValue.toLowerCase();
-
-    return treatmentDefs.filter((def) => {
-      const matches = def.name.toLowerCase().startsWith(query);
-      return (
-        matches && !selectedTreatments.find((t) => t.id === def.id)
-      );
-    });
-  }, [inputValue, treatmentDefs, selectedTreatments]);
-
-  useEffect(() => {
-    if (inputValue.length > 0) {
-      setIsPopoverOpen(true);
-    } else {
-      setIsPopoverOpen(false);
-    }
-  }, [inputValue, filteredTreatments]);
+  const treatmentOptions = useMemo(() => {
+    return treatmentDefs.map((t) => ({
+      value: t.id,
+      label: `${t.name} - ₹${t.price}`,
+      treatment: t,
+    }));
+  }, [treatmentDefs]);
+  
+  const selectedOptions = selectedTreatments.map(t => ({
+        value: t.id,
+        label: `${t.name} - ₹${t.price}`,
+        treatment: t,
+  }));
 
   const totalCharges = useMemo(() => {
     return selectedTreatments.reduce((total, t) => total + t.price, 0);
@@ -277,16 +258,17 @@ const UpdateTreatmentModal = ({
     onSubmit(treatmentNames, totalCharges, treatmentToEdit?.date);
   };
 
-  const handleSelectTreatment = (treatmentDef: TreatmentDef) => {
-    setSelectedTreatments((prev) => [...prev, treatmentDef]);
-    setInputValue("");
-    setIsPopoverOpen(false);
-    inputRef.current?.focus();
+  const handleSelectChange = (selectedOptions: any) => {
+    const newTreatments = selectedOptions
+      ? selectedOptions.map((option: any) => option.treatment)
+      : [];
+    setSelectedTreatments(newTreatments);
   };
-
+  
   const handleRemoveTreatment = (treatmentId: string) => {
     setSelectedTreatments((prev) => prev.filter((t) => t.id !== treatmentId));
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -302,67 +284,42 @@ const UpdateTreatmentModal = ({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
-          <Input
-            ref={inputRef}
+          <SelectComponent
+            options={treatmentOptions}
+            isMulti
+            value={selectedOptions}
+            onChange={handleSelectChange}
             placeholder="Search and add treatments..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            className="basic-multi-select"
+            classNamePrefix="select"
           />
-          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-            <PopoverTrigger asChild>
-              <div className="w-full" />
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-[--radix-popover-trigger-width] p-0"
-              align="start"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-            >
-              <Command>
-                <CommandGroup>
-                  {filteredTreatments.length > 0 ? (
-                    filteredTreatments.map((def) => (
-                      <CommandItem
-                        key={def.id}
-                        onSelect={() => handleSelectTreatment(def)}
-                        value={def.name}
-                        className="flex justify-between"
-                      >
-                        <span>{def.name}</span>
-                        <span className="text-muted-foreground">₹{def.price}</span>
-                      </CommandItem>
-                    ))
-                  ) : inputValue ? (
-                    <div className="p-2 text-sm text-muted-foreground">
-                      No treatment found.
-                    </div>
-                  ) : null}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
           <div className="space-y-2">
             <Label>Selected Treatments</Label>
             {selectedTreatments.length > 0 ? (
-              <div className="flex flex-col gap-2 pt-2">
-                {selectedTreatments.map((t) => (
-                  <Badge
-                    key={t.id}
-                    variant="secondary"
-                    className="flex items-center justify-between py-1.5 px-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleRemoveTreatment(t.id)}
-                        className="rounded-full hover:bg-muted-foreground/20"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                      <span>{t.name}</span>
-                    </div>
-                    <span>₹{t.price}</span>
-                  </Badge>
-                ))}
-                <div className="flex justify-between items-center pt-2 mt-2 border-t font-semibold">
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Treatment</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                      <TableHead className="w-[40px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedTreatments.map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell>{t.name}</TableCell>
+                        <TableCell className="text-right">₹{t.price}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={() => handleRemoveTreatment(t.id)}>
+                            <X className="h-4 w-4"/>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                 <div className="flex justify-between items-center p-4 border-t font-semibold">
                   <span>Total</span>
                   <span>₹{totalCharges}</span>
                 </div>
