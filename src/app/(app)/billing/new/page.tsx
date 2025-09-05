@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Patient, Session, TreatmentDef, PackageSale, PackageDef, Bill } from '@/types/domain';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, User, Calendar as CalendarIcon, Pencil } from 'lucide-react';
 import { SelectPatientDialog } from './select-patient-dialog';
 import { SelectSessionDialog } from './select-session-dialog';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { ManualSessionDialog, type ManualSessionFormValues } from './manual-session-dialog';
@@ -16,6 +16,7 @@ import { useRealtimeDb } from '@/hooks/use-realtime-db';
 import { TreatmentSelector, type BillableTreatment } from './treatment-selector';
 import { useAuth } from '@/hooks/use-auth';
 import { useBills } from '@/hooks/use-bills';
+import { usePatients } from '@/hooks/use-patients';
 
 type DisplaySession = {
     date: string | Date;
@@ -26,8 +27,15 @@ type DisplaySession = {
 
 export default function NewBillPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { addBill } = useBills();
+  const { getPatient } = usePatients();
+
+  const [sessions] = useRealtimeDb<Record<string, Session>>('sessions', {});
+  const patientId = searchParams.get('patientId');
+  const sessionId = searchParams.get('sessionId');
+  
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [displaySession, setDisplaySession] = useState<DisplaySession | null>(null);
   const [selectedTreatments, setSelectedTreatments] = useState<BillableTreatment[]>([]);
@@ -38,6 +46,28 @@ export default function NewBillPage() {
 
   const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
   const [packages] = useRealtimeDb<Record<string, PackageDef>>('packages', {});
+
+  useEffect(() => {
+    if (patientId) {
+      const patient = getPatient(patientId);
+      if (patient) {
+        setSelectedPatient(patient);
+      }
+    }
+  }, [patientId, getPatient]);
+
+  useEffect(() => {
+    if (sessionId && sessions[sessionId]) {
+      const session = sessions[sessionId];
+      setDisplaySession({
+          date: session.date,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          status: session.status,
+      });
+    }
+  }, [sessionId, sessions]);
+
 
   const availableTreatments = useMemo(() => 
     Object.values(treatmentDefs).filter(t => t.centreId === user?.centreId), 

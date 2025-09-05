@@ -9,6 +9,7 @@ import {
   UserPlus,
   User,
   Edit,
+  CreditCard,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Patient, Session, Therapist, Treatment, TreatmentPlan } from "@/types/domain";
@@ -240,6 +241,15 @@ export default function AppointmentsPage() {
                     >
                       <LogOut /> Update
                     </Button>
+                  )}
+                  {event.resource.status !== 'completed' && user?.role === 'admin' && (
+                     <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push(`/billing/new?patientId=${event.resource.patientId}&sessionId=${event.resource.id}`)}
+                      >
+                        <CreditCard /> Bill
+                      </Button>
                   )}
                   {event.resource.status !== 'completed' && (
                     <Button

@@ -2,7 +2,7 @@
 "use client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut } from "lucide-react";
+import { Users, Calendar, Package, Clock, Check, PlusCircle, Footprints, User, UserPlus, LogOut, CreditCard } from "lucide-react";
 import type { Patient, Session, Treatment, TreatmentPlan } from "@/types/domain";
 import { useRealtimeDb } from "@/hooks/use-realtime-db";
 import { Badge } from "@/components/ui/badge";
@@ -151,6 +151,11 @@ const TodaysAppointmentsList = () => {
                 {canManageSession(session) && (session.status === 'checked-in' || session.status === 'completed') && (
                   <Button size="sm" variant="secondary" onClick={() => setSessionToEnd(session)}>
                     <LogOut className="mr-2 h-4 w-4" /> Update
+                  </Button>
+                )}
+                {canManageSession(session) && session.status !== 'scheduled' && user?.role === 'admin' && (
+                  <Button size="sm" variant="outline" onClick={() => router.push(`/billing/new?patientId=${session.patientId}&sessionId=${session.id}`)}>
+                    <CreditCard className="mr-2 h-4 w-4"/> Bill
                   </Button>
                 )}
               </div>

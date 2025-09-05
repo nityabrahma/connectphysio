@@ -42,6 +42,7 @@ import {
   LogOut,
   X,
   Printer,
+  CreditCard,
 } from "lucide-react";
 import {
   Select,
@@ -272,7 +273,7 @@ const UpdateTreatmentModal = ({
 
   return (
      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg w-full max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-lg w-full max-h-[100vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Treatment" : "Add New Treatment"}
@@ -766,6 +767,10 @@ export default function PatientDetailPage() {
                 <DropdownMenuItem onSelect={() => setIsNewPlanModalOpen(true)}>
                   <FilePlus />
                   New Treatment Plan
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push(`/billing/new?patientId=${patient.id}`)}>
+                    <CreditCard />
+                    Generate Bill
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
