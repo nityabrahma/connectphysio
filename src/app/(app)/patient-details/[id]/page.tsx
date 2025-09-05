@@ -271,8 +271,8 @@ const UpdateTreatmentModal = ({
 
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+     <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Treatment" : "Add New Treatment"}
@@ -283,7 +283,7 @@ const UpdateTreatmentModal = ({
               : "Select the treatments performed. This will become the new active treatment description."}
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 space-y-4">
+        <div className="py-4 space-y-4 flex-1 flex flex-col min-h-0">
           <SelectComponent
             options={treatmentOptions}
             isMulti
@@ -293,33 +293,35 @@ const UpdateTreatmentModal = ({
             className="basic-multi-select"
             classNamePrefix="select"
           />
-          <div className="space-y-2">
+          <div className="space-y-2 flex-1 flex flex-col min-h-0">
             <Label>Selected Treatments</Label>
             {selectedTreatments.length > 0 ? (
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Treatment</TableHead>
-                      <TableHead className="text-right">Price</TableHead>
-                      <TableHead className="w-[40px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedTreatments.map((t) => (
-                      <TableRow key={t.id}>
-                        <TableCell>{t.name}</TableCell>
-                        <TableCell className="text-right">₹{t.price}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" onClick={() => handleRemoveTreatment(t.id)}>
-                            <X className="h-4 w-4"/>
-                          </Button>
-                        </TableCell>
+              <div className="border rounded-lg flex-1 flex flex-col min-h-0">
+                <div className="overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Treatment</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                        <TableHead className="w-[40px]"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                 <div className="flex justify-between items-center p-4 border-t font-semibold">
+                    </TableHeader>
+                    <TableBody>
+                      {selectedTreatments.map((t) => (
+                        <TableRow key={t.id}>
+                          <TableCell>{t.name}</TableCell>
+                          <TableCell className="text-right">₹{t.price}</TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" onClick={() => handleRemoveTreatment(t.id)}>
+                              <X className="h-4 w-4"/>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                 <div className="flex justify-between items-center p-4 border-t font-semibold mt-auto">
                   <span>Total</span>
                   <span>₹{totalCharges}</span>
                 </div>
@@ -504,7 +506,7 @@ export default function PatientDetailPage() {
     ) {
       return null;
     }
-    return activeTreatmentPlan.treatments[0];
+    return activeTreatmentPlan.treatments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
   }, [activeTreatmentPlan]);
 
   const handleNewTreatmentPlan = (name: string) => {
@@ -537,18 +539,20 @@ export default function PatientDetailPage() {
     toast({ title: "New treatment plan started." });
   };
 
-  const handleUpdateTreatment = (treatments: string[], charges: number) => {
+  const handleUpdateTreatment = (treatments: string[], charges: number, treatmentDate?: string) => {
     if (!activeTreatmentPlan) return;
 
     const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
 
     const newTreatment: Treatment = {
-      date: new Date().toISOString(),
+      date: treatmentDate || new Date().toISOString(),
       treatments,
       charges,
     };
 
-    const updatedPlan = { ...planToUpdate, treatments: [newTreatment] };
+    const otherTreatments = planToUpdate.treatments.filter(t => t.date !== newTreatment.date);
+
+    const updatedPlan = { ...planToUpdate, treatments: [newTreatment, ...otherTreatments] };
 
     setTreatmentPlans({
       ...treatmentPlans,
@@ -669,7 +673,7 @@ export default function PatientDetailPage() {
       const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
       const updatedPlan = {
         ...planToUpdate,
-        treatments: [newTreatment],
+        treatments: [...(planToUpdate.treatments || []), newTreatment],
       };
       setTreatmentPlans({
         ...treatmentPlans,
