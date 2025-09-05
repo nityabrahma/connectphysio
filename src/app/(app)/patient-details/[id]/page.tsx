@@ -97,6 +97,7 @@ import { EndSessionForm } from "../../dashboard/end-session-form";
 import { Textarea } from "@/components/ui/textarea";
 import SelectComponent from "react-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PrintablePrescription } from "./printable-prescription";
 
 const ViewSessionModal = ({
   session,
@@ -430,6 +431,7 @@ export default function PatientDetailPage() {
   const { getPatient, deletePatient, updatePatient } = usePatients();
   const patientId = params.id as string;
   const patient = getPatient(patientId);
+  const printComponentRef = useRef<{ handlePrint: () => void }>(null);
 
   const [sessions, setSessions] = useRealtimeDb<Record<string, Session>>(
     "sessions",
@@ -690,6 +692,10 @@ export default function PatientDetailPage() {
     setSessionToEnd(null);
   };
 
+  const handlePrintClick = () => {
+    printComponentRef.current?.handlePrint();
+  };
+
   if (!patient) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -791,7 +797,7 @@ export default function PatientDetailPage() {
                     <Edit className="mr-2 h-4 w-4" /> Edit Details
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={() => router.push(`/patient-details/${patient.id}/print`)}
+                    onSelect={handlePrintClick}
                   >
                     <Printer className="mr-2 h-4 w-4" /> Print Prescription
                   </DropdownMenuItem>
@@ -1070,6 +1076,16 @@ export default function PatientDetailPage() {
           onSubmit={handleEndSessionSubmit}
         />
       )}
+       <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          {patient && activeTreatmentPlan && (
+              <PrintablePrescription
+                ref={printComponentRef}
+                patient={patient}
+                activeTreatmentPlan={activeTreatmentPlan}
+                latestTreatment={latestTreatment}
+              />
+          )}
+      </div>
     </>
   );
 }
