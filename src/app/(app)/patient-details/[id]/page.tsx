@@ -272,7 +272,7 @@ const UpdateTreatmentModal = ({
 
   return (
      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-lg w-full max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Treatment" : "Add New Treatment"}
