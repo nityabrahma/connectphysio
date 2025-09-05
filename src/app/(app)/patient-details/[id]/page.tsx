@@ -124,14 +124,6 @@ const ViewSessionModal = ({
         </DialogHeader>
         <div className="flex-1 overflow-y-auto -mr-6 pr-6">
           <div className="space-y-6 py-4">
-            <div>
-              <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
-                <Stethoscope size={18} /> Health Notes
-              </h4>
-              <div className="p-4 border rounded-lg">
-                <FormattedHealthNotes notes={session.healthNotes} />
-              </div>
-            </div>
             {session.notes && (
               <div>
                 <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
@@ -581,27 +573,6 @@ export default function PatientDetailPage() {
     return patientSessions.find((s) => isSameDay(new Date(s.date), new Date()));
   }, [patientSessions]);
 
-  const latestSessionForPlan = useMemo(() => {
-    if (
-      todaysSession &&
-      (todaysSession.status === "checked-in" ||
-        todaysSession.status === "completed")
-    ) {
-      return todaysSession;
-    }
-
-    const completedSessions = patientSessions.filter(
-      (s) => s.status === "completed"
-    );
-    if (completedSessions.length > 0) {
-      return completedSessions.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      )[0];
-    }
-
-    return null;
-  }, [patientSessions, todaysSession]);
-
   const handleNewAppointmentClick = () => {
     if (!activeTreatmentPlanId) {
       toast({
@@ -630,13 +601,13 @@ export default function PatientDetailPage() {
     setSessionToEdit(null);
   };
 
-  const handleClinicalNotesUpdate = (sessionId: string, healthNotes: string, medicalHistory: string) => {
-    if (!patient) return;
+  const handleClinicalNotesUpdate = (clinicalNotes: string, medicalHistory: string) => {
+    if (!patient || !activeTreatmentPlan) return;
 
-    // Update session health notes
-    const sessionToUpdate = sessions[sessionId];
-    if (sessionToUpdate) {
-        setSessions({ ...sessions, [sessionId]: { ...sessionToUpdate, healthNotes } });
+    // Update treatment plan clinical notes
+    const planToUpdate = treatmentPlans[activeTreatmentPlan.id];
+    if (planToUpdate) {
+        setTreatmentPlans({ ...treatmentPlans, [activeTreatmentPlan.id]: { ...planToUpdate, clinicalNotes } });
     }
 
     // Update patient medical history
@@ -662,7 +633,6 @@ export default function PatientDetailPage() {
 
   const handleEndSessionSubmit = (
     sessionId: string,
-    healthNotes: string,
     treatment: Omit<Treatment, "date">
   ) => {
     const session = sessions[sessionId];
@@ -686,7 +656,7 @@ export default function PatientDetailPage() {
 
     setSessions({
       ...sessions,
-      [sessionId]: { ...session, status: "completed", healthNotes },
+      [sessionId]: { ...session, status: "completed" },
     });
     toast({ title: "Session Completed" });
     setSessionToEnd(null);
@@ -1000,7 +970,7 @@ export default function PatientDetailPage() {
                           variant="secondary"
                           onClick={() => setSessionToEnd(todaysSession)}
                         >
-                          <LogOut className="mr-2 h-4 w-4" /> Update
+                          <LogOut className="mr-2 h-4 w-4" /> Complete
                         </Button>
                       )}
                   </div>
@@ -1011,7 +981,7 @@ export default function PatientDetailPage() {
             {consultationForm ? (
               <ConsultationNotesForm
                 questionnaire={consultationForm}
-                session={latestSessionForPlan}
+                treatmentPlan={activeTreatmentPlan}
                 initialMedicalHistory={patient.pastMedicalHistory || ''}
                 onUpdate={handleClinicalNotesUpdate}
               />
@@ -1082,8 +1052,6 @@ export default function PatientDetailPage() {
                 ref={printComponentRef}
                 patient={patient}
                 activeTreatmentPlan={activeTreatmentPlan}
-                latestTreatment={latestTreatment}
-                clinicalNotes={latestSessionForPlan?.healthNotes}
               />
           )}
       </div>

@@ -89,7 +89,6 @@ export type Session = {
   packageSaleId?: ID;
   treatmentPlanId?: ID;
   status: "scheduled" | "checked-in" | "completed" | "cancelled";
-  healthNotes?: string; // Stored as a JSON string of questionnaire answers
   notes?: string;
   createdAt: string;
 };
@@ -153,6 +152,7 @@ export type TreatmentPlan = {
     name: string; // e.g., "Post-Surgery Knee Rehab"
     history?: string; // Current problem for this specific plan
     examination?: string; // Observations for this specific plan
+    clinicalNotes?: string; // Stored as a JSON string of questionnaire answers
     createdAt: string; // ISO DateTime
     isActive: boolean;
     treatments: Treatment[];

@@ -23,12 +23,10 @@ const A4_HEIGHT_PX = 1123;
 interface PrintablePrescriptionProps {
   patient: Patient;
   activeTreatmentPlan: TreatmentPlan;
-  latestTreatment: Treatment | null;
-  clinicalNotes?: string;
 }
 
 export const PrintablePrescription = forwardRef(
-  function PrintablePrescription({ patient, activeTreatmentPlan, latestTreatment, clinicalNotes }: PrintablePrescriptionProps, ref) {
+  function PrintablePrescription({ patient, activeTreatmentPlan }: PrintablePrescriptionProps, ref) {
     const { user } = useAuth();
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [iframeBody, setIframeBody] = useState<HTMLElement | null>(null);
@@ -36,11 +34,19 @@ export const PrintablePrescription = forwardRef(
     const [sessions] = useRealtimeDb<Record<string, Session>>("sessions", {});
     const [therapists] = useRealtimeDb<Record<string, Therapist>>("therapists", {});
     
-    const [printData, setPrintData] = useState({ patient, activeTreatmentPlan, latestTreatment, clinicalNotes });
+    const [printData, setPrintData] = useState({ patient, activeTreatmentPlan });
 
     useEffect(() => {
-        setPrintData({ patient, activeTreatmentPlan, latestTreatment, clinicalNotes });
-    }, [patient, activeTreatmentPlan, latestTreatment, clinicalNotes]);
+        setPrintData({ patient, activeTreatmentPlan });
+    }, [patient, activeTreatmentPlan]);
+    
+    const latestTreatment = useMemo(() => {
+        if (!printData.activeTreatmentPlan?.treatments || printData.activeTreatmentPlan.treatments.length === 0) {
+          return null;
+        }
+        return printData.activeTreatmentPlan.treatments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+    }, [printData.activeTreatmentPlan]);
+
 
     useEffect(() => {
         const iframe = iframeRef.current;
@@ -129,7 +135,6 @@ export const PrintablePrescription = forwardRef(
             </div>
           </header>
 
-          {/* Section 1: Patient Information */}
           <section className="mt-8">
             <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
               Patient Details
@@ -155,10 +160,9 @@ export const PrintablePrescription = forwardRef(
             </div>
           </section>
 
-          {(printData.patient.pastMedicalHistory || printData.clinicalNotes) && <div className="divider"></div>}
+          {(printData.patient.pastMedicalHistory || printData.activeTreatmentPlan.clinicalNotes) && <div className="divider"></div>}
 
-          {/* Section 2: Clinical Information */}
-          {(printData.patient.pastMedicalHistory || printData.clinicalNotes) && (
+          {(printData.patient.pastMedicalHistory || printData.activeTreatmentPlan.clinicalNotes) && (
             <section>
               <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
                 Clinical Information
@@ -172,11 +176,11 @@ export const PrintablePrescription = forwardRef(
                     </p>
                   </div>
                 )}
-                {printData.clinicalNotes && (
+                {printData.activeTreatmentPlan.clinicalNotes && (
                    <div>
-                      <h4 className="font-semibold text-gray-700">Clinical Notes (Latest Session):</h4>
+                      <h4 className="font-semibold text-gray-700">Clinical Notes:</h4>
                       <div className="pl-4 text-gray-600">
-                          <FormattedHealthNotes notes={printData.clinicalNotes} />
+                          <FormattedHealthNotes notes={printData.activeTreatmentPlan.clinicalNotes} />
                       </div>
                   </div>
                 )}
@@ -184,23 +188,21 @@ export const PrintablePrescription = forwardRef(
             </section>
           )}
           
-          {printData.latestTreatment && <div className="divider"></div>}
+          {latestTreatment && <div className="divider"></div>}
           
-          {/* Section 3: Treatment Protocol */}
-          {printData.latestTreatment && Array.isArray(printData.latestTreatment.treatments) && printData.latestTreatment.treatments.length > 0 && (
+          {latestTreatment && Array.isArray(latestTreatment.treatments) && latestTreatment.treatments.length > 0 && (
             <section>
                 <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
                 Treatment Protocol
                 </h3>
                 <div className="text-sm">
                     <ul className="list-disc pl-8 space-y-1">
-                    {printData.latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
+                    {latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
                     </ul>
                 </div>
             </section>
           )}
 
-          {/* Section 4: Session Summary */}
           {patientSessions.length > 0 && (
             <section className="mt-8">
               <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">Session Summary</h3>
@@ -223,7 +225,6 @@ export const PrintablePrescription = forwardRef(
             </section>
           )}
 
-          {/* Section 5: Signature */}
           <footer className="mt-16 pt-8 border-t-2 border-gray-800 text-right">
             <div className="text-lg font-bold">Signature</div>
           </footer>

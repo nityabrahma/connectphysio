@@ -60,7 +60,7 @@ const TodaysAppointmentsList = () => {
     }
   };
   
-  const handleEndSessionSubmit = (sessionId: string, healthNotes: string, treatment: Omit<Treatment, 'date'>) => {
+  const handleEndSessionSubmit = (sessionId: string, treatment: Omit<Treatment, 'date'>) => {
     const session = sessions[sessionId];
     if (!session) return;
     
@@ -78,7 +78,7 @@ const TodaysAppointmentsList = () => {
         toast({ title: "No active treatment plan found to add treatment to.", variant: 'destructive' });
     }
 
-    setSessions({ ...sessions, [sessionId]: { ...session, status: 'completed', healthNotes } });
+    setSessions({ ...sessions, [sessionId]: { ...session, status: 'completed' } });
     toast({ title: 'Session Completed' });
     setSessionToEnd(null);
   }
@@ -150,7 +150,7 @@ const TodaysAppointmentsList = () => {
                 )}
                 {canManageSession(session) && (session.status === 'checked-in' || session.status === 'completed') && (
                   <Button size="sm" variant="secondary" onClick={() => setSessionToEnd(session)}>
-                    <LogOut className="mr-2 h-4 w-4" /> Update
+                    <LogOut className="mr-2 h-4 w-4" /> Complete
                   </Button>
                 )}
                 {canManageSession(session) && (session.status === 'checked-in' || session.status === 'completed') && user?.role === 'admin' && (

@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import type { Questionnaire, Session } from "@/types/domain"
+import type { Questionnaire, TreatmentPlan } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -35,19 +35,19 @@ export type ConsultationNotesFormValues = z.infer<typeof formSchema>
 
 interface ConsultationNotesFormProps {
     questionnaire: Questionnaire;
-    session: Session | null;
+    treatmentPlan: TreatmentPlan | null;
     initialMedicalHistory: string;
-    onUpdate: (sessionId: string, healthNotes: string, medicalHistory: string) => void;
+    onUpdate: (notes: string, medicalHistory: string) => void;
 }
 
-export function ConsultationNotesForm({ questionnaire, session, initialMedicalHistory, onUpdate }: ConsultationNotesFormProps) {
+export function ConsultationNotesForm({ questionnaire, treatmentPlan, initialMedicalHistory, onUpdate }: ConsultationNotesFormProps) {
     
     const defaultValues = useMemo(() => {
         const answers = questionnaire.questions.map(q => {
             let existingAnswer = q.type === 'slider' ? q.min || 0 : "";
-            if (session?.healthNotes) {
+            if (treatmentPlan?.clinicalNotes) {
                 try {
-                    const parsedNotes = JSON.parse(session.healthNotes);
+                    const parsedNotes = JSON.parse(treatmentPlan.clinicalNotes);
                     if(parsedNotes.answers) {
                         const savedAnswer = parsedNotes.answers.find((a: { questionId: string }) => a.questionId === q.id);
                         if (savedAnswer) {
@@ -61,7 +61,7 @@ export function ConsultationNotesForm({ questionnaire, session, initialMedicalHi
             return { questionId: q.id, answer: existingAnswer };
         });
         return { answers, medicalHistory: initialMedicalHistory };
-    }, [questionnaire, session, initialMedicalHistory]);
+    }, [questionnaire, treatmentPlan, initialMedicalHistory]);
 
     const form = useForm<ConsultationNotesFormValues>({
         resolver: zodResolver(formSchema),
@@ -74,17 +74,10 @@ export function ConsultationNotesForm({ questionnaire, session, initialMedicalHi
 
 
     const handleFormSubmit = (values: ConsultationNotesFormValues) => {
-       if (!session) return;
+       if (!treatmentPlan) return;
        
-       let existingNotes = {};
-       try {
-        if(session.healthNotes) {
-            existingNotes = JSON.parse(session.healthNotes);
-        }
-       } catch (e) {}
-
-       const newHealthNotes = JSON.stringify({ ...existingNotes, answers: values.answers });
-       onUpdate(session.id, newHealthNotes, values.medicalHistory || "");
+       const newClinicalNotes = JSON.stringify({ answers: values.answers, questionnaireId: questionnaire.id });
+       onUpdate(newClinicalNotes, values.medicalHistory || "");
     }
     
     const { fields } = useFieldArray({
@@ -92,18 +85,18 @@ export function ConsultationNotesForm({ questionnaire, session, initialMedicalHi
         name: "answers"
     });
 
-    if (!session) {
+    if (!treatmentPlan) {
         return (
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Stethoscope size={20}/>Clinical Notes</CardTitle>
                     <CardDescription>
-                        Medical history and notes for the most recent session.
+                        Medical history and notes for the selected treatment plan.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="text-center text-muted-foreground py-8">
-                        <p>No session available to record notes against.</p>
+                        <p>No active treatment plan. Please create one to add notes.</p>
                     </div>
                 </CardContent>
             </Card>
@@ -115,7 +108,7 @@ export function ConsultationNotesForm({ questionnaire, session, initialMedicalHi
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Stethoscope size={20}/>Clinical Notes</CardTitle>
                 <CardDescription>
-                    Update the patient's medical history and the clinical notes for the latest session.
+                    Update the patient's medical history and the clinical notes for this treatment plan.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
