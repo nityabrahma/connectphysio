@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { ArrowLeft, Printer } from 'lucide-react';
@@ -13,11 +13,13 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import { PrintableBill } from './printable-bill';
 
 export default function ViewBillPage() {
   const router = useRouter();
   const params = useParams();
   const billId = params.id as string;
+  const printComponentRef = useRef<{ handlePrint: () => void }>(null);
   
   const { getBill } = useBills();
   const { getPatient } = usePatients();
@@ -25,6 +27,10 @@ export default function ViewBillPage() {
   const bill = useMemo(() => getBill(billId), [billId, getBill]);
   const patient = useMemo(() => bill ? getPatient(bill.patientId) : null, [bill, getPatient]);
   
+  const handlePrintClick = () => {
+    printComponentRef.current?.handlePrint();
+  };
+
   if (!bill || !patient) {
      return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -57,13 +63,13 @@ export default function ViewBillPage() {
                     <p className="text-muted-foreground">Viewing invoice {bill.billNumber}</p>
                 </div>
             </div>
-            <Button variant="outline" onClick={() => window.print()}>
+            <Button variant="outline" onClick={handlePrintClick}>
                 <Printer className="mr-2 h-4 w-4"/>
                 Print
             </Button>
         </div>
 
-        <Card className="w-full max-w-4xl mx-auto print:shadow-none print:border-none">
+        <Card className="w-full max-w-4xl mx-auto">
             <CardHeader className="bg-muted/50 rounded-t-2xl">
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
                     <div>
@@ -149,7 +155,7 @@ export default function ViewBillPage() {
                         <span>x {bill.numberOfSessions}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Total Before Discount</span>
+                        <span className="font-semibold">Total Before Discount</span>
                         <span className="font-semibold">{formatCurrency(bill.subtotal)}</span>
                     </div>
                     {bill.discount && (
@@ -173,6 +179,7 @@ export default function ViewBillPage() {
             )}
         </Card>
       </div>
+      <PrintableBill ref={printComponentRef} bill={bill} patient={patient} />
     </>
   );
 }
