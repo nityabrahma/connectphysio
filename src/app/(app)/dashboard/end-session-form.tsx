@@ -23,16 +23,15 @@ import {
 } from "@/components/ui/dialog"
 import { useEffect, useMemo, useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
 import { useAuth } from "@/hooks/use-auth"
 import { Slider } from "@/components/ui/slider"
 import Link from "next/link"
 import { useRealtimeDb } from "@/hooks/use-realtime-db"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command"
+import { Label } from "@/components/ui/label"
+import SelectComponent from "react-select"
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
-import { Label } from "@/components/ui/label"
+
 
 const answerSchema = z.object({
   questionId: z.string(),
@@ -60,8 +59,6 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
     const [treatmentDefs] = useRealtimeDb<Record<string, TreatmentDef>>('treatmentDefs', {});
     
     const [selectedTreatments, setSelectedTreatments] = useState<TreatmentDef[]>([]);
-    const [inputValue, setInputValue] = useState('');
-    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     const sessionQuestionnaire = useMemo(() => {
         return Object.values(questionnaires).find(q => q.centreId === user?.centreId);
@@ -75,21 +72,19 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
         return patientPlans.find(tp => tp.isActive) || patientPlans[0] || null;
     }, [treatmentPlans, patient]);
     
-    const filteredTreatments = useMemo(() => {
-        if (!inputValue) return [];
-        return centreTreatmentDefs.filter(def => 
-            def.name.toLowerCase().includes(inputValue.toLowerCase()) &&
-            !selectedTreatments.find(t => t.id === def.id)
-        );
-    }, [inputValue, centreTreatmentDefs, selectedTreatments]);
-
-    useEffect(() => {
-        if (inputValue.length > 0 && filteredTreatments.length > 0) {
-            setIsPopoverOpen(true);
-        } else {
-            setIsPopoverOpen(false);
-        }
-    }, [inputValue, filteredTreatments]);
+    const treatmentOptions = useMemo(() => {
+        return centreTreatmentDefs.map(t => ({
+          value: t.id,
+          label: `${t.name} - ₹${t.price}`,
+          treatment: t,
+        }));
+    }, [centreTreatmentDefs]);
+      
+    const selectedOptions = selectedTreatments.map(t => ({
+        value: t.id,
+        label: `${t.name} - ₹${t.price}`,
+        treatment: t,
+    }));
     
     const totalCharges = useMemo(() => {
         return selectedTreatments.reduce((total, t) => total + t.price, 0);
@@ -159,12 +154,11 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
         onSubmit(session.id, healthNotes, newTreatment);
     }
     
-    const handleSelectTreatment = (treatmentDef: TreatmentDef) => {
-        setSelectedTreatments(prev => [...prev, treatmentDef]);
-        setInputValue('');
-        setIsPopoverOpen(false);
-    }
-    
+    const handleSelectChange = (selectedOptions: any) => {
+        const newTreatments = selectedOptions ? selectedOptions.map((option: any) => option.treatment) : [];
+        setSelectedTreatments(newTreatments);
+    };
+
     const handleRemoveTreatment = (treatmentId: string) => {
         setSelectedTreatments(prev => prev.filter(t => t.id !== treatmentId));
     }
@@ -185,60 +179,40 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
                             <div className="space-y-4 py-4">
                                 <div className="pt-4 mt-4 border-t">
                                     <h3 className="text-lg font-semibold mb-2">Treatment Information</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                         <div className="space-y-4 md:col-span-2">
-                                            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                                                <PopoverTrigger asChild>
-                                                    <Input 
-                                                        placeholder="Search and add treatments..."
-                                                        value={inputValue}
-                                                        onChange={(e) => setInputValue(e.target.value)}
-                                                    />
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                                                    <Command>
-                                                        <CommandEmpty>No treatment found.</CommandEmpty>
-                                                        <CommandGroup>
-                                                        {filteredTreatments.map((def) => (
-                                                            <CommandItem
-                                                                key={def.id}
-                                                                onSelect={() => handleSelectTreatment(def)}
-                                                                value={def.name}
-                                                                className="flex justify-between"
-                                                            >
-                                                            <span>{def.name}</span>
-                                                            <span className="text-muted-foreground">₹{def.price}</span>
-                                                            </CommandItem>
-                                                        ))}
-                                                        </CommandGroup>
-                                                    </Command>
-                                                </PopoverContent>
-                                            </Popover>
+                                    <div className="space-y-4">
+                                        <SelectComponent
+                                            options={treatmentOptions}
+                                            isMulti
+                                            value={selectedOptions}
+                                            onChange={handleSelectChange}
+                                            placeholder="Search and add treatments..."
+                                            className="basic-multi-select"
+                                            classNamePrefix="select"
+                                        />
 
-                                            <div className="space-y-2">
-                                                <Label>Selected Treatments</Label>
-                                                {selectedTreatments.length > 0 ? (
-                                                    <div className="flex flex-col gap-2 pt-2">
-                                                        {selectedTreatments.map(t => (
-                                                            <Badge key={t.id} variant="secondary" className="flex items-center justify-between py-1.5 px-2">
-                                                                <div className="flex items-center gap-2">
-                                                                    <button onClick={() => handleRemoveTreatment(t.id)} className="rounded-full hover:bg-muted-foreground/20">
-                                                                        <X className="h-3 w-3" />
-                                                                    </button>
-                                                                    <span>{t.name}</span>
-                                                                </div>
-                                                                <span>₹{t.price}</span>
-                                                            </Badge>
-                                                        ))}
-                                                        <div className="flex justify-between items-center pt-2 mt-2 border-t font-semibold">
-                                                            <span>Total</span>
-                                                            <span>₹{totalCharges}</span>
-                                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Selected Treatments</Label>
+                                            {selectedTreatments.length > 0 ? (
+                                                <div className="flex flex-col gap-2 pt-2">
+                                                    {selectedTreatments.map(t => (
+                                                        <Badge key={t.id} variant="secondary" className="flex items-center justify-between py-1.5 px-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <button type="button" onClick={() => handleRemoveTreatment(t.id)} className="rounded-full hover:bg-muted-foreground/20">
+                                                                    <X className="h-3 w-3" />
+                                                                </button>
+                                                                <span>{t.name}</span>
+                                                            </div>
+                                                            <span>₹{t.price}</span>
+                                                        </Badge>
+                                                    ))}
+                                                    <div className="flex justify-between items-center pt-2 mt-2 border-t font-semibold">
+                                                        <span>Total</span>
+                                                        <span>₹{totalCharges}</span>
                                                     </div>
-                                                ) : (
-                                                    <p className="text-sm text-muted-foreground pt-2">No treatments selected yet.</p>
-                                                )}
-                                            </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground pt-2">No treatments selected yet.</p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -308,3 +282,5 @@ export function EndSessionForm({ isOpen, onOpenChange, onSubmit, session, patien
         </Dialog>
     );
 }
+
+    
