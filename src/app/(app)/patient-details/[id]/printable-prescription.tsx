@@ -29,24 +29,31 @@ export const PrintablePrescription = forwardRef(
   function PrintablePrescription({ patient, activeTreatmentPlan, latestTreatment }: PrintablePrescriptionProps, ref) {
     const { user } = useAuth();
     const iframeRef = useRef<HTMLIFrameElement>(null);
-    const [isPrinting, setIsPrinting] = useState(false);
     const [iframeBody, setIframeBody] = useState<HTMLElement | null>(null);
 
     const [sessions] = useRealtimeDb<Record<string, Session>>("sessions", {});
     const [therapists] = useRealtimeDb<Record<string, Therapist>>("therapists", {});
+    
+    // State to hold the props to ensure the iframe content updates
+    const [printData, setPrintData] = useState({ patient, activeTreatmentPlan, latestTreatment });
 
     useEffect(() => {
-        if (iframeRef.current) {
-            setIframeBody(iframeRef.current.contentWindow?.document.body || null);
+        setPrintData({ patient, activeTreatmentPlan, latestTreatment });
+    }, [patient, activeTreatmentPlan, latestTreatment]);
+
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        if (iframe?.contentWindow) {
+            setIframeBody(iframe.contentWindow.document.body);
         }
     }, []);
 
     const patientSessions = useMemo(() => {
-        if (!activeTreatmentPlan) return [];
+        if (!printData.activeTreatmentPlan) return [];
         return Object.values(sessions)
-          .filter(s => s.treatmentPlanId === activeTreatmentPlan.id && s.status === 'completed')
+          .filter(s => s.treatmentPlanId === printData.activeTreatmentPlan.id && s.status === 'completed')
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [sessions, activeTreatmentPlan]);
+    }, [sessions, printData.activeTreatmentPlan]);
 
 
     useImperativeHandle(ref, () => ({
@@ -125,19 +132,19 @@ export const PrintablePrescription = forwardRef(
             </h3>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
               <div>
-                <strong>Name:</strong> {patient.name}
+                <strong>Name:</strong> {printData.patient.name}
               </div>
               <div>
-                <strong>Age:</strong> {patient.age || "N/A"}
+                <strong>Age:</strong> {printData.patient.age || "N/A"}
               </div>
               <div>
-                <strong>Gender:</strong> {patient.gender || "N/A"}
+                <strong>Gender:</strong> {printData.patient.gender || "N/A"}
               </div>
               <div>
-                <strong>Phone:</strong> {patient.phone}
+                <strong>Phone:</strong> {printData.patient.phone}
               </div>
               <div className="col-span-2">
-                <strong>Address:</strong> {patient.address || "N/A"}
+                <strong>Address:</strong> {printData.patient.address || "N/A"}
               </div>
             </div>
           </section>
@@ -150,18 +157,18 @@ export const PrintablePrescription = forwardRef(
               <div>
                 <h4 className="font-semibold text-gray-700">Medical History:</h4>
                 <p className="pl-4 text-gray-600 whitespace-pre-wrap">
-                  {patient.pastMedicalHistory || "None provided."}
+                  {printData.patient.pastMedicalHistory || "None provided."}
                 </p>
               </div>
-              {activeTreatmentPlan && (
+              {printData.activeTreatmentPlan && (
                 <>
                   <div>
                     <h4 className="font-semibold text-gray-700">Chief Complaint:</h4>
-                    <p className="pl-4 text-gray-600 whitespace-pre-wrap">{activeTreatmentPlan.history || "Not recorded."}</p>
+                    <p className="pl-4 text-gray-600 whitespace-pre-wrap">{printData.activeTreatmentPlan.history || "Not recorded."}</p>
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-700">Examination Findings:</h4>
-                    <p className="pl-4 text-gray-600 whitespace-pre-wrap">{activeTreatmentPlan.examination || "Not recorded."}</p>
+                    <p className="pl-4 text-gray-600 whitespace-pre-wrap">{printData.activeTreatmentPlan.examination || "Not recorded."}</p>
                   </div>
                 </>
               )}
@@ -172,10 +179,10 @@ export const PrintablePrescription = forwardRef(
             <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
               Treatment Protocol
             </h3>
-            {latestTreatment && Array.isArray(latestTreatment.treatments) ? (
+            {printData.latestTreatment && Array.isArray(printData.latestTreatment.treatments) ? (
               <div className="text-sm">
                 <ul className="list-disc pl-8 space-y-1">
-                  {latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
+                  {printData.latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
                 </ul>
               </div>
             ) : (
