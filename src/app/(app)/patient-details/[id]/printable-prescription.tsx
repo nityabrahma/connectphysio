@@ -90,6 +90,7 @@ export const PrintablePrescription = forwardRef(
                 .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
                 .pl-4 { padding-left: 1rem; }
                 .text-gray-600 { color: #4B5563; }
+                .text-muted-foreground { color: #6b7280; }
                 .whitespace-pre-wrap { white-space: pre-wrap; }
                 .list-disc { list-style-type: disc; }
                 .pl-8 { padding-left: 2rem; }
@@ -154,48 +155,50 @@ export const PrintablePrescription = forwardRef(
             </div>
           </section>
 
-          <div className="divider"></div>
+          {(printData.patient.pastMedicalHistory || printData.clinicalNotes) && <div className="divider"></div>}
 
           {/* Section 2: Clinical Information */}
-          <section>
-            <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
-              Clinical Information
-            </h3>
-            <div className="space-y-4 text-sm">
-              {printData.patient.pastMedicalHistory && (
-                <div>
-                  <h4 className="font-semibold text-gray-700">Past Medical History:</h4>
-                  <p className="pl-4 text-gray-600 whitespace-pre-wrap">
-                    {printData.patient.pastMedicalHistory}
-                  </p>
-                </div>
-              )}
-              {printData.clinicalNotes && (
-                 <div>
-                    <h4 className="font-semibold text-gray-700">Clinical Notes (Latest Session):</h4>
-                    <div className="pl-4 text-gray-600">
-                        <FormattedHealthNotes notes={printData.clinicalNotes} />
-                    </div>
-                </div>
-              )}
-            </div>
-          </section>
+          {(printData.patient.pastMedicalHistory || printData.clinicalNotes) && (
+            <section>
+              <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
+                Clinical Information
+              </h3>
+              <div className="space-y-4 text-sm">
+                {printData.patient.pastMedicalHistory && (
+                  <div>
+                    <h4 className="font-semibold text-gray-700">Past Medical History:</h4>
+                    <p className="pl-4 text-gray-600 whitespace-pre-wrap">
+                      {printData.patient.pastMedicalHistory}
+                    </p>
+                  </div>
+                )}
+                {printData.clinicalNotes && (
+                   <div>
+                      <h4 className="font-semibold text-gray-700">Clinical Notes (Latest Session):</h4>
+                      <div className="pl-4 text-gray-600">
+                          <FormattedHealthNotes notes={printData.clinicalNotes} />
+                      </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
           
-          <div className="divider"></div>
+          {printData.latestTreatment && <div className="divider"></div>}
           
           {/* Section 3: Treatment Protocol */}
-          <section>
-             <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
-              Treatment Protocol
-            </h3>
-            {printData.latestTreatment && Array.isArray(printData.latestTreatment.treatments) && printData.latestTreatment.treatments.length > 0 ? (
-              <div className="text-sm">
-                <ul className="list-disc pl-8 space-y-1">
-                  {printData.latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
-                </ul>
-              </div>
-            ) : null }
-          </section>
+          {printData.latestTreatment && Array.isArray(printData.latestTreatment.treatments) && printData.latestTreatment.treatments.length > 0 && (
+            <section>
+                <h3 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">
+                Treatment Protocol
+                </h3>
+                <div className="text-sm">
+                    <ul className="list-disc pl-8 space-y-1">
+                    {printData.latestTreatment.treatments.map((t, i) => <li key={i}>{t}</li>)}
+                    </ul>
+                </div>
+            </section>
+          )}
 
           {/* Section 4: Session Summary */}
           {patientSessions.length > 0 && (
