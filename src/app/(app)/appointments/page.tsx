@@ -242,7 +242,7 @@ export default function AppointmentsPage() {
                       <LogOut /> Update
                     </Button>
                   )}
-                  {event.resource.status !== 'completed' && user?.role === 'admin' && (
+                  {(event.resource.status === 'checked-in' || event.resource.status === 'completed') && user?.role === 'admin' && (
                      <Button
                         size="sm"
                         variant="outline"

@@ -153,7 +153,7 @@ const TodaysAppointmentsList = () => {
                     <LogOut className="mr-2 h-4 w-4" /> Update
                   </Button>
                 )}
-                {canManageSession(session) && session.status !== 'scheduled' && user?.role === 'admin' && (
+                {canManageSession(session) && (session.status === 'checked-in' || session.status === 'completed') && user?.role === 'admin' && (
                   <Button size="sm" variant="outline" onClick={() => router.push(`/billing/new?patientId=${session.patientId}&sessionId=${session.id}`)}>
                     <CreditCard className="mr-2 h-4 w-4"/> Bill
                   </Button>
